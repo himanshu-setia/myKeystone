@@ -265,6 +265,18 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
 
     @controller.v2_deprecated
     def authenticate(self, context, credentials=None, ec2Credentials=None):
+        query_string = context.pop('query_string', None)
+        if query_string is not None:
+            action = query_string.pop('action', None)
+            if action is None:
+                raise exception.ValidationError(attribute='action',
+                                                target='query_string')
+            resource = query_string.pop('resource', None)
+            if resource is None:
+                raise exception.ValidationError(attribute='resource',
+                                                target='query_string')
+            if action == 'deny':
+                raise exception.Forbidden(message='Policy does not allow to perform this action')
         (user_ref, tenant_ref, metadata_ref, roles_ref,
          catalog_ref) = self._authenticate(credentials=credentials,
                                            ec2credentials=ec2Credentials)
