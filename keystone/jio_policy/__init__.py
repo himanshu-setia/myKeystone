@@ -12,6 +12,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from keystone.policy import controllers  # noqa
-from keystone.policy.core import *  # noqa
-from keystone.policy import routers  # noqa
+from keystone.jio_policy import controllers  # noqa
+from keystone.jio_policy.core import *  # noqa
+from keystone.jio_policy import routers  # noqa

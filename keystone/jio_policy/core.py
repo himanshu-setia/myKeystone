@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""Entry point into the Policy service."""
+"""Entry point into the Jio policy service."""
 
 import abc
 
@@ -37,21 +37,19 @@ class Manager(manager.Manager):
 
     """
 
-    driver_namespace = 'keystone.policy'
-
-    _POLICY = 'policy'
+    _JIO_POLICY = 'jio_policy'
 
     def __init__(self):
-        super(Manager, self).__init__(CONF.policy.driver)
+        super(Manager, self).__init__(CONF.jio_policy.driver)
 
     def create_policy(self, policy_id, policy, initiator=None):
+        import pdb; pdb.set_trace()
         ref = self.driver.create_policy(policy_id, policy)
-        notifications.Audit.created(self._POLICY, policy_id, initiator)
         return ref
 
 
 @six.add_metaclass(abc.ABCMeta)
-class PolicyDriverV8(object):
+class Driver(object):
 
     @abc.abstractmethod
     def create_policy(self, policy_id, policy):
@@ -61,6 +59,3 @@ class PolicyDriverV8(object):
 
         """
         raise exception.NotImplemented()  # pragma: no cover
-
-
-Driver = manager.create_legacy_driver(PolicyDriverV8)

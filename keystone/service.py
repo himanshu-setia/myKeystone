@@ -32,6 +32,7 @@ from keystone import resource
 from keystone import routers
 from keystone import token
 from keystone import trust
+from keystone import jio_policy
 
 
 CONF = cfg.CONF
@@ -104,7 +105,7 @@ def v3_app_factory(global_conf, **local_conf):
     _routers = []
 
     router_modules = [assignment, auth, catalog, credential, identity, policy,
-                      resource]
+                      resource, jio_policy]
     if CONF.trust.enabled:
         router_modules.append(trust)
 

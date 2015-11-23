@@ -49,6 +49,7 @@ def upgrade(migrate_engine):
             sql.Column('policy_id', sql.String(length=64), nullable=False),
             sql.Column('action_id', sql.String(length=64), nullable=False),
             sql.Column('resource_id', sql.String(length=64), nullable=False),
+            sql.Column('effect', sql.Boolean, default=False, nullable=False),
             sql.PrimaryKeyConstraint('policy_id', 'action_id', 'resource_id'),
             sql.ForeignKeyConstraint(
                 ['action_id'], ['action.id'],

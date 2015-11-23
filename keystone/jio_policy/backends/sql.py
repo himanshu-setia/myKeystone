@@ -17,13 +17,43 @@ from keystone import exception
 from keystone.policy.backends import rules
 
 
-class PolicyModel(sql.ModelBase, sql.DictBase):
-    __tablename__ = 'policy'
-    attributes = ['id', 'blob', 'type']
+class JioPolicyModel(sql.ModelBase):
+    __tablename__ = 'jio_policy'
+    attributes = ['id', 'project_id', 'created_at', 'deleted_at']
     id = sql.Column(sql.String(64), primary_key=True)
-    blob = sql.Column(sql.JsonBlob(), nullable=False)
-    type = sql.Column(sql.String(255), nullable=False)
-    extra = sql.Column(sql.JsonBlob())
+    project_id = sql.Column(sql.String(64), nullable=False)
+    created_at = sql.Column(sql.DateTime, nullable=False)
+    deleted_at = sql.Column(sql.DateTime, nullable=False)
+
+class PolicyActionResourceModel(sql.ModelBase):
+    __tablename__ = 'policy_action_resource'
+    attributes = ['policy_id', 'action_id', 'resource_id', 'effect']
+    policy_id = sql.Column(sql.String(64), primary_key=True)
+    action_id = sql.Column(sql.String(64), primary_key=True)
+    resource_id = sql.Column(sql.String(64), primary_key=True)
+    effect = sql.Column(sql.Boolean)
+
+class ActionModel(sql.ModelBase):
+    __tablename__ = 'action'
+    attributes = ['id', 'action_name', 'service_type']
+    id = sql.Column(sql.String(64), primary_key=True)
+    action_name = sql.Column(sql.String(64))
+    service_type = sql.Column(sql.String(255), nullable=False)
+
+class ResourceModel(sql.ModelBase):
+    __tablename__ = 'resource'
+    attirbutes = ['id', 'resource_name', 'service_type']
+    id = sql.Column(sql.String(64), primary_key=True)
+    resource_name = sql.Column(sql.String(255), nullable=False)
+    service_type = sql.Column(sql.String(255), nullable=False)
+
+class PolicyUserGroupModel(sql.ModelBase):
+    __tablename__ = 'policy_user_group_mapping'
+    attributes = ['type', 'user_group_id', 'policy_id']
+    type = sql.Column(
+        sql.Enum('UserPolicy', 'GroupPolicy'), nullable=False, primary_key=True)
+    user_group_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
+    policy_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
 
 
 class Policy(rules.Policy):
@@ -32,11 +62,12 @@ class Policy(rules.Policy):
     def create_policy(self, policy_id, policy):
         session = sql.get_session()
 
+        ref = policy
         with session.begin():
-            ref = PolicyModel.from_dict(policy)
-            session.add(ref)
+            ref = JioPolicyModel(
+            session.add(ref))
 
-        return ref.to_dict()
+        return ref
 
     def list_policies(self):
         session = sql.get_session()

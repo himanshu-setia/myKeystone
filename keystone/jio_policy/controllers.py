@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
+
 from keystone.common import controller
 from keystone.common import dependency
 from keystone.common import validation
@@ -25,6 +27,8 @@ class JioPolicyV3(controller.V3Controller):
     member_name = 'policy'
 
     @controller.protected()
-    @validation.validated(schema.policy_create, 'policy')
+    #@validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
-        return "foo"
+        policy_id = uuid.uuid4().hex
+        policy = self.jio_policy_api.create_policy(policy_id, policy)
+        return policy
