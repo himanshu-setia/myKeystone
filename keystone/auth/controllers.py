@@ -537,6 +537,24 @@ class Auth(controller.V3Controller):
             del token_data['token']['catalog']
         return render_token_data_response(token_id, token_data)
 
+    def validate_token_with_action_resource(self, context):
+        query_string = context.get('query_string', None)
+        if not query_string:
+            raise exception.ValidationError(attribute="action and resource",
+                                            target="query_string")
+        else:
+            action = query_string.pop('action', None)
+            if action is None:
+                raise exception.ValidationError(attribute="action",
+                                                target="query_string")
+            resource = query_string.get('resource', None)
+            if resource is None:
+                raise exception.ValidationError(attribute="resource",
+                                                target="query_string")
+            if action == 'deny':
+                raise exception.Forbidden(message='Policy does not allow to perform this action')
+            return self.validate_token(context)
+
     @controller.protected()
     def revocation_list(self, context, auth=None):
         if not CONF.token.revoke_by_id:
