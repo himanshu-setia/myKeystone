@@ -11,7 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
+import uuid
+import itertools
+import copy
+from datetime import datetime
 from keystone.common import sql
 from keystone import exception
 from keystone.policy.backends import rules
@@ -21,9 +24,11 @@ class JioPolicyModel(sql.ModelBase):
     __tablename__ = 'jio_policy'
     attributes = ['id', 'project_id', 'created_at', 'deleted_at']
     id = sql.Column(sql.String(64), primary_key=True)
+    name = sql.Column(sql.String(64), nullable=False)
     project_id = sql.Column(sql.String(64), nullable=False)
     created_at = sql.Column(sql.DateTime, nullable=False)
-    deleted_at = sql.Column(sql.DateTime, nullable=False)
+    updated_at = sql.Column(sql.DateTime)
+    deleted_at = sql.Column(sql.DateTime)
 
 class PolicyActionResourceModel(sql.ModelBase):
     __tablename__ = 'policy_action_resource'
@@ -44,7 +49,7 @@ class ResourceModel(sql.ModelBase):
     __tablename__ = 'resource'
     attirbutes = ['id', 'resource_name', 'service_type']
     id = sql.Column(sql.String(64), primary_key=True)
-    resource_name = sql.Column(sql.String(255), nullable=False)
+    name = sql.Column(sql.String(255), nullable=False)
     service_type = sql.Column(sql.String(255), nullable=False)
 
 class PolicyUserGroupModel(sql.ModelBase):
@@ -59,14 +64,42 @@ class PolicyUserGroupModel(sql.ModelBase):
 class Policy(rules.Policy):
 
     @sql.handle_conflicts(conflict_type='policy')
-    def create_policy(self, policy_id, policy):
-        session = sql.get_session()
+    def create_policy(self, service, project_id, policy_id, policy):
 
-        ref = policy
-        with session.begin():
-            ref = JioPolicyModel(
-            session.add(ref))
+        ref = copy.deepcopy(policy)
+        ref['id'] = policy_id
+        name = policy.pop('name', None)
+        if name is None:
+            raise exception.ValidationError(attribute='name', target='policy')
+        statement = policy.pop('statement', None)
+        if statement is None:
+            raise exception.ValidationError(attribute='statement', target='policy')
 
+        created_at = datetime.utcnow()
+        with sql.transaction() as session:
+            session.add(JioPolicyModel(id=policy_id,name=name,
+                project_id=project_id, created_at=created_at))
+            for stmt in statement:
+                action = stmt.pop('action', None)
+                if type(action) != list:
+                    action = [action]
+                effect = stmt.pop('effect', None)
+                resource = stmt.pop('resource', None)
+                if type(resource) != list:
+                    resource = [resource]
+                if effect == 'allow':
+                    effect = True
+                else:
+                    effect = False
+                resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
+                for pair in zip(resource_ids, resource):
+                    session.add(ResourceModel(id=pair[0], name=pair[1],
+                        service_type=service))
+
+                for pair in itertools.product(action, resource):
+                    session.add(PolicyActionResourceModel(
+                       policy_id=policy_id, action_id=pair[0], resource_id=pair[1],
+                       effect=effect))
         return ref
 
     def list_policies(self):

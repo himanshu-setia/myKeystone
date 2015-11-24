@@ -42,9 +42,8 @@ class Manager(manager.Manager):
     def __init__(self):
         super(Manager, self).__init__(CONF.jio_policy.driver)
 
-    def create_policy(self, policy_id, policy, initiator=None):
-        import pdb; pdb.set_trace()
-        ref = self.driver.create_policy(policy_id, policy)
+    def create_policy(self, service, project_id, policy_id, policy):
+        ref = self.driver.create_policy(service, project_id, policy_id, policy)
         return ref
 
 
@@ -52,7 +51,7 @@ class Manager(manager.Manager):
 class Driver(object):
 
     @abc.abstractmethod
-    def create_policy(self, policy_id, policy):
+    def create_policy(self, service, project_id, policy_id, policy):
         """Store a policy blob.
 
         :raises: keystone.exception.Conflict

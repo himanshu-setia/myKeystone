@@ -20,7 +20,6 @@ from keystone.common import json_home
 class Routers(wsgi.RoutersBase):
 
     def append_v3_routers(self, mapper, routers):
-        import pdb; pdb.set_trace()
         policy_controller = controllers.JioPolicyV3()
         self._add_resource(
             mapper, policy_controller,

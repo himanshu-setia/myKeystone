@@ -29,6 +29,12 @@ class JioPolicyV3(controller.V3Controller):
     @controller.protected()
     #@validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
+        import pdb; pdb.set_trace()
         policy_id = uuid.uuid4().hex
-        policy = self.jio_policy_api.create_policy(policy_id, policy)
+        try:
+            project_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['project_id']
+        except KeyError:
+            raise exceptions.Forbidden()
+        service = 'image'
+        policy = self.jio_policy_api.create_policy(service, project_id, policy_id, policy)
         return policy
