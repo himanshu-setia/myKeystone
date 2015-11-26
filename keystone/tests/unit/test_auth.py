@@ -1326,3 +1326,36 @@ class NonDefaultAuthTest(tests.TestCase):
                                    methods=['password', 'token', 'custom'])
         config.setup_authentication()
         self.assertTrue(hasattr(CONF.auth, 'custom'))
+
+class AuthTokenActionResource(AuthTest):
+    def test_unscoped_token(self):	
+
+    def test_auth_invalid_token(self):
+	## TODO: Test invalid token w resource and action
+
+    def test_auth_unscoped_token_no_project_negative(self):
+	## TODO: Test unscoped token validation
+    
+    def test_auth_token_action_resource(self):
+
+    def test_auth_no_action_negative(self):
+	resource_str = 'jrn:jcs:nova:tenantId:resourceTye:resourceID'
+	self.assertRaises(
+            exception.Unauthorized,
+            self.controller.validate_token,
+            dict(is_admin=True, query_string={'action': '', 'resource', resource_str}),
+            token_id=scoped_token_id)
+
+    def test_auth_no_resources_negative(self):
+	action_str = 'create_vm'
+        self.assertRaises(
+            exception.Unauthorized,
+            self.controller.validate_token,
+            dict(is_admin=True, query_string={'action': '', 'resource', resource_str}),
+            token_id=scoped_token_id)
+
+
+    def test_auth_invalid_action_negative(self):
+
+    def test_auth_invalid_resource_negative(self):
+
