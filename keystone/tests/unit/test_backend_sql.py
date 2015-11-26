@@ -131,7 +131,7 @@ class SqlModels(SqlTests):
                 ('name', sql.String, 255),
                 ('service_type', sql.String, 255))
         self.assertExpectedSchema('resource', cols)
-    
+
     def test_jio_policy(self):
         cols = (('id', sql.String, 64),
                 ('project_id', sql.String, 64),
@@ -148,7 +148,7 @@ class SqlModels(SqlTests):
                 ('resource_id', sql.String, 64),
                 ('effect', sql.Boolean, False))
         self.assertExpectedSchema('policy_action_resource', cols)
- 
+
     def test_policy_user_group_mapping(self):
         cols = (('type', sql.Enum, None),
                 ('user_group_id', sql.String, 64),
