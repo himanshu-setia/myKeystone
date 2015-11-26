@@ -46,6 +46,9 @@ class Manager(manager.Manager):
         ref = self.driver.create_policy(service, project_id, policy_id, policy)
         return ref
 
+    def delete_policy(self, policy_id):
+        ref = self.driver.delete_policy(policy_id)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -58,3 +61,12 @@ class Driver(object):
 
         """
         raise exception.NotImplemented()  # pragma: no cover
+
+    @abc.abstractmethod
+    def delete_policy(self, policy_id):
+        """Deletes a policy blob.
+
+        :raises: keystone.exception.PolicyNotFound
+
+        """
+        raise exception.NotImplemented()

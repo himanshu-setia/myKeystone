@@ -75,6 +75,10 @@ class Policy(rules.Policy):
         if statement is None:
             raise exception.ValidationError(attribute='statement', target='policy')
 
+        action_name = statement[0].get('action')[0]
+        with sql.transaction() as session:
+            action_id = session.query(ActionModel.id).filter(ActionModel.action_name==action_name).one()
+
         created_at = datetime.utcnow()
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id,name=name,
@@ -96,10 +100,10 @@ class Policy(rules.Policy):
                     session.add(ResourceModel(id=pair[0], name=pair[1],
                         service_type=service))
 
-                for pair in itertools.product(action, resource):
+                for pair in itertools.product(action, resource_ids):
                     session.add(PolicyActionResourceModel(
-                       policy_id=policy_id, action_id=pair[0], resource_id=pair[1],
-                       effect=effect))
+                       policy_id=policy_id, action_id=session.query(ActionModel.id).filter(ActionModel.action_name==pair[0]).one()[0],
+                       resource_id=pair[1], effect=effect))
         return ref
 
     def list_policies(self):
@@ -110,7 +114,7 @@ class Policy(rules.Policy):
 
     def _get_policy(self, session, policy_id):
         """Private method to get a policy model object (NOT a dictionary)."""
-        ref = session.query(PolicyModel).get(policy_id)
+        ref = session.query(JioPolicyModel).get(policy_id)
         if not ref:
             raise exception.PolicyNotFound(policy_id=policy_id)
         return ref
@@ -139,5 +143,12 @@ class Policy(rules.Policy):
         session = sql.get_session()
 
         with session.begin():
-            ref = self._get_policy(session, policy_id)
-            session.delete(ref)
+            policy_ref = self._get_policy(session, policy_id)
+            policy_action_resource = session.query(PolicyActionResourceModel).filter_by(policy_id=policy_ref.id).all()
+            session.query(PolicyActionResourceModel).filter_by(policy_id=policy_ref.id).delete()
+            policy_user_group = session.query(PolicyUserGroupModel).filter_by(policy_id=policy_ref.id).all()
+            for row in policy_action_resource:
+                session.query(ResourceModel).filter_by(id=row.resource_id).delete()
+            for row in policy_user_group:
+                session.query(PolicyUserGroupModel).filter_by(policy_id=row.id).delete()
+            session.delete(policy_ref)

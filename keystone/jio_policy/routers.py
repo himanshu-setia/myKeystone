@@ -21,11 +21,41 @@ class Routers(wsgi.RoutersBase):
 
     def append_v3_routers(self, mapper, routers):
         policy_controller = controllers.JioPolicyV3()
+
         self._add_resource(
             mapper, policy_controller,
             path='/jio_policies',
             post_action='create_policy',
             rel=json_home.build_v3_resource_relation('jio_policy'),
             path_vars={
-                'policy_id': json_home.Parameters.USER_ID,
+                'policy_id': json_home.Parameters.POLICY_ID,
             })
+
+        self._add_resource(
+            mapper, policy_controller,
+            path='/jio_policies/{policy_id}',
+            delete_action='delete_policy',
+            rel=json_home.build_v3_resource_relation('jio_policy'),
+            path_vars={
+                'policy_id': json_home.Parameters.POLICY_ID,
+            })
+
+        self._add_resource(
+                mapper, policy_controller,
+                path='/jio_policies/{policy_id}/users/{user_id}',
+                put_action='attach_policy_to_user',
+                delete_action='detach_policy_from_user',
+                rel=json_home.build_v3_resource_relation('jio_policy'),
+                path_vars={
+                    'policy_id': json_home.Parameters.POLICY_ID,
+                })
+
+        self._add_resource(
+                mapper, policy_controller,
+                path='/jio_policies/{policy_id}/groups/{group_id}',
+                put_action='attach_policy_to_group',
+                delete_action='detach_policy_from_group',
+                rel=json_home.build_v3_resource_relation('jio_policy'),
+                path_vars={
+                    'policy_id': json_home.Parameters.POLICY_ID,
+                })
