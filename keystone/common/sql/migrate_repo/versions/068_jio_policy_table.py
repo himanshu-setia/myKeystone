@@ -2,7 +2,6 @@ from oslo_log import log
 import sqlalchemy as sql
 from keystone.common import sql as key_sql
 
-
 LOG = log.getLogger(__name__)
 
 
@@ -96,6 +95,7 @@ def upgrade(migrate_engine):
             ),
             mysql_engine='InnoDB',
             mysql_charset='utf8')
+
     action_resource_type_mapping = sql.Table(
             'action_resource_type_mapping', meta,
             sql.Column('action_id', sql.String(length=64), nullable=False),
@@ -115,6 +115,11 @@ def upgrade(migrate_engine):
     # create policy related tables
     tables = [action, resource_type, resource, jio_policy, policy_action_resource,
             policy_user_group_mapping, action_resource_type_mapping]
+
+    # create policy related tables
+    tables = [action, resource, jio_policy, policy_action_resource,
+            policy_user_group_mapping]
+>>>>>>> added policy related tables in unit test
     for table in tables:
         try:
             table.create()
