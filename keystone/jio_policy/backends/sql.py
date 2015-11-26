@@ -331,3 +331,13 @@ class Policy(jio_policy.Driver):
     def detach_policy_from_group(self, policy_id, group_id):
         self._detach_policy_from_user_group(policy_id, group_id,
                                             type='GroupPolicy')
+
+def create_action(action_id, action_name, service_type):
+    ref = dict()
+    ref['id'] = action_id
+    ref['name'] = action_name
+    ref['service_type'] = service_type
+    session = sql.get_session()
+    with session.begin():
+        session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
+    return ref

@@ -1083,7 +1083,7 @@ FILE_OPTIONS = {
                     help='Require client certificate.'),
     ],
     'jio_policy': [
-            cfg.StrOpt('driver', default=('keystone.jio_policy.backends.sql.policy'),
+            cfg.StrOpt('driver', default=('keystone.jio_policy.backends.sql.Policy'),
                 help='jio policy backend.'),
     ],
 }
