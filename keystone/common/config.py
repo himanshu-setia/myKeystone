@@ -1082,6 +1082,10 @@ FILE_OPTIONS = {
                     deprecated_for_removal=True,
                     help='Require client certificate.'),
     ],
+    'jio_policy': [
+            cfg.StrOpt('driver', default=('keystone.jio_policy.backends.sql.policy'),
+                help='jio policy backend.'),
+    ],
 }
 
 
