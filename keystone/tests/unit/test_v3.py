@@ -29,6 +29,7 @@ from keystone import middleware
 from keystone.policy.backends import rules
 from keystone.tests import unit as tests
 from keystone.tests.unit import rest
+from keystone.jio_policy.backends import sql as jio_policy_sql
 
 
 CONF = cfg.CONF
@@ -94,6 +95,7 @@ class AuthTestMixin(object):
                                      username=None, user_domain_id=None,
                                      user_domain_name=None, password=None,
                                      kerberos=False, **kwargs):
+
         """Build auth dictionary.
 
         It will create an auth dictionary based on all the arguments
@@ -213,7 +215,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         self.default_domain_project_id = uuid.uuid4().hex
         self.default_domain_project = self.new_project_ref(
-            domain_id=DEFAULT_DOMAIN_ID)
+          domain_id=DEFAULT_DOMAIN_ID)
         self.default_domain_project['id'] = self.default_domain_project_id
         self.resource_api.create_project(self.default_domain_project_id,
                                          self.default_domain_project)
@@ -344,6 +346,27 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         ref = self.new_ref()
         ref['blob'] = uuid.uuid4().hex
         ref['type'] = uuid.uuid4().hex
+        return ref
+
+    def new_action_ref(self):
+    	#TODO: create a new action from DB operation	
+        action_id =  uuid.uuid4().hex
+        action_name =  uuid.uuid4().hex
+        service_type =  uuid.uuid4().hex
+    	return jio_policy_sql.create_action(action_id, action_name, service_type) 
+
+    def new_jio_policy_ref(self):
+        ref = dict()
+        ref['id'] = uuid.uuid4().hex
+        ref['service'] = 'image'
+        ref['name'] = uuid.uuid4().hex
+        action_name = uuid.uuid4().hex
+        action = self.new_action_ref()
+        statement1 = dict()
+        statement1['action'] = action['name']
+        statement1['resource'] = 'jrn:jcs:self:image:tenantId:resourceType:resourceId'
+        statement1['effect'] = 'allow'
+        ref['statement'] = [statement1]
         return ref
 
     def new_trust_ref(self, trustor_user_id, trustee_user_id, project_id=None,
@@ -533,7 +556,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         """
         entities = resp.result.get(key)
         self.assertIsNotNone(entities)
-
+        
         if expected_length is not None:
             self.assertEqual(expected_length, len(entities))
         elif ref is not None:
@@ -1208,6 +1231,35 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         auth_info = auth.controllers.AuthInfo.create(no_context, auth_data)
         auth_context = {'extras': {}, 'method_names': []}
         return context, auth_info, auth_context
+    
+    # Jio policy
+    def assertValidJioPolicyResponse(self, resp, *args, **kwargs):
+        return self.assertValidResponse(
+            resp,
+            'policy',
+            self.assertValidJioPolicy,
+            keys_to_check=['name', 'service', 'statement'],
+            *args,
+            **kwargs)
+    
+    def assertValidJioPolicyListResponse(self, resp, *args, **kwargs):
+        import pdb; pdb.set_trace()
+        return self.assertValidListResponse(
+             resp,
+             'policies',
+             self.assertValidJioPolicy,
+             keys_to_check=['name'],
+             *args,
+             **kwargs)
+
+    def assertValidJioPolicy(self, entity, ref=None):
+        self.assertIsNotNone(entity.get('id'))
+        self.assertIsNotNone(entity.get('name'))
+        self.assertIsNotNone(entity.get('created_at'))
+        self.assertIsNotNone(entity.get('attachment_count'))
+        if ref:
+            self.assertEqual(ref['name'], entity['name'])
+        return entity
 
 
 class VersionTestCase(RestfulTestCase):
