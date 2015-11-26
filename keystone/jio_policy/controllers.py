@@ -44,7 +44,7 @@ class JioPolicyV3(controller.V3Controller):
 
     @controller.protected()
     def attach_policy_to_user(self, context, policy_id, user_id):
-        pass
+        return "foo"
 
     @controller.protected()
     def detach_policy_from_user(self, context, policy_id, user_id):

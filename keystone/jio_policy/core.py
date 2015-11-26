@@ -49,6 +49,18 @@ class Manager(manager.Manager):
     def delete_policy(self, policy_id):
         ref = self.driver.delete_policy(policy_id)
 
+    def attach_policy_to_user(self, policy_id, user_id):
+        pass
+
+    def detach_policy_from_user(self, policy_id, user_id):
+        pass
+
+    def attach_policy_to_group(self, policy_id, group_id):
+        pass
+
+    def detach_policy_from_group(self, policy_id, group_id):
+        pass
+
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -68,5 +80,41 @@ class Driver(object):
 
         :raises: keystone.exception.PolicyNotFound
 
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def attach_policy_to_user(self, policy_id, user_id):
+        """Attaches a policy to a user.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.UserNotFound
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def detach_policy_from_user(self, policy_id, user_id):
+        """Detach policy from a user.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.UserNotFound
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def attach_policy_to_group(self, policy_id, group_id):
+        """Attaches a policy to a group.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.GroupNotFound
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def detach_policy_from_group(self, policy_id, group_id):
+        """Detaches policy from a group.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.UserNotFound
         """
         raise exception.NotImplemented()
