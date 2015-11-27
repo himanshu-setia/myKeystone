@@ -116,10 +116,6 @@ def upgrade(migrate_engine):
     tables = [action, resource_type, resource, jio_policy, policy_action_resource,
             policy_user_group_mapping, action_resource_type_mapping]
 
-    # create policy related tables
-    tables = [action, resource, jio_policy, policy_action_resource,
-            policy_user_group_mapping]
->>>>>>> added policy related tables in unit test
     for table in tables:
         try:
             table.create()
