@@ -44,6 +44,8 @@ def upgrade(migrate_engine):
             sql.Column('project_id', sql.String(length=64), nullable=False),
             sql.Column('created_at', sql.DateTime, nullable=False),
             sql.Column('updated_at', sql.DateTime),
+            sql.Column('project_id', sql.String(length=64), nullable=False),
+            sql.Column('created_at', sql.DateTime),
             sql.Column('deleted_at', sql.DateTime),
             sql.Column('policy_blob', key_sql.JsonBlob),
             mysql_engine='InnoDB',
