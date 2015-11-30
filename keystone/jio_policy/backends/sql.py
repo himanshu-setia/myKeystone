@@ -152,3 +152,36 @@ class Policy(rules.Policy):
             for row in policy_user_group:
                 session.query(PolicyUserGroupModel).filter_by(policy_id=row.id).delete()
             session.delete(policy_ref)
+
+    def _attach_policy_to_user_group(self, policy_id, user_group_id,
+            type=None):
+        session = sql.get_session()
+        with session.begin():
+            policy_ref = self._get_policy(session, policy_id)
+            session.add(PolicyUserGroupModel(type=type, policy_id=
+                policy_id, user_group_id=user_group_id))
+
+    def _detach_policy_from_user_group(self, policy_id, user_group_id,
+            type=None):
+        session = sql.get_session()
+        with session.begin():
+            policy_ref = self._get_policy(session, policy_id)
+            session.query(PolicyUserGroupModel).filter_by(
+                    user_group_id=user_group_id).filter_by(policy_id=policy_id
+                    ).filter_by(type=type).delete()
+
+    def attach_policy_to_user(self, policy_id, user_id):
+        self._attach_policy_to_user_group(policy_id, user_id,
+                type='UserPolicy')
+
+    def detach_policy_from_user(self, policy_id, user_id):
+        self._detach_policy_from_user_group(policy_id, user_id,
+                type='UserPolicy')
+
+    def attach_policy_to_group(self, policy_id, group_id):
+       self._attach_policy_to_user_group(policy_id, group_id,
+               type='GroupPolicy')
+
+    def detach_policy_from_group(self, policy_id, group_id):
+        self._detach_policy_from_user_group(policy_id, group_id,
+                type='GroupPolicy')

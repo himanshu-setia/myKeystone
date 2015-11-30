@@ -27,7 +27,7 @@ from keystone import notifications
 
 CONF = cfg.CONF
 
-
+@dependency.requires('identity_api')
 @dependency.provider('jio_policy_api')
 class Manager(manager.Manager):
     """Default pivot point for the Policy backend.
@@ -49,6 +49,22 @@ class Manager(manager.Manager):
     def delete_policy(self, policy_id):
         ref = self.driver.delete_policy(policy_id)
 
+    def attach_policy_to_user(self, policy_id, user_id):
+        self.identity_api.get_user(user_id)
+        self.driver.attach_policy_to_user(policy_id, user_id)
+
+    def detach_policy_from_user(self, policy_id, user_id):
+        self.identity_api.get_user(user_id)
+        self.driver.detach_policy_from_user(policy_id, user_id)
+
+    def attach_policy_to_group(self, policy_id, group_id):
+        self.identity_api.get_group(group_id)
+        self.driver.attach_policy_to_group(policy_id, group_id)
+
+    def detach_policy_from_group(self, policy_id, group_id):
+        self.identity_api.get_group(group_id)
+        self.driver.detach_policy_from_group(policy_id, group_id)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -68,5 +84,41 @@ class Driver(object):
 
         :raises: keystone.exception.PolicyNotFound
 
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def attach_policy_to_user(self, policy_id, user_id):
+        """Attaches a policy to a user.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.UserNotFound
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def detach_policy_from_user(self, policy_id, user_id):
+        """Detach policy from a user.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.UserNotFound
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def attach_policy_to_group(self, policy_id, group_id):
+        """Attaches a policy to a group.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.GroupNotFound
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def detach_policy_from_group(self, policy_id, group_id):
+        """Detaches policy from a group.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.UserNotFound
         """
         raise exception.NotImplemented()
