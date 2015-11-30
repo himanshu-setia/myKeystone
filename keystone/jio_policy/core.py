@@ -27,7 +27,7 @@ from keystone import notifications
 
 CONF = cfg.CONF
 
-
+@dependency.requires('identity_api')
 @dependency.provider('jio_policy_api')
 class Manager(manager.Manager):
     """Default pivot point for the Policy backend.
@@ -50,16 +50,20 @@ class Manager(manager.Manager):
         ref = self.driver.delete_policy(policy_id)
 
     def attach_policy_to_user(self, policy_id, user_id):
-        pass
+        self.identity_api.get_user(user_id)
+        self.driver.attach_policy_to_user(policy_id, user_id)
 
     def detach_policy_from_user(self, policy_id, user_id):
-        pass
+        self.identity_api.get_user(user_id)
+        self.driver.detach_policy_from_user(policy_id, user_id)
 
     def attach_policy_to_group(self, policy_id, group_id):
-        pass
+        self.identity_api.get_group(group_id)
+        self.driver.attach_policy_to_group(policy_id, group_id)
 
     def detach_policy_from_group(self, policy_id, group_id):
-        pass
+        self.identity_api.get_group(group_id)
+        self.driver.detach_policy_from_group(policy_id, group_id)
 
 
 @six.add_metaclass(abc.ABCMeta)

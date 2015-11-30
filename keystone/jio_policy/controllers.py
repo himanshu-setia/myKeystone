@@ -44,16 +44,16 @@ class JioPolicyV3(controller.V3Controller):
 
     @controller.protected()
     def attach_policy_to_user(self, context, policy_id, user_id):
-        return "foo"
+        return self.jio_policy_api.attach_policy_to_user(policy_id, user_id)
 
     @controller.protected()
     def detach_policy_from_user(self, context, policy_id, user_id):
-        pass
+        return self.jio_policy_api.detach_policy_from_user(policy_id, user_id)
 
     @controller.protected()
     def attach_policy_to_group(self, context, policy_id, group_id):
-        pass
+        return self.jio_policy_api.attach_policy_to_group(policy_id, group_id)
 
     @controller.protected()
     def detach_policy_from_group(self, context, policy_id, group_id):
-        pass
+        return self.jio_policy_api.detach_policy_from_group(policy_id, group_id)
