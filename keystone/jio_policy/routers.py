@@ -26,6 +26,7 @@ class Routers(wsgi.RoutersBase):
             mapper, policy_controller,
             path='/jio_policies',
             post_action='create_policy',
+            get_action='list_policies',
             rel=json_home.build_v3_resource_relation('jio_policy'),
             path_vars={
                 'policy_id': json_home.Parameters.POLICY_ID,

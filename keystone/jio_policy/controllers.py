@@ -27,16 +27,27 @@ class JioPolicyV3(controller.V3Controller):
     member_name = 'policy'
 
     @controller.protected()
-    #@validation.validated(schema.policy_create, 'policy')
+    # @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
         policy_id = uuid.uuid4().hex
         try:
-            project_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['project_id']
+            project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'project_id']
         except KeyError:
             raise exceptions.Forbidden()
         service = 'image'
-        policy = self.jio_policy_api.create_policy(service, project_id, policy_id, policy)
+        policy = self.jio_policy_api.create_policy(service, project_id,
+                                                   policy_id, policy)
         return policy
+
+    @controller.protected()
+    def list_policies(self, context):
+        try:
+            project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'project_id']
+        except KeyError:
+            raise exceptions.Forbidden()
+        return self.jio_policy.list_policies(project_id)
 
     @controller.protected()
     def delete_policy(self, context, policy_id):
@@ -56,4 +67,5 @@ class JioPolicyV3(controller.V3Controller):
 
     @controller.protected()
     def detach_policy_from_group(self, context, policy_id, group_id):
-        return self.jio_policy_api.detach_policy_from_group(policy_id, group_id)
+        return self.jio_policy_api.detach_policy_from_group(policy_id,
+                                                            group_id)
