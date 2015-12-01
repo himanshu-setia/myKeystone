@@ -27,6 +27,7 @@ from keystone import notifications
 
 CONF = cfg.CONF
 
+
 @dependency.requires('identity_api')
 @dependency.provider('jio_policy_api')
 class Manager(manager.Manager):
@@ -45,6 +46,12 @@ class Manager(manager.Manager):
     def create_policy(self, service, project_id, policy_id, policy):
         ref = self.driver.create_policy(service, project_id, policy_id, policy)
         return ref
+
+    def list_policies(self, project_id):
+        # TODO(ajayaa) Check whether the user had permission to list policies
+        # in the project.
+        project_ref = self.resource_api.get_project(project_id)
+        return self.driver.list_policies(project_id)
 
     def delete_policy(self, policy_id):
         ref = self.driver.delete_policy(policy_id)
