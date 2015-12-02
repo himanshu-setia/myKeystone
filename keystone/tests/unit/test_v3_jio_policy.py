@@ -25,6 +25,7 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         r = self.post(
                 '/jio_policies',
                 body={'policy': ref})
+        print r
         return self.assertValidJioPolicyResponse(r, ref)
 
     def test_list_jio_policies(self):
