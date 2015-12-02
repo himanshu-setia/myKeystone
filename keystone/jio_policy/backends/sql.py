@@ -81,11 +81,6 @@ class Policy(jio_policy.Driver):
             raise exception.ValidationError(attribute='statement',
                                             target='policy')
 
-        action_name = statement[0].get('action')[0]
-        with sql.transaction() as session:
-            action_id = session.query(ActionModel.id).filter(
-                    ActionModel.action_name == action_name).one()
-
         created_at = datetime.utcnow()
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
