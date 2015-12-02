@@ -482,6 +482,8 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
     def get_scoped_token(self):
         """Convenience method so that we can test authenticated requests."""
+        import pdb;
+        pdb.set_trace()
         r = self.admin_request(
             method='POST',
             path='/v3/auth/tokens',
