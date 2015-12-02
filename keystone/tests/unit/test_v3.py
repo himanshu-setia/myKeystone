@@ -441,8 +441,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
     def get_scoped_token(self):
         """Convenience method so that we can test authenticated requests."""
-        import pdb;
-        pdb.set_trace()
         r = self.admin_request(
             method='POST',
             path='/v3/auth/tokens',
@@ -1154,6 +1152,8 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             **kwargs)
 
     def assertValidPolicyResponse(self, resp, *args, **kwargs):
+        import pdb;
+        pdb.set_trace()
         return self.assertValidResponse(
             resp,
             'policy',
@@ -1274,6 +1274,14 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
              **kwargs)
 
     def assertValidJioPolicy(self, entity, ref=None):
+            'policies',
+            self.assertValidJioPolicy,
+            *args,
+            **kwargs)
+
+    def assertValidJioPolicy(self, entity, ref=None):
+        self.assertIsNotNone(entity.get('statement'))
+        self.assertIsNotNone(entity.get('name'))
         self.assertIsNotNone(entity.get('id'))
         self.assertIsNotNone(entity.get('name'))
         if ref:

@@ -85,10 +85,8 @@ class Policy(jio_policy.Driver):
     def create_policy(self, project_id, policy_id, policy):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
-
         name = policy.get('name', None)
         statement = policy.get('statement', None)
-
         created_at = datetime.utcnow()
 
         with sql.transaction() as session:
@@ -406,7 +404,6 @@ class Policy(jio_policy.Driver):
                 new_ref[r] = ref.get(r)
                 ret.append(new_ref)
         return ret
-
 
 def create_action(action_id, action_name, service_type):
     ref = dict()
