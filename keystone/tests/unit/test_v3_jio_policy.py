@@ -25,6 +25,7 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         r = self.post(
                 '/jio_policies',
                 body={'policy': ref})
+        print r
         return self.assertValidJioPolicyResponse(r, ref)
 
     def test_list_jio_policies(self):
@@ -44,6 +45,7 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         r = self.delete(
                 '/jio_policies/%(policy_id)s' % {
                     'policy_id':self.jio_policy_id})
+
 
     def test_create_jio_policy_with_invalid_resource_fail(self):
         ref = self.new_jio_policy_ref()

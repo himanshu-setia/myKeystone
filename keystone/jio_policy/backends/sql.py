@@ -521,7 +521,6 @@ class Policy(jio_policy.Driver):
 
     def detach_policy_from_group(self, policy_id, group_id):
         self._detach_policy_from_user_group(policy_id, group_id,
-<<<<<<< HEAD
                                             type='GroupPolicy')
 
     def list_actions(self, hints):
@@ -542,10 +541,6 @@ class Policy(jio_policy.Driver):
         query = query.filter(ActionModel.action_name == action_name)
         rows = query.filter(ResourceTypeModel.name == resource_type).count()
         return True if rows > 0 else False
-=======
-                type='GroupPolicy')
-=======
->>>>>>> unit test for policy
 
 def create_action(action_id, action_name, service_type):
     ref = dict()
@@ -554,7 +549,6 @@ def create_action(action_id, action_name, service_type):
     ref['service_type'] = service_type
     session = sql.get_session()
     with session.begin():
-<<<<<<< HEAD
         try:
             session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
         except sql.DBReferenceError:
@@ -585,8 +579,3 @@ def create_action_resource_type_mapping(action_id, resource_type_id):
         except sql.DBReferenceError:
             raise exception.ValidationError(attribute='valid action id or resource id', target='resource')
     return ref
-=======
-        session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
-    return ref
->>>>>>> Stashed changes
->>>>>>> unit test for policy
