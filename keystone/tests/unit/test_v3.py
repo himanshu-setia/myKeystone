@@ -214,7 +214,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         self.default_domain_project_id = uuid.uuid4().hex
         self.default_domain_project = self.new_project_ref(
-            domain_id=DEFAULT_DOMAIN_ID)
+          domain_id=DEFAULT_DOMAIN_ID)
         self.default_domain_project['id'] = self.default_domain_project_id
         self.resource_api.create_project(self.default_domain_project_id,
                                          self.default_domain_project)
@@ -441,6 +441,8 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
     def get_scoped_token(self):
         """Convenience method so that we can test authenticated requests."""
+        import pdb;
+        pdb.set_trace()
         r = self.admin_request(
             method='POST',
             path='/v3/auth/tokens',
@@ -1251,7 +1253,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         auth_info = auth.controllers.AuthInfo.create(no_context, auth_data)
         auth_context = {'extras': {}, 'method_names': []}
         return context, auth_info, auth_context
-    
+
     # Jio policy
     def assertValidJioPolicyResponse(self, resp, *args, **kwargs):
         return self.assertValidResponse(
@@ -1261,7 +1263,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             keys_to_check=['name', 'service', 'statement'],
             *args,
             **kwargs)
-    
+
     def assertValidJioPolicyListResponse(self, resp, *args, **kwargs):
         return self.assertValidListResponse(
              resp,
