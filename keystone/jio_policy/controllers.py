@@ -38,7 +38,7 @@ class JioPolicyV3(controller.V3Controller):
         service = 'image'
         policy = self.jio_policy_api.create_policy(service, project_id,
                                                    policy_id, policy)
-        return policy
+        return JioPolicyV3.wrap_member(context, policy)
 
     @controller.protected()
     def list_policies(self, context):
@@ -47,7 +47,13 @@ class JioPolicyV3(controller.V3Controller):
                 'project_id']
         except KeyError:
             raise exceptions.Forbidden()
-        return self.jio_policy.list_policies(project_id)
+        ref = self.jio_policy_api.list_policies(project_id)
+        return JioPolicyV3.wrap_collection(context, ref)
+
+    @controller.protected()
+    def get_policy(self, context, policy_id):
+        ref = self.jio_policy_api.get_policy(policy_id)
+        return JioPolicyV3.wrap_member(context, ref)
 
     @controller.protected()
     def delete_policy(self, context, policy_id):

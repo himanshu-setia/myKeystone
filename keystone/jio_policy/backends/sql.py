@@ -18,9 +18,11 @@ from datetime import datetime
 from keystone.common import sql
 from keystone import exception
 from keystone import jio_policy
+from oslo_serialization import jsonutils
+from sqlalchemy.orm import load_only
 
 
-class JioPolicyModel(sql.ModelBase):
+class JioPolicyModel(sql.ModelBase, sql.DictBase):
     __tablename__ = 'jio_policy'
     attributes = ['id', 'project_id', 'created_at', 'deleted_at']
     id = sql.Column(sql.String(64), primary_key=True)
@@ -29,6 +31,7 @@ class JioPolicyModel(sql.ModelBase):
     created_at = sql.Column(sql.DateTime, nullable=False)
     updated_at = sql.Column(sql.DateTime)
     deleted_at = sql.Column(sql.DateTime)
+    policy_blob = sql.Column(sql.JsonBlob)
 
 
 class PolicyActionResourceModel(sql.ModelBase):
@@ -77,14 +80,20 @@ class Policy(jio_policy.Driver):
         if name is None:
             raise exception.ValidationError(attribute='name', target='policy')
         statement = policy.pop('statement', None)
-        if statement is None:
+        if statement is None or type(statement) != list:
             raise exception.ValidationError(attribute='statement',
                                             target='policy')
-
         created_at = datetime.utcnow()
+
+        ref['attachment_count'] = 0
+        ref['created_at'] = created_at
+        ref['updated_at'] = created_at
+
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
-                        project_id=project_id, created_at=created_at))
+                        project_id=project_id, created_at=created_at,
+                        updated_at=created_at,
+                        policy_blob=jsonutils.dumps(ref)))
             for stmt in statement:
                 action = stmt.pop('action', None)
                 if type(action) != list:
@@ -111,11 +120,13 @@ class Policy(jio_policy.Driver):
                             one()[0], resource_id=pair[1], effect=effect))
         return ref
 
-    def list_policies(self):
+    def list_policies(self, project_id):
         session = sql.get_session()
 
-        refs = session.query(PolicyModel).all()
-        return [ref.to_dict() for ref in refs]
+        refs = session.query(JioPolicyModel).filter_by(project_id=project_id)\
+            .with_entities(JioPolicyModel.id, JioPolicyModel.name)
+        ret = {}
+        return [dict(ref) for ref in refs]
 
     def _get_policy(self, session, policy_id):
         """Private method to get a policy model object (NOT a dictionary)."""
@@ -124,10 +135,21 @@ class Policy(jio_policy.Driver):
             raise exception.PolicyNotFound(policy_id=policy_id)
         return ref
 
+    def _find_attachment_count(self, session, policy_id):
+        return session.query(PolicyUserGroupModel).filter_by(
+                policy_id=policy_id).count()
+
     def get_policy(self, policy_id):
         session = sql.get_session()
-
-        return self._get_policy(session, policy_id).to_dict()
+        count = self._find_attachment_count(session, policy_id)
+        # TODO(ajayaa) Query for only required columns.
+        ref = session.query(JioPolicyModel).get(policy_id)
+        ret = jsonutils.loads(ref.policy_blob)
+        ret['created_at'] = ref.created_at
+        ret['updated_at'] = ref.updated_at
+        attachment_count = self._find_attachment_count(session, policy_id)
+        ret['attachment_count'] = int(attachment_count)
+        return ret
 
     @sql.handle_conflicts(conflict_type='policy')
     def update_policy(self, policy_id, policy):

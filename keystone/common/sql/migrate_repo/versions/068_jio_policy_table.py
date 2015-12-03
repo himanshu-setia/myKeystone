@@ -1,5 +1,6 @@
 from oslo_log import log
 import sqlalchemy as sql
+from keystone.common import sql as key_sql
 
 
 LOG = log.getLogger(__name__)
@@ -44,6 +45,7 @@ def upgrade(migrate_engine):
             sql.Column('created_at', sql.DateTime, nullable=False),
             sql.Column('updated_at', sql.DateTime),
             sql.Column('deleted_at', sql.DateTime),
+            sql.Column('policy_blob', key_sql.JsonBlob),
             mysql_engine='InnoDB',
             mysql_charset='utf8')
     policy_action_resource = sql.Table(

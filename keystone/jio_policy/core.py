@@ -28,7 +28,7 @@ from keystone import notifications
 CONF = cfg.CONF
 
 
-@dependency.requires('identity_api')
+@dependency.requires('identity_api', 'resource_api')
 @dependency.provider('jio_policy_api')
 class Manager(manager.Manager):
     """Default pivot point for the Policy backend.
@@ -48,10 +48,14 @@ class Manager(manager.Manager):
         return ref
 
     def list_policies(self, project_id):
-        # TODO(ajayaa) Check whether the user had permission to list policies
+        # TODO(ajayaa) Check whether the user has permission to list policies
         # in the project.
         project_ref = self.resource_api.get_project(project_id)
         return self.driver.list_policies(project_id)
+
+    def get_policy(self, policy_id):
+        # TODO(ajayaa) Check whether the user has permission to get a policy.
+        return self.driver.get_policy(policy_id)
 
     def delete_policy(self, policy_id):
         ref = self.driver.delete_policy(policy_id)
@@ -87,9 +91,18 @@ class Driver(object):
 
     @abc.abstractmethod
     def delete_policy(self, policy_id):
-        """Deletes a policy blob.
+        """Deletes a policy and all associated actions and resources.
 
         :raises: keystone.exception.PolicyNotFound
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_policy(self, policy_id):
+        """Gets a policy blob.
+
+        "raises: keystone.exception.PolicyNotFound
 
         """
         raise exception.NotImplemented()
