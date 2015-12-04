@@ -124,9 +124,20 @@ class Policy(jio_policy.Driver):
         session = sql.get_session()
 
         refs = session.query(JioPolicyModel).filter_by(project_id=project_id)\
-            .with_entities(JioPolicyModel.id, JioPolicyModel.name)
-        ret = {}
-        return [dict(ref) for ref in refs]
+            .with_entities(
+                    JioPolicyModel.id, JioPolicyModel.name,
+                    JioPolicyModel.created_at, JioPolicyModel.updated_at)
+        ret = []
+        attrs_to_return = ['id', 'name', 'created_at', 'deleted_at',
+                'attachment_count']
+        for ref in refs:
+            new_ref = {}
+            for index, value in enumerate(ref):
+                new_ref[attrs_to_return[index]] = value
+            new_ref['attachment_count'] = int(self._find_attachment_count(
+                session, new_ref['id']))
+            ret.append(new_ref)
+        return ret
 
     def _get_policy(self, session, policy_id):
         """Private method to get a policy model object (NOT a dictionary)."""
