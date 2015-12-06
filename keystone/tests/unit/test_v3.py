@@ -664,7 +664,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         """
         entities = resp.result.get(key)
         self.assertIsNotNone(entities)
-
+        
         if expected_length is not None:
             self.assertEqual(expected_length, len(entities))
         elif ref is not None:
@@ -1240,8 +1240,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             **kwargs)
 
     def assertValidPolicyResponse(self, resp, *args, **kwargs):
-        import pdb;
-        pdb.set_trace()
         return self.assertValidResponse(
             resp,
             'policy',
@@ -1346,24 +1344,30 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
     def assertValidJioPolicyResponse(self, resp, *args, **kwargs):
         return self.assertValidResponse(
             resp,
-            'policies',
+            'policy',
             self.assertValidJioPolicy,
+            keys_to_check=['name', 'service', 'statement'],
             *args,
             **kwargs)
+    
+    def assertValidJioPolicyListResponse(self, resp, *args, **kwargs):
+        import pdb; pdb.set_trace()
+        return self.assertValidListResponse(
+             resp,
+             'policies',
+             self.assertValidJioPolicy,
+             keys_to_check=['name'],
+             *args,
+             **kwargs)
 
     def assertValidJioPolicy(self, entity, ref=None):
-        import pdb
-        pdb.set_trace()
-        self.assertIsNotNone(entity.get('statement'))
-        self.assertIsNotNone(entity.get('name'))
         self.assertIsNotNone(entity.get('id'))
-        #self.assertIsNotNone(entity.get('blob'))
+        self.assertIsNotNone(entity.get('name'))
+        self.assertIsNotNone(entity.get('created_at'))
+        self.assertIsNotNone(entity.get('attachment_count'))
         if ref:
-            self.assertEqual(ref['id'], entity['id'])
             self.assertEqual(ref['name'], entity['name'])
-            self.assertEqual(ref['statement'], entity['statement'])
-            return entity
-
+        return entity
 
     # Jio policy
     def assertValidJioPolicyResponse(self, resp, *args, **kwargs):
@@ -1419,6 +1423,7 @@ class AuthContextMiddlewareTestCase(RestfulTestCase):
         return fake_req()
 
     def test_auth_context_build_by_middleware(self):
+        # test to make sure AuthContextMiddleware successful build the auth
         # context from the incoming auth token
         admin_token = self.get_scoped_token()
 
