@@ -616,7 +616,8 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         """
         entities = resp.result.get(key)
-        self.assertIsNotNone(entities) 
+        self.assertIsNotNone(entities)
+        
         if expected_length is not None:
             self.assertEqual(expected_length, len(entities))
         elif ref is not None:
@@ -1192,8 +1193,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             **kwargs)
 
     def assertValidPolicyResponse(self, resp, *args, **kwargs):
-        import pdb;
-        pdb.set_trace()
         return self.assertValidResponse(
             resp,
             'policy',
@@ -1309,16 +1308,10 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         return self.assertValidListResponse(
              resp,
              'policies',
-             self.assertValidJioListPolicy,
+             self.assertValidJioPolicy,
              keys_to_check=['name'],
              *args,
              **kwargs)
-
-    def assertValidJioPolicy(self, entity, ref=None):
-            'policies',
-            self.assertValidJioPolicy,
-            *args,
-            **kwargs)
 
     def assertValidJioPolicy(self, entity, ref=None):
         self.assertIsNotNone(entity.get('statement'))
@@ -1354,7 +1347,6 @@ class AuthContextMiddlewareTestCase(RestfulTestCase):
 
         return fake_req()
 
-    def test_auth_context_build_by_middleware(self):
         # test to make sure AuthContextMiddleware successful build the auth
         # context from the incoming auth token
         admin_token = self.get_scoped_token()
