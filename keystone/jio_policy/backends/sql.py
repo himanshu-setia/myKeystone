@@ -71,9 +71,16 @@ class PolicyUserGroupModel(sql.ModelBase):
 
 class Policy(jio_policy.Driver):
 
-    @sql.handle_conflicts(conflict_type='policy')
-    def create_policy(self, service, project_id, policy_id, policy):
+    @classmethod
+    def _get_service_name(cls, resource_name):
+        ls = resource_name.split(':')
+        if len(ls) < 5:
+            raise exception.ValidationError(attribute='service name',
+                                            target='resource')
+        return ls[3]
 
+    @sql.handle_conflicts(conflict_type='policy')
+    def create_policy(self, project_id, policy_id, policy):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.pop('name', None)
@@ -105,7 +112,7 @@ class Policy(jio_policy.Driver):
                 resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                 for pair in zip(resource_ids, resource):
                     session.add(ResourceModel(id=pair[0], name=pair[1],
-                                service_type=service))
+                                service_type=Policy._get_service_name(pair[1])))
 
                 for pair in itertools.product(action, resource_ids):
                     session.add(

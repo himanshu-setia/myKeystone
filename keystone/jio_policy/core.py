@@ -43,8 +43,8 @@ class Manager(manager.Manager):
     def __init__(self):
         super(Manager, self).__init__(CONF.jio_policy.driver)
 
-    def create_policy(self, service, project_id, policy_id, policy):
-        ref = self.driver.create_policy(service, project_id, policy_id, policy)
+    def create_policy(self, project_id, policy_id, policy):
+        ref = self.driver.create_policy(project_id, policy_id, policy)
         return ref
 
     def list_policies(self, project_id):

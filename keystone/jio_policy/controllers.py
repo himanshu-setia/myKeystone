@@ -35,9 +35,8 @@ class JioPolicyV3(controller.V3Controller):
                 'project_id']
         except KeyError:
             raise exceptions.Forbidden()
-        service = 'image'
-        policy = self.jio_policy_api.create_policy(service, project_id,
-                                                   policy_id, policy)
+        policy = self.jio_policy_api.create_policy(project_id, policy_id,
+                                                   policy)
         return JioPolicyV3.wrap_member(context, policy)
 
     @controller.protected()
