@@ -43,8 +43,8 @@ class Manager(manager.Manager):
     def __init__(self):
         super(Manager, self).__init__(CONF.jio_policy.driver)
 
-    def create_policy(self, service, project_id, policy_id, policy):
-        ref = self.driver.create_policy(service, project_id, policy_id, policy)
+    def create_policy(self, project_id, policy_id, policy):
+        ref = self.driver.create_policy(project_id, policy_id, policy)
         return ref
 
     def list_policies(self, project_id):
@@ -59,6 +59,9 @@ class Manager(manager.Manager):
 
     def delete_policy(self, policy_id):
         ref = self.driver.delete_policy(policy_id)
+
+    def update_policy(self, policy_id, policy):
+        return self.driver.update_policy(policy_id, policy)
 
     def attach_policy_to_user(self, policy_id, user_id):
         self.identity_api.get_user(user_id)
@@ -101,6 +104,15 @@ class Driver(object):
     @abc.abstractmethod
     def get_policy(self, policy_id):
         """Gets a policy blob.
+
+        "raises: keystone.exception.PolicyNotFound
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def update_policy(self, policy_id):
+        """Updates a policy atomically.
 
         "raises: keystone.exception.PolicyNotFound
 

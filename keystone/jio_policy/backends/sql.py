@@ -71,9 +71,16 @@ class PolicyUserGroupModel(sql.ModelBase):
 
 class Policy(jio_policy.Driver):
 
-    @sql.handle_conflicts(conflict_type='policy')
-    def create_policy(self, service, project_id, policy_id, policy):
+    @classmethod
+    def _get_service_name(cls, resource_name):
+        ls = resource_name.split(':')
+        if len(ls) < 5:
+            raise exception.ValidationError(attribute='service name',
+                                            target='resource')
+        return ls[3]
 
+    @sql.handle_conflicts(conflict_type='policy')
+    def create_policy(self, project_id, policy_id, policy):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.pop('name', None)
@@ -84,10 +91,6 @@ class Policy(jio_policy.Driver):
             raise exception.ValidationError(attribute='statement',
                                             target='policy')
         created_at = datetime.utcnow()
-
-        ref['attachment_count'] = 0
-        ref['created_at'] = created_at
-        ref['updated_at'] = created_at
 
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
@@ -109,7 +112,8 @@ class Policy(jio_policy.Driver):
                 resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                 for pair in zip(resource_ids, resource):
                     session.add(ResourceModel(id=pair[0], name=pair[1],
-                                service_type=service))
+                                service_type=Policy._get_service_name(
+                                    pair[1])))
 
                 for pair in itertools.product(action, resource_ids):
                     session.add(
@@ -118,6 +122,10 @@ class Policy(jio_policy.Driver):
                                 ActionModel.id).filter(
                                     ActionModel.action_name == pair[0]).
                             one()[0], resource_id=pair[1], effect=effect))
+
+        ref['attachment_count'] = 0
+        ref['created_at'] = created_at
+        ref['updated_at'] = created_at
         return ref
 
     def list_policies(self, project_id):
@@ -129,7 +137,7 @@ class Policy(jio_policy.Driver):
                     JioPolicyModel.created_at, JioPolicyModel.updated_at)
         ret = []
         attrs_to_return = ['id', 'name', 'created_at', 'deleted_at',
-                'attachment_count']
+                           'attachment_count']
         for ref in refs:
             new_ref = {}
             for index, value in enumerate(ref):
@@ -165,17 +173,56 @@ class Policy(jio_policy.Driver):
     @sql.handle_conflicts(conflict_type='policy')
     def update_policy(self, policy_id, policy):
         session = sql.get_session()
+        service = 'image'
 
+        # TODO(ajayaa) sql optimizations.
         with session.begin():
             ref = self._get_policy(session, policy_id)
-            old_dict = ref.to_dict()
-            old_dict.update(policy)
-            new_policy = PolicyModel.from_dict(old_dict)
-            ref.blob = new_policy.blob
-            ref.type = new_policy.type
-            ref.extra = new_policy.extra
+            ref.name = policy.get('name')
+            ref.updated_at = datetime.utcnow()
+            policy_blob = jsonutils.loads(ref.policy_blob)
+            policy_blob['name'] = ref.name
+            if 'statement' in policy:
+                statement = policy.get('statement')
+                policy_blob['statement'] = statement
+                policy_action_resource = session.query(
+                        PolicyActionResourceModel).filter_by(
+                                policy_id=ref.id).all()
+                session.query(PolicyActionResourceModel).filter_by(
+                        policy_id=ref.id).delete()
+                for row in policy_action_resource:
+                    session.query(ResourceModel).filter_by(
+                            id=row.resource_id).delete()
 
-        return ref.to_dict()
+                for stmt in statement:
+                    action = stmt.get('action', None)
+                    if type(action) != list:
+                        action = [action]
+                    effect = stmt.get('effect', None)
+                    resource = stmt.get('resource', None)
+                    if type(resource) != list:
+                        resource = [resource]
+                    if effect == 'allow':
+                        effect = True
+                    else:
+                        effect = False
+                    resource_ids = [uuid.uuid4().hex for i in range(
+                        len(resource))]
+                    for pair in zip(resource_ids, resource):
+                        session.add(ResourceModel(id=pair[0], name=pair[1],
+                                    service_type=Policy._get_service_name(
+                                        pair[1])))
+
+                    for pair in itertools.product(action, resource_ids):
+                        session.add(
+                            PolicyActionResourceModel(
+                                policy_id=policy_id, action_id=session.query(
+                                    ActionModel.id).filter(
+                                        ActionModel.action_name == pair[0]).
+                                one()[0], resource_id=pair[1], effect=effect))
+
+            ref.policy_blob = jsonutils.dumps(policy_blob)
+        return dict(policy_blob)
 
     def delete_policy(self, policy_id):
         session = sql.get_session()
