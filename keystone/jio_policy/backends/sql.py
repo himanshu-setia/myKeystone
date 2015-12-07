@@ -112,7 +112,8 @@ class Policy(jio_policy.Driver):
                 resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                 for pair in zip(resource_ids, resource):
                     session.add(ResourceModel(id=pair[0], name=pair[1],
-                                service_type=Policy._get_service_name(pair[1])))
+                                service_type=Policy._get_service_name(
+                                    pair[1])))
 
                 for pair in itertools.product(action, resource_ids):
                     session.add(
@@ -136,7 +137,7 @@ class Policy(jio_policy.Driver):
                     JioPolicyModel.created_at, JioPolicyModel.updated_at)
         ret = []
         attrs_to_return = ['id', 'name', 'created_at', 'deleted_at',
-                'attachment_count']
+                           'attachment_count']
         for ref in refs:
             new_ref = {}
             for index, value in enumerate(ref):
@@ -174,7 +175,7 @@ class Policy(jio_policy.Driver):
         session = sql.get_session()
         service = 'image'
 
-        #TODO(ajayaa) sql optimizations.
+        # TODO(ajayaa) sql optimizations.
         with session.begin():
             ref = self._get_policy(session, policy_id)
             ref.name = policy.get('name')
@@ -185,11 +186,13 @@ class Policy(jio_policy.Driver):
                 statement = policy.get('statement')
                 policy_blob['statement'] = statement
                 policy_action_resource = session.query(
-                        PolicyActionResourceModel).filter_by(policy_id=ref.id).all()
+                        PolicyActionResourceModel).filter_by(
+                                policy_id=ref.id).all()
                 session.query(PolicyActionResourceModel).filter_by(
-                policy_id=ref.id).delete()
+                        policy_id=ref.id).delete()
                 for row in policy_action_resource:
-                    session.query(ResourceModel).filter_by(id=row.resource_id).delete()
+                    session.query(ResourceModel).filter_by(
+                            id=row.resource_id).delete()
 
                 for stmt in statement:
                     action = stmt.get('action', None)
@@ -203,10 +206,12 @@ class Policy(jio_policy.Driver):
                         effect = True
                     else:
                         effect = False
-                    resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
+                    resource_ids = [uuid.uuid4().hex for i in range(
+                        len(resource))]
                     for pair in zip(resource_ids, resource):
                         session.add(ResourceModel(id=pair[0], name=pair[1],
-                                    service_type=service))
+                                    service_type=Policy._get_service_name(
+                                        pair[1])))
 
                     for pair in itertools.product(action, resource_ids):
                         session.add(
