@@ -345,7 +345,9 @@ class AuthInfo(object):
 
 
 @dependency.requires('assignment_api', 'catalog_api', 'identity_api',
-                     'resource_api', 'token_provider_api', 'trust_api')
+                     'resource_api', 'token_provider_api', 'trust_api',
+                     'jio_policy_api')
+
 class Auth(controller.V3Controller):
 
     # Note(atiwari): From V3 auth controller code we are
