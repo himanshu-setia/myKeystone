@@ -10,7 +10,7 @@ class TestAuthWithActionResource(test_v3.RestfulTestCase):
         super(TestAuthWithActionResource, self).setUp()
         self.action = self.new_action_ref()
         self.jio_policy = self.new_jio_policy_ref()
-        self.jio_policy_api.create_policy(self.jio_policy.get('service'), self.project_id, self.jio_policy.get('id'), copy.deepcopy(self.jio_policy))
+        self.jio_policy_api.create_policy(self.project_id, self.jio_policy.get('id'), copy.deepcopy(self.jio_policy))
 
     def test_auth_with_action_resource(self):
         scoped_token = self.get_scoped_token()

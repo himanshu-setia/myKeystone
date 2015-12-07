@@ -11,7 +11,7 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         super(JioPolicyTestCase, self).setUp()
         self.jio_policy = self.new_jio_policy_ref()
         self.jio_policy_id = self.jio_policy.get('id')
-        self.jio_policy_api.create_policy(self.jio_policy.get('service'), self.project_id, self.jio_policy_id, copy.deepcopy(self.jio_policy))
+        self.jio_policy_api.create_policy(self.project_id, self.jio_policy_id, copy.deepcopy(self.jio_policy))
 
     def test_get_jio_policy(self): 
         r = self.get( 
@@ -44,7 +44,7 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
                 '/jio_policies/%(policy_id)s' % {
                     'policy_id':self.jio_policy_id})
 
-    """ def test_create_jio_policy_with_invalid_resource_fail(self):
+    def test_create_jio_policy_with_invalid_resource_fail(self):
         ref = self.new_jio_policy_ref()
         ref.get('statement')[0]['resource'] = 'xyz'
         r = self.post(
@@ -73,7 +73,7 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         r = self.get(
                      '/jio_policies/%(policy_id)s' % {
                           'policy_id': false_policy_id},
-                     expected_status = 400)"""
+                     expected_status = 400)
 
     def test_attach_policy_to_user(self):
         r = self.put(
