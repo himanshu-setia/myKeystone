@@ -60,6 +60,11 @@ class JioPolicyV3(controller.V3Controller):
         return self.jio_policy_api.delete_policy(policy_id)
 
     @controller.protected()
+    def update_policy(self, context, policy_id, policy):
+        ref = self.jio_policy_api.update_policy(policy_id, policy)
+        return JioPolicyV3.wrap_member(context, ref)
+
+    @controller.protected()
     def attach_policy_to_user(self, context, policy_id, user_id):
         return self.jio_policy_api.attach_policy_to_user(policy_id, user_id)
 

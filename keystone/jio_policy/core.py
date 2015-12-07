@@ -60,6 +60,9 @@ class Manager(manager.Manager):
     def delete_policy(self, policy_id):
         ref = self.driver.delete_policy(policy_id)
 
+    def update_policy(self, policy_id, policy):
+        return self.driver.update_policy(policy_id, policy)
+
     def attach_policy_to_user(self, policy_id, user_id):
         self.identity_api.get_user(user_id)
         self.driver.attach_policy_to_user(policy_id, user_id)
@@ -101,6 +104,15 @@ class Driver(object):
     @abc.abstractmethod
     def get_policy(self, policy_id):
         """Gets a policy blob.
+
+        "raises: keystone.exception.PolicyNotFound
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def update_policy(self, policy_id):
+        """Updates a policy atomically.
 
         "raises: keystone.exception.PolicyNotFound
 
