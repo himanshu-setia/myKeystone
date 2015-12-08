@@ -78,7 +78,15 @@ class Manager(manager.Manager):
     def detach_policy_from_group(self, policy_id, group_id):
         self.identity_api.get_group(group_id)
         self.driver.detach_policy_from_group(policy_id, group_id)
+    
+    def get_user_policy(self, user_id, action, resource):
+        group_ids = self._get_group_ids_for_user_id(user_id)
+        ref = self.driver.get_user_policy(user_id, group_ids, action, resource)
+        return ref
 
+    def _get_group_ids_for_user_id(self, user_id):
+        return [x['id'] for
+                x in self.identity_api.list_groups_for_user(user_id)]
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -154,3 +162,11 @@ class Driver(object):
                  keystone.exception.UserNotFound
         """
         raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_user_policy(self, userid, groupids, action, resource):
+        """Deletes a policy blob.
+        :raises: keystone.exception.PolicyNotFound
+        """
+        raise exception.NotImplemented()
+

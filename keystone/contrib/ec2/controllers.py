@@ -260,7 +260,7 @@ class Ec2ControllerCommon(object):
         return self._convert_v3_to_ec2_credential(creds)
 
 
-@dependency.requires('policy_api', 'token_provider_api')
+@dependency.requires('policy_api', 'token_provider_api', 'jio_policy_api')
 class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
 
     @controller.v2_deprecated
@@ -275,8 +275,15 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             if resource is None:
                 raise exception.ValidationError(attribute='resource',
                                                 target='query_string')
-            if action == 'deny':
+        
+            # get user id
+            auth_context = self.get_auth_context(context)
+            user_id = auth_context.get('user_id')
+            effect = self.jio_policy_api.get_user_policy(user_id,action,resource)
+            
+            if not effect:
                 raise exception.Forbidden(message='Policy does not allow to perform this action')
+ 
         (user_ref, tenant_ref, metadata_ref, roles_ref,
          catalog_ref) = self._authenticate(credentials=credentials,
                                            ec2credentials=ec2Credentials)

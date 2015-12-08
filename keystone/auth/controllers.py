@@ -553,9 +553,16 @@ class Auth(controller.V3Controller):
             if resource is None:
                 raise exception.ValidationError(attribute="resource",
                                                 target="query_string")
-            if action == 'deny':
+            
+            # get user id
+            auth_context = self.get_auth_context(context)
+            user_id = auth_context.get('user_id')
+            effect = self.jio_policy_api.get_user_policy(user_id,action,resource)
+
+            if not effect:
                 raise exception.Forbidden(message='Policy does not allow to perform this action')
-            return self.validate_token(context)
+
+        return self.validate_token(context)
 
     @controller.protected()
     def revocation_list(self, context, auth=None):
