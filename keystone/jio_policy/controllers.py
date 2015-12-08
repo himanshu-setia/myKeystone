@@ -18,7 +18,7 @@ from keystone.common import controller
 from keystone.common import dependency
 from keystone.common import validation
 from keystone import notifications
-from keystone.policy import schema
+from keystone.jio_policy import schema
 
 
 @dependency.requires('jio_policy_api')
@@ -27,7 +27,7 @@ class JioPolicyV3(controller.V3Controller):
     member_name = 'policy'
 
     @controller.protected()
-    # @validation.validated(schema.policy_create, 'policy')
+    @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
         policy_id = uuid.uuid4().hex
         try:
@@ -59,6 +59,7 @@ class JioPolicyV3(controller.V3Controller):
         return self.jio_policy_api.delete_policy(policy_id)
 
     @controller.protected()
+    @validation.validated(schema.policy_update, 'policy')
     def update_policy(self, context, policy_id, policy):
         ref = self.jio_policy_api.update_policy(policy_id, policy)
         return JioPolicyV3.wrap_member(context, ref)
