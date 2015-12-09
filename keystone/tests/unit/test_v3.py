@@ -350,20 +350,20 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
     def new_action_ref(self):
     	#TODO: create a new action from DB operation	
         action_id =  uuid.uuid4().hex
-        service_name = uuid.uuid4().hex
-        action_name = 'jrn:jcs:' + service_name + uuid.uuid4().hex
+        action_name = 'jrn:jcs:' + self.service.get('type') + ':'+ uuid.uuid4().hex
         service_type =  uuid.uuid4().hex
     	return jio_policy_sql.create_action(action_id, action_name, service_type) 
 
     def new_jio_policy_ref(self):
         ref = dict()
         ref['id'] = uuid.uuid4().hex
-        ref['service'] = 'image'
+        ref['service'] = self.service.get('type')
         ref['name'] = uuid.uuid4().hex
         action = self.new_action_ref()
         statement1 = dict()
-        statement1['action'] = action['name']
-        statement1['resource'] = 'jrn:jcs:self:image:tenantId:resourceType:resourceId'
+        statement1['action'] = [action.get('name')]
+        resource = 'jrn:jcs:'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
+        statement1['resource'] =[resource]
         statement1['effect'] = 'allow'
         ref['statement'] = [statement1]
         return ref
