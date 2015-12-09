@@ -26,10 +26,10 @@ class TestAuthWithActionResource(test_v3.RestfulTestCase):
 
     def test_auth_with_false_action_fail(self):
         r = self.get('/authorize?action=%(action_id)s&resource=%(resource_id)s' % {
-                        'action_id': uuid.uuid4().hex, 'resource_id' : self.jio_policy.get('statement')[0].get('resource')[0]},
-                        expected_status = 400)
+            'action_id': uuid.uuid4().hex, 'resource_id' : self.jio_policy.get('statement')[0].get('resource')[0]},
+            expected_status = 400)
 
     def test_auth_with_false_resource_fail(self):
-                r = self.get('/authorize?action=%(action_id)s&resource=%(resource_id)s' % {
-                        'action_id' : self.jio_policy.get('statement')[0].get('action')[0], 'resource_id' : uuid.uuid4().hex},
-                        expected_status = 400)
+        r = self.get('/authorize?action=%(action_id)s&resource=%(resource_id)s' % {
+            'action_id' : self.jio_policy.get('statement')[0].get('action')[0], 'resource_id' : uuid.uuid4().hex},
+            expected_status = 400)

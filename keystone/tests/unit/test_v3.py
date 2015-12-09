@@ -351,7 +351,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
     	#TODO: create a new action from DB operation	
         action_id =  uuid.uuid4().hex
         action_name = 'jrn:jcs:' + self.service.get('type') + ':'+ uuid.uuid4().hex
-        service_type =  uuid.uuid4().hex
+        service_type = self.service.get('type')
     	return jio_policy_sql.create_action(action_id, action_name, service_type) 
 
     def new_jio_policy_ref(self):
@@ -362,6 +362,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         action = self.new_action_ref()
         statement1 = dict()
         statement1['action'] = [action.get('name')]
+        #TODO: rrawat ; Change of project_id to domain_id. and change of format of resourceid
         resource = 'jrn:jcs:'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
         statement1['resource'] =[resource]
         statement1['effect'] = 'allow'
