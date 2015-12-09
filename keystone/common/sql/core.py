@@ -54,6 +54,7 @@ Enum = sql.Enum
 ForeignKey = sql.ForeignKey
 DateTime = sql.DateTime
 IntegrityError = sql.exc.IntegrityError
+DBReferenceError = db_exception.DBReferenceError
 DBDuplicateEntry = db_exception.DBDuplicateEntry
 OperationalError = sql.exc.OperationalError
 NotFound = sql.orm.exc.NoResultFound

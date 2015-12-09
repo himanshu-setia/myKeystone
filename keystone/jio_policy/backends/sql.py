@@ -83,13 +83,10 @@ class Policy(jio_policy.Driver):
     def create_policy(self, project_id, policy_id, policy):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
-        name = policy.pop('name', None)
-        if name is None:
-            raise exception.ValidationError(attribute='name', target='policy')
-        statement = policy.pop('statement', None)
-        if statement is None or type(statement) != list:
-            raise exception.ValidationError(attribute='statement',
-                                            target='policy')
+
+        name = policy.get('name', None)
+        statement = policy.get('statement', None)
+
         created_at = datetime.utcnow()
 
         with sql.transaction() as session:
@@ -98,30 +95,38 @@ class Policy(jio_policy.Driver):
                         updated_at=created_at,
                         policy_blob=jsonutils.dumps(ref)))
             for stmt in statement:
-                action = stmt.pop('action', None)
-                if type(action) != list:
-                    action = [action]
-                effect = stmt.pop('effect', None)
-                resource = stmt.pop('resource', None)
-                if type(resource) != list:
-                    resource = [resource]
+                action = stmt.get('action', None)
+                effect = stmt.get('effect', None)
+                resource = stmt.get('resource', None)
                 if effect == 'allow':
                     effect = True
-                else:
+                elif effect == 'deny':
                     effect = False
+                else:
+                    raise exception.ValidationError(attribute='allow or deny',
+                                                    target='effect')
                 resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
-                for pair in zip(resource_ids, resource):
-                    session.add(ResourceModel(id=pair[0], name=pair[1],
-                                service_type=Policy._get_service_name(
-                                    pair[1])))
+                try:
+                    for pair in zip(resource_ids, resource):
+                        session.add(ResourceModel(id=pair[0], name=pair[1],
+                                    service_type=Policy._get_service_name(
+                                        pair[1])))
 
-                for pair in itertools.product(action, resource_ids):
-                    session.add(
-                        PolicyActionResourceModel(
-                            policy_id=policy_id, action_id=session.query(
-                                ActionModel.id).filter(
-                                    ActionModel.action_name == pair[0]).
-                            one()[0], resource_id=pair[1], effect=effect))
+                    for pair in itertools.product(action, resource_ids):
+                        action_id = session.query(ActionModel).filter_by(
+                                action_name=pair[0]).with_entities(
+                                        ActionModel.id).one()[0]
+
+                        session.add(
+                            PolicyActionResourceModel(
+                                policy_id=policy_id, action_id=action_id,
+                                resource_id=pair[1], effect=effect))
+                except sql.NotFound:
+                    raise exception.ValidationError(
+                            attribute='valid action', target='policy')
+                except sql.DBReferenceError:
+                    raise exception.ValidationError(
+                            attribute='valid service name', target='resource')
 
         ref['attachment_count'] = 0
         ref['created_at'] = created_at
@@ -193,33 +198,39 @@ class Policy(jio_policy.Driver):
                 for row in policy_action_resource:
                     session.query(ResourceModel).filter_by(
                             id=row.resource_id).delete()
-
                 for stmt in statement:
                     action = stmt.get('action', None)
-                    if type(action) != list:
-                        action = [action]
                     effect = stmt.get('effect', None)
                     resource = stmt.get('resource', None)
-                    if type(resource) != list:
-                        resource = [resource]
                     if effect == 'allow':
                         effect = True
-                    else:
+                    elif effect == 'deny':
                         effect = False
-                    resource_ids = [uuid.uuid4().hex for i in range(
-                        len(resource))]
-                    for pair in zip(resource_ids, resource):
-                        session.add(ResourceModel(id=pair[0], name=pair[1],
-                                    service_type=Policy._get_service_name(
-                                        pair[1])))
+                    else:
+                        raise exception.ValidationError(attribute='allow or deny',
+                                                        target='effect')
+                    resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
+                    try:
+                        for pair in zip(resource_ids, resource):
+                            session.add(ResourceModel(id=pair[0], name=pair[1],
+                                        service_type=Policy._get_service_name(
+                                            pair[1])))
 
-                    for pair in itertools.product(action, resource_ids):
-                        session.add(
-                            PolicyActionResourceModel(
-                                policy_id=policy_id, action_id=session.query(
-                                    ActionModel.id).filter(
-                                        ActionModel.action_name == pair[0]).
-                                one()[0], resource_id=pair[1], effect=effect))
+                        for pair in itertools.product(action, resource_ids):
+                            action_id = session.query(ActionModel).filter_by(
+                                    action_name=pair[0]).with_entities(
+                                            ActionModel.id).one()[0]
+
+                            session.add(
+                                PolicyActionResourceModel(
+                                    policy_id=policy_id, action_id=action_id,
+                                    resource_id=pair[1], effect=effect))
+                    except sql.NotFound:
+                        raise exception.ValidationError(
+                                attribute='valid action', target='policy')
+                    except sql.DBReferenceError:
+                        raise exception.ValidationError(
+                                attribute='valid service name', target='resource')
 
             ref.policy_blob = jsonutils.dumps(policy_blob)
         return dict(policy_blob)
