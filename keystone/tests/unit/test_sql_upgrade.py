@@ -116,7 +116,7 @@ INITIAL_TABLE_STRUCTURE = {
 	'id', 'name','service_type',
     ],
     'jio_policy': [
-	'id', 'project_id', 'created_at', 'deleted_at'
+            'id', 'project_id', 'created_at', 'deleted_at','updated_at', 'policy_blob'
     ],
     'policy_action_resource': [
 	'policy_id', 'action_id', 'resource_id', 'effect'

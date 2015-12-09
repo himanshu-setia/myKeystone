@@ -121,37 +121,39 @@ class SqlModels(SqlTests):
         self.assertExpectedSchema('user_group_membership', cols)
 
     def test_action(self):
-	cols = (('id', sql.String, 64),
+        cols = (('id', sql.String, 64),
                 ('action_name', sql.String, 255),
                 ('service_type', sql.String, 255))
-	self.assertExpectedSchema('action', cols)
+        self.assertExpectedSchema('action', cols)
 
     def test_resource(self):
-	cols = (('id', sql.String, 64),
-		('name', sql.String, 255), 
-		('service_type', sql.String, 255))
- 	self.assertExpectedSchema('resource', cols)
+        cols = (('id', sql.String, 64),
+                ('name', sql.String, 255),
+                ('service_type', sql.String, 255))
+        self.assertExpectedSchema('resource', cols)
     
     def test_jio_policy(self):
-	cols = (('id', sql.String, 64),
+        cols = (('id', sql.String, 64),
                 ('project_id', sql.String, 64),
-		('created_at', sql.DateTime),
-                ('deleted_at', sql.DateTime))
-	self.assertExpectedSchema('jio_policy', cols)
+                ('created_at', sql.DateTime, None),
+                ('deleted_at', sql.DateTime, None),
+                ('name', sql.String, 255),
+                ('updated_at', sql.DateTime, None),
+                ('policy_blob', sql.JsonBlob, None))
+        self.assertExpectedSchema('jio_policy', cols)
 
     def test_policy_action_resource(self):
-	cols = (('policy_id', sql.String, 64),
-		('action_id', sql.String, 64),
-            	('resource_id', sql.String, 64),
-                ('effect', sql.Boolean))
-	self.assertExpectedSchema('policy_action_resource', cols)
+        cols = (('policy_id', sql.String, 64),
+                ('action_id', sql.String, 64),
+                ('resource_id', sql.String, 64),
+                ('effect', sql.Boolean, False))
+        self.assertExpectedSchema('policy_action_resource', cols)
  
-    """    def test_policy_user_group_mapping(self):
-	cols = (('type', sql.Enum('UserPolicy', 'GroupPolicy', name='type'),
-		('user_group_id', sql.String, 64)
-		('policy_id', sql.String, 64))
-	self.assertExpectedSchema('policy_user_group_mapping', cols)"""
-
+    def test_policy_user_group_mapping(self):
+        cols = (('type', sql.Enum, None),
+                ('user_group_id', sql.String, 64),
+                ('policy_id', sql.String, 64))
+        self.assertExpectedSchema('policy_user_group_mapping', cols)
 
 class SqlIdentity(SqlTests, test_backend.IdentityTests):
     def test_password_hashed(self):

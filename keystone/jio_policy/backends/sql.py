@@ -27,7 +27,7 @@ class JioPolicyModel(sql.ModelBase, sql.DictBase):
     __tablename__ = 'jio_policy'
     attributes = ['id', 'project_id', 'created_at', 'deleted_at']
     id = sql.Column(sql.String(64), primary_key=True)
-    name = sql.Column(sql.String(64), nullable=False)
+    name = sql.Column(sql.String(255), nullable=False)
     project_id = sql.Column(sql.String(64), nullable=False)
     created_at = sql.Column(sql.DateTime, nullable=False)
     updated_at = sql.Column(sql.DateTime)
@@ -48,7 +48,7 @@ class ActionModel(sql.ModelBase):
     __tablename__ = 'action'
     attributes = ['id', 'action_name', 'service_type']
     id = sql.Column(sql.String(64), primary_key=True)
-    action_name = sql.Column(sql.String(64))
+    action_name = sql.Column(sql.String(255))
     service_type = sql.Column(sql.String(255), nullable=False)
 
 

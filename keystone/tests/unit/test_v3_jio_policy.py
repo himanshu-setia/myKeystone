@@ -30,13 +30,13 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         r = self.get('/jio_policies')
         return self.assertValidJioPolicyListResponse(r, ref = self.jio_policy)
 
-    """def test_update_jio_policy(self):
-        policy = self.new_policy_ref()
-        policy['id'] = self.policy_id
+    def test_update_jio_policy(self):
+        policy = self.new_jio_policy_ref()
         r = self.patch(
-                      '/policies/%(policy_id)s' % {'policy_id': self.policy_id},
+                      '/jio_policies/%(policy_id)s' % {'policy_id': self.jio_policy_id},
                       body={'policy': policy})
-        self.assertValidPolicyResponse(r, policy)"""
+        policy['id'] = self.jio_policy_id
+        self.assertValidJioPolicyResponse(r, policy)
 
     def test_delete_jio_policy(self):
         ref = self.new_jio_policy_ref()
@@ -51,7 +51,6 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
                      '/jio_policies',
                      body={'policy': ref},
                      expected_status = 400)
-        #this should ideal pass but failing due to resources not checked on controller.
 
     def test_create_jio_policy_with_invalid_action_fail(self):
         ref = self.new_jio_policy_ref()
@@ -73,7 +72,7 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         r = self.get(
                      '/jio_policies/%(policy_id)s' % {
                           'policy_id': false_policy_id},
-                     expected_status = 400)
+                     expected_status = 404)
 
     def test_attach_policy_to_user(self):
         r = self.put(
