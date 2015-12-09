@@ -214,8 +214,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.user_id = self.user['id']
 
         self.default_domain_project_id = uuid.uuid4().hex
-        self.default_domain_project = self.new_project_ref(
-          domain_id=DEFAULT_DOMAIN_ID)
+        self.default_domain_project = self.new_project_ref(domain_id=DEFAULT_DOMAIN_ID)
         self.default_domain_project['id'] = self.default_domain_project_id
         self.resource_api.create_project(self.default_domain_project_id,
                                          self.default_domain_project)
@@ -351,7 +350,8 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
     def new_action_ref(self):
     	#TODO: create a new action from DB operation	
         action_id =  uuid.uuid4().hex
-        action_name =  uuid.uuid4().hex
+        service_name = uuid.uuid4().hex
+        action_name = 'jrn:jcs:' + service_name + uuid.uuid4().hex
         service_type =  uuid.uuid4().hex
     	return jio_policy_sql.create_action(action_id, action_name, service_type) 
 
@@ -360,7 +360,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         ref['id'] = uuid.uuid4().hex
         ref['service'] = 'image'
         ref['name'] = uuid.uuid4().hex
-        action_name = uuid.uuid4().hex
         action = self.new_action_ref()
         statement1 = dict()
         statement1['action'] = action['name']
@@ -534,7 +533,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         if resource_url:
             self.assertThat(links['self'], matchers.EndsWith(resource_url))
-
         self.assertIn('next', links)
         if links['next'] is not None:
             self.assertThat(links['next'],
@@ -1246,7 +1244,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         return self.assertValidListResponse(
              resp,
              'policies',
-             self.assertValidJioPolicy,
+             self.assertValidJioListPolicy,
              keys_to_check=['name'],
              *args,
              **kwargs)
@@ -1254,12 +1252,18 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
     def assertValidJioPolicy(self, entity, ref=None):
         self.assertIsNotNone(entity.get('id'))
         self.assertIsNotNone(entity.get('name'))
-        self.assertIsNotNone(entity.get('created_at'))
-        self.assertIsNotNone(entity.get('attachment_count'))
+        if ref:
+            self.assertEqual(ref['name'], entity['name'])
+            self.assertEqual(ref['service'], entity['service'])
+            self.assertEqual(ref['statement'], entity['statement'])
+        return entity
+
+    def assertValidJioListPolicy(self, entity, ref=None):
+        self.assertIsNotNone(entity.get('id'))
+        self.assertIsNotNone(entity.get('name'))
         if ref:
             self.assertEqual(ref['name'], entity['name'])
         return entity
-
 
 class VersionTestCase(RestfulTestCase):
     def test_get_version(self):
