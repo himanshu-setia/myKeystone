@@ -244,38 +244,48 @@ class Policy(jio_policy.Driver):
                     policy_id=row.id).delete()
             session.delete(policy_ref)
 
-    def get_user_policy(self, userid, groupid, action, resource):
+    def is_user_authorized(self, userid, groupid, projectid, action, resource):
         session = sql.get_session()
 
         # query action id from action name in action table
         action_info = session.query(ActionModel.id).filter(ActionModel.action_name==action).first()
+        if action_info is None:
+            #check if logging needed here "No matching action found in policy.json"
+            return False
+        else
+            action_info = action_info[0]
+
         resource_direct = session.query(ResourceModel.id).filter(ResourceModel.name==resource).first()
         # modified resource for wildcard checks
         resource_generic = resource[:resource.rfind(':')+1]+'*'
         resource_indirect = session.query(ResourceModel.id).filter(ResourceModel.name==resource_generic).first()
 
-        if resource_direct == []:
-            resource_direct = None
+        if resource_direct is not None
+            resource_direct = resource_direct[0]
 
-        if resource_indirect == []:
-            resource_indirect = None
+        if resource_indirect is not None
+            resource_indirect = resource_indirect[0]
+
+        if resource_direct is None and resource_indirect is None:
+            # "No matching resource found in policy.json:
+            return False
 
         user_query = session.query(PolicyActionResourceModel.effect,PolicyUserGroupModel)
         user_query = user_query.filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.policy_id)
-        user_query = user_query.filter(PolicyActionResourceModel.action_id.in_(action_info))
+        user_query = user_query.filter(PolicyActionResourceModel.action_id==action_info)
         user_query = user_query.filter(PolicyUserGroupModel.user_group_id==userid)
-        user_query = user_query.filter(or_(PolicyActionResourceModel.resource_id.in_(resource_direct), PolicyActionResourceModel.resource_id.in_(resource_indirect))).all()
+        user_query = user_query.filter(or_(PolicyActionResourceModel.resource_id==resource_direct, PolicyActionResourceModel.resource_id==resource_indirect)).all()
 
-        group_query = session.query(PolicyActionResourceModel.effect,PolicyUserGroupModel)
-        group_query = group_query.filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.policy_id)
-        group_query = group_query.filter(PolicyActionResourceModel.action_id.in_(action_info))
-        group_query = group_query.filter(PolicyUserGroupModel.user_group_id.in_(groupid))
-        group_query = group_query.filter(or_(PolicyActionResourceModel.resource_id.in_(resource_direct), PolicyActionResourceModel.resource_id.in_(resource_indirect))).all()
+        if groupid is not None:
+            group_query = session.query(PolicyActionResourceModel.effect,PolicyUserGroupModel)
+            group_query = group_query.filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.policy_id)
+            group_query = group_query.filter(PolicyActionResourceModel.action_id==action_info)
+            group_query = group_query.filter(PolicyUserGroupModel.user_group_id.in_(groupid))
+            group_query = group_query.filter(or_(PolicyActionResourceModel.resource_id==resource_direct, PolicyActionResourceModel.resource_id==resource_indirect)).all()
+        else
+            group_query = None
 
         # add assert and debug prints
-
-        if not user_query and not group_query:
-            return False
 
         result = True
         if user_query:
@@ -286,7 +296,18 @@ class Policy(jio_policy.Driver):
             for row in group_query:
                 result = result and row[0]
 
+        if not user_query and not group_query:
+            result = False
+
+        # if service is s3, and project_id_from_user is not same as project_id_from_resource, explicitly allow
+        # as per the requirement from Object Storage team
+        if result is False and resource.split(':')[3]=='s3':
+            project_id_from_resource = resource.split(':')[2]
+            if projectid != project_id_from_resource:
+                result = True
+
         return result
+
 
     def _attach_policy_to_user_group(self, policy_id, user_group_id,
                                      type=None):

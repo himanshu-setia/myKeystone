@@ -557,7 +557,8 @@ class Auth(controller.V3Controller):
             # get user id
             auth_context = self.get_auth_context(context)
             user_id = auth_context.get('user_id')
-            effect = self.jio_policy_api.get_user_policy(user_id,action,resource)
+            project_id = auth_context.get('project_id')
+            effect = self.jio_policy_api.is_user_authorized(user_id,project_id,action,resource)
 
             if not effect:
                 raise exception.Forbidden(message='Policy does not allow to perform this action')
