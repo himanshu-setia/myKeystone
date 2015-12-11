@@ -50,33 +50,36 @@ class JioPolicyV3(controller.V3Controller):
         return JioPolicyV3.wrap_collection(context, ref)
 
     @controller.protected()
-    def get_policy(self, context, policy_id):
-        ref = self.jio_policy_api.get_policy(policy_id)
+    def get_policy(self, context, jio_policy_id):
+        ref = self.jio_policy_api.get_policy(jio_policy_id)
         return JioPolicyV3.wrap_member(context, ref)
 
     @controller.protected()
-    def delete_policy(self, context, policy_id):
-        return self.jio_policy_api.delete_policy(policy_id)
+    def delete_policy(self, context, jio_policy_id):
+        return self.jio_policy_api.delete_policy(jio_policy_id)
 
     @controller.protected()
     @validation.validated(schema.policy_update, 'policy')
-    def update_policy(self, context, policy_id, policy):
-        ref = self.jio_policy_api.update_policy(policy_id, policy)
+    def update_policy(self, context, jio_policy_id, policy):
+        ref = self.jio_policy_api.update_policy(jio_policy_id, policy)
         return JioPolicyV3.wrap_member(context, ref)
 
     @controller.protected()
-    def attach_policy_to_user(self, context, policy_id, user_id):
-        return self.jio_policy_api.attach_policy_to_user(policy_id, user_id)
+    def attach_policy_to_user(self, context, jio_policy_id, user_id):
+        return self.jio_policy_api.attach_policy_to_user(jio_policy_id,
+                                                         user_id)
 
     @controller.protected()
-    def detach_policy_from_user(self, context, policy_id, user_id):
-        return self.jio_policy_api.detach_policy_from_user(policy_id, user_id)
+    def detach_policy_from_user(self, context, jio_policy_id, user_id):
+        return self.jio_policy_api.detach_policy_from_user(jio_policy_id,
+                                                           user_id)
 
     @controller.protected()
-    def attach_policy_to_group(self, context, policy_id, group_id):
-        return self.jio_policy_api.attach_policy_to_group(policy_id, group_id)
+    def attach_policy_to_group(self, context, jio_policy_id, group_id):
+        return self.jio_policy_api.attach_policy_to_group(jio_policy_id,
+                                                          group_id)
 
     @controller.protected()
-    def detach_policy_from_group(self, context, policy_id, group_id):
-        return self.jio_policy_api.detach_policy_from_group(policy_id,
+    def detach_policy_from_group(self, context, jio_policy_id, group_id):
+        return self.jio_policy_api.detach_policy_from_group(jio_policy_id,
                                                             group_id)
