@@ -266,7 +266,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
     @controller.v2_deprecated
     def authenticate(self, context, credentials=None, ec2Credentials=None):
         query_string = context.pop('query_string', None)
-        if query_string is not None:
+        if query_string:
             action = query_string.pop('action', None)
             if action is None:
                 raise exception.ValidationError(attribute='action',

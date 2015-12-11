@@ -170,6 +170,29 @@ FEDERATED_AUTH_URL = ('/OS-FEDERATION/identity_providers/{identity_provider}'
                       '/protocols/{protocol}/auth')
 
 V3_JSON_HOME_RESOURCES_INHERIT_DISABLED = {
+    json_home.build_v3_resource_relation('jio_policies'): {
+        'href': '/jio_policies'},
+    json_home.build_v3_resource_relation('jio_policy'): {
+        'href-template': '/jio_policies/{jio_policy_id}',
+        'href-vars': {
+            'jio_policy_id':
+            json_home.build_v3_parameter_relation('jio_policy_id')}},
+    json_home.build_v3_resource_relation('jio_policy_group'): {
+        'href-template': '/jio_policies/{jio_policy_id}/groups/{group_id}',
+        'href-vars': {
+            'jio_policy_id':
+            json_home.build_v3_parameter_relation('jio_policy_id'),
+            'group_id':
+            json_home.build_v3_parameter_relation('group_id')}},
+    json_home.build_v3_resource_relation('jio_policy_user'): {
+        'href-template': '/jio_policies/{jio_policy_id}/users/{user_id}',
+        'href-vars': {
+            'jio_policy_id':
+            json_home.build_v3_parameter_relation('jio_policy_id'),
+            'user_id':
+            json_home.build_v3_parameter_relation('user_id')}},
+    json_home.build_v3_resource_relation('authorize'): {
+        'href': '/authorize'},
     json_home.build_v3_resource_relation('auth_tokens'): {
         'href': '/auth/tokens'},
     json_home.build_v3_resource_relation('auth_catalog'): {
