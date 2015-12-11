@@ -95,7 +95,6 @@ class AuthTestMixin(object):
                                      username=None, user_domain_id=None,
                                      user_domain_name=None, password=None,
                                      kerberos=False, **kwargs):
-
         """Build auth dictionary.
 
         It will create an auth dictionary based on all the arguments
@@ -214,7 +213,8 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.user_id = self.user['id']
 
         self.default_domain_project_id = uuid.uuid4().hex
-        self.default_domain_project = self.new_project_ref(domain_id=DEFAULT_DOMAIN_ID)
+        self.default_domain_project = self.new_project_ref(
+            domain_id=DEFAULT_DOMAIN_ID)
         self.default_domain_project['id'] = self.default_domain_project_id
         self.resource_api.create_project(self.default_domain_project_id,
                                          self.default_domain_project)
@@ -534,6 +534,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         if resource_url:
             self.assertThat(links['self'], matchers.EndsWith(resource_url))
+
         self.assertIn('next', links)
         if links['next'] is not None:
             self.assertThat(links['next'],
@@ -555,7 +556,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         """
         entities = resp.result.get(key)
         self.assertIsNotNone(entities)
-        
+
         if expected_length is not None:
             self.assertEqual(expected_length, len(entities))
         elif ref is not None:
