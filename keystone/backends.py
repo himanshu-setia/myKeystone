@@ -25,6 +25,7 @@ from keystone import policy
 from keystone import resource
 from keystone import token
 from keystone import trust
+from keystone import jio_policy
 
 
 def load_backends():
@@ -57,7 +58,8 @@ def load_backends():
         role_api=assignment.RoleManager(),
         token_api=token.persistence.Manager(),
         trust_api=trust.Manager(),
-        token_provider_api=token.provider.Manager())
+        token_provider_api=token.provider.Manager(),
+        jio_policy_api=jio_policy.Manager())
 
     auth.controllers.load_auth_methods()
 
