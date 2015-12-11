@@ -262,7 +262,8 @@ class Policy(jio_policy.Driver):
         action_info = session.query(ActionModel.id).filter(ActionModel.action_name==action).first()
         if action_info is None:
             #check if logging needed here "No matching action found in policy.json"
-            return False
+            raise exception.ValidationError(attribute='valid action name',
+                                            target = 'request')
         else:
             action_info = action_info[0]
 
@@ -279,7 +280,8 @@ class Policy(jio_policy.Driver):
 
         if resource_direct is None and resource_indirect is None:
             # "No matching resource found in policy.json:
-            return False
+            raise exception.ValidationError(attribute='valid resource name',
+                                            target = 'request')
 
         user_query = session.query(PolicyActionResourceModel.effect,PolicyUserGroupModel)
         user_query = user_query.filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.policy_id)
@@ -287,7 +289,7 @@ class Policy(jio_policy.Driver):
         user_query = user_query.filter(PolicyUserGroupModel.user_group_id==userid)
         user_query = user_query.filter(or_(PolicyActionResourceModel.resource_id==resource_direct, PolicyActionResourceModel.resource_id==resource_indirect)).all()
 
-        if groupid is not None:
+        if groupid != []:
             group_query = session.query(PolicyActionResourceModel.effect,PolicyUserGroupModel)
             group_query = group_query.filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.policy_id)
             group_query = group_query.filter(PolicyActionResourceModel.action_id==action_info)
