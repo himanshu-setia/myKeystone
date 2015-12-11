@@ -252,7 +252,7 @@ class Policy(jio_policy.Driver):
         if action_info is None:
             #check if logging needed here "No matching action found in policy.json"
             return False
-        else
+        else:
             action_info = action_info[0]
 
         resource_direct = session.query(ResourceModel.id).filter(ResourceModel.name==resource).first()
@@ -260,10 +260,10 @@ class Policy(jio_policy.Driver):
         resource_generic = resource[:resource.rfind(':')+1]+'*'
         resource_indirect = session.query(ResourceModel.id).filter(ResourceModel.name==resource_generic).first()
 
-        if resource_direct is not None
+        if resource_direct is not None:
             resource_direct = resource_direct[0]
 
-        if resource_indirect is not None
+        if resource_indirect is not None:
             resource_indirect = resource_indirect[0]
 
         if resource_direct is None and resource_indirect is None:
@@ -282,7 +282,7 @@ class Policy(jio_policy.Driver):
             group_query = group_query.filter(PolicyActionResourceModel.action_id==action_info)
             group_query = group_query.filter(PolicyUserGroupModel.user_group_id.in_(groupid))
             group_query = group_query.filter(or_(PolicyActionResourceModel.resource_id==resource_direct, PolicyActionResourceModel.resource_id==resource_indirect)).all()
-        else
+        else:
             group_query = None
 
         # add assert and debug prints
