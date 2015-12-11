@@ -27,7 +27,7 @@ class JioPolicyModel(sql.ModelBase, sql.DictBase):
     __tablename__ = 'jio_policy'
     attributes = ['id', 'project_id', 'created_at', 'deleted_at']
     id = sql.Column(sql.String(64), primary_key=True)
-    name = sql.Column(sql.String(64), nullable=False)
+    name = sql.Column(sql.String(255), nullable=False)
     project_id = sql.Column(sql.String(64), nullable=False)
     created_at = sql.Column(sql.DateTime, nullable=False)
     updated_at = sql.Column(sql.DateTime)
@@ -48,7 +48,7 @@ class ActionModel(sql.ModelBase):
     __tablename__ = 'action'
     attributes = ['id', 'action_name', 'service_type']
     id = sql.Column(sql.String(64), primary_key=True)
-    action_name = sql.Column(sql.String(64))
+    action_name = sql.Column(sql.String(255))
     service_type = sql.Column(sql.String(255), nullable=False)
 
 
@@ -331,3 +331,16 @@ class Policy(jio_policy.Driver):
     def detach_policy_from_group(self, policy_id, group_id):
         self._detach_policy_from_user_group(policy_id, group_id,
                                             type='GroupPolicy')
+
+def create_action(action_id, action_name, service_type):
+    ref = dict()
+    ref['id'] = action_id
+    ref['name'] = action_name
+    ref['service_type'] = service_type
+    session = sql.get_session()
+    with session.begin():
+	try:
+            session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
+	except sql.DBReferenceError:
+            raise exception.ValidationError(attribute='valid service name', target='resource')
+    return ref
