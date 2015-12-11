@@ -11,26 +11,53 @@
 # under the License.
 
 
+_statement_schema = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "array",
+                "required": "true",
+                "items": {
+                    "type": "string",
+                    "required": "true",
+                    "minItems": 1
+                }
+            },
+            "resource": {
+                "type": "array",
+                "required": "true",
+                "items": {
+                    "type": "string",
+                    "required": "true",
+                    "minItems": 1
+                }
+            },
+            "effect": {
+                "type": "string",
+                "required": "true",
+                "maxLength": 5
+            }
+        }
+    }
+}
+
 _policy_properties = {
-    'blob': {
-        'type': 'string'
-    },
-    'type': {
-        'type': 'string',
-        'maxLength': 255
+    "statement": _statement_schema,
+    "name": {
+        "type": "string",
+        "maxLength": 255
     }
 }
 
 policy_create = {
-    'type': 'object',
-    'properties': _policy_properties,
-    'required': ['blob', 'type'],
-    'additionalProperties': True
+    "type": "object",
+    "properties": _policy_properties,
+    "required": ["statement", "name"],
 }
 
 policy_update = {
-    'type': 'object',
-    'properties': _policy_properties,
-    'minProperties': 1,
-    'additionalProperties': True
+    "type": "object",
+    "properties": _policy_properties,
 }
