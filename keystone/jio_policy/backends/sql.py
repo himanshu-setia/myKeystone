@@ -286,10 +286,13 @@ class Policy(jio_policy.Driver):
                                             target = 'request')
 
         user_query = session.query(PolicyActionResourceModel.effect,
-                                   PolicyUserGroupModel)
+                                   PolicyUserGroupModel,
+                                   JioPolicyModel)
         user_query = user_query.\
-          filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.\
-                 policy_id)
+          filter(PolicyActionResourceModel.policy_id==\
+                 PolicyUserGroupModel.policy_id)
+        user_query = user_query.\
+          filter(PolicyActionResourceModel.policy_id==JioPolicyModel.id)
         user_query = user_query.\
           filter(JioPolicyModel.project_id==projectid)
         user_query = user_query.\
@@ -303,10 +306,13 @@ class Policy(jio_policy.Driver):
 
         if groupid != []:
             group_query = session.query(PolicyActionResourceModel.effect,
-                                        PolicyUserGroupModel)
+                                        PolicyUserGroupModel,
+                                        JioPolicyModel)
             group_query = group_query.\
               filter(PolicyActionResourceModel.policy_id==\
                      PolicyUserGroupModel.policy_id)
+            group_query = group_query.\
+              filter(PolicyActionResourceModel.policy_id==JioPolicyModel.id)
             group_query = group_query.\
               filter(JioPolicyModel.project_id==projectid)
             group_query = group_query.\
