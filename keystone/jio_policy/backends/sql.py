@@ -169,6 +169,8 @@ class Policy(jio_policy.Driver):
         count = self._find_attachment_count(session, policy_id)
         # TODO(ajayaa) Query for only required columns.
         ref = session.query(JioPolicyModel).get(policy_id)
+        if not ref:
+            raise exception.PolicyNotFound(policy_id=policy_id)
         ret = jsonutils.loads(ref.policy_blob)
         ret['created_at'] = ref.created_at
         ret['updated_at'] = ref.updated_at
