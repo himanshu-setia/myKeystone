@@ -81,7 +81,11 @@ class Manager(manager.Manager):
     
     def is_user_authorized(self, user_id, project_id, action, resource):
         group_ids = self._get_group_ids_for_user_id(user_id)
-        ref = self.driver.is_user_authorized(user_id, group_ids, project_id, action, resource)
+        ref = self.driver.is_user_authorized(user_id,
+                                             group_ids,
+                                             project_id,
+                                             action,
+                                             resource)
         return ref
 
     def _get_group_ids_for_user_id(self, user_id):
@@ -164,7 +168,8 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def is_user_authorized(self, userid, groupids, projectid, action, resource):
+    def is_user_authorized(self, userid, groupids, projectid, action,
+                           resource):
         """Deletes a policy blob.
         :raises: keystone.exception.PolicyNotFound
         """

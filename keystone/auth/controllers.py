@@ -553,15 +553,18 @@ class Auth(controller.V3Controller):
             if resource is None:
                 raise exception.ValidationError(attribute="resource",
                                                 target="query_string")
-            
             # get user id
             auth_context = self.get_auth_context(context)
             user_id = auth_context.get('user_id')
             project_id = auth_context.get('project_id')
-            effect = self.jio_policy_api.is_user_authorized(user_id,project_id,action,resource)
+            effect = self.jio_policy_api.is_user_authorized(user_id,
+                                                            project_id,
+                                                            action,
+                                                            resource)
 
             if not effect:
-                raise exception.Forbidden(message='Policy does not allow to perform this action')
+                raise exception.Forbidden(message='Policy does not allow'
+                                                  ' to perform this action')
 
         return self.validate_token(context)
 

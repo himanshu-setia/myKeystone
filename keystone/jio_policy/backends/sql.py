@@ -259,18 +259,21 @@ class Policy(jio_policy.Driver):
         session = sql.get_session()
 
         # query action id from action name in action table
-        action_info = session.query(ActionModel.id).filter(ActionModel.action_name==action).first()
+        action_info = session.query(ActionModel.id).\
+                      filter(ActionModel.action_name==action).first()
         if action_info is None:
-            #check if logging needed here "No matching action found in policy.json"
             raise exception.ValidationError(attribute='valid action name',
                                             target = 'request')
         else:
             action_info = action_info[0]
 
-        resource_direct = session.query(ResourceModel.id).filter(ResourceModel.name==resource).first()
-        # modified resource for wildcard checks
+        resource_direct = session.query(ResourceModel.id).\
+                          filter(ResourceModel.name==resource).first()
         resource_generic = resource[:resource.rfind(':')+1]+'*'
-        resource_indirect = session.query(ResourceModel.id).filter(ResourceModel.name==resource_generic).first()
+        resource_indirect = session.query(ResourceModel.id).\
+                            filter(ResourceModel.name==resource_generic).\
+                            first()
+
 
         if resource_direct is not None:
             resource_direct = resource_direct[0]
@@ -279,22 +282,43 @@ class Policy(jio_policy.Driver):
             resource_indirect = resource_indirect[0]
 
         if resource_direct is None and resource_indirect is None:
-            # "No matching resource found in policy.json:
             raise exception.ValidationError(attribute='valid resource name',
                                             target = 'request')
 
-        user_query = session.query(PolicyActionResourceModel.effect,PolicyUserGroupModel)
-        user_query = user_query.filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.policy_id)
-        user_query = user_query.filter(PolicyActionResourceModel.action_id==action_info)
-        user_query = user_query.filter(PolicyUserGroupModel.user_group_id==userid)
-        user_query = user_query.filter(or_(PolicyActionResourceModel.resource_id==resource_direct, PolicyActionResourceModel.resource_id==resource_indirect)).all()
+        user_query = session.query(PolicyActionResourceModel.effect,
+                                   PolicyUserGroupModel)
+        user_query = user_query.\
+          filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.\
+                 policy_id)
+        user_query = user_query.\
+          filter(JioPolicyModel.project_id==projectid)
+        user_query = user_query.\
+          filter(PolicyActionResourceModel.action_id==action_info)
+        user_query = user_query.\
+          filter(PolicyUserGroupModel.user_group_id==userid)
+        user_query = user_query.\
+          filter(or_(PolicyActionResourceModel.resource_id==resource_direct,
+                     PolicyActionResourceModel.resource_id==resource_indirect)
+                ).all()
 
         if groupid != []:
-            group_query = session.query(PolicyActionResourceModel.effect,PolicyUserGroupModel)
-            group_query = group_query.filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.policy_id)
-            group_query = group_query.filter(PolicyActionResourceModel.action_id==action_info)
-            group_query = group_query.filter(PolicyUserGroupModel.user_group_id.in_(groupid))
-            group_query = group_query.filter(or_(PolicyActionResourceModel.resource_id==resource_direct, PolicyActionResourceModel.resource_id==resource_indirect)).all()
+            group_query = session.query(PolicyActionResourceModel.effect,
+                                        PolicyUserGroupModel)
+            group_query = group_query.\
+              filter(PolicyActionResourceModel.policy_id==\
+                     PolicyUserGroupModel.policy_id)
+            group_query = group_query.\
+              filter(JioPolicyModel.project_id==projectid)
+            group_query = group_query.\
+              filter(PolicyActionResourceModel.action_id==\
+                     action_info)
+            group_query = group_query.\
+              filter(PolicyUserGroupModel.user_group_id.\
+                     in_(groupid))
+            group_query = group_query.\
+              filter(or_(PolicyActionResourceModel.resource_id==resource_direct,
+                     PolicyActionResourceModel.resource_id==resource_indirect)
+                    ).all()
         else:
             group_query = None
 
@@ -311,13 +335,6 @@ class Policy(jio_policy.Driver):
 
         if not user_query and not group_query:
             result = False
-
-        # if service is s3, and project_id_from_user is not same as project_id_from_resource, explicitly allow
-        # as per the requirement from Object Storage team
-        if result is False and resource.split(':')[3]=='s3':
-            project_id_from_resource = resource.split(':')[2]
-            if projectid != project_id_from_resource:
-                result = True
 
         return result
 
