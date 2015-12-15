@@ -347,7 +347,6 @@ class AuthInfo(object):
 @dependency.requires('assignment_api', 'catalog_api', 'identity_api',
                      'resource_api', 'token_provider_api', 'trust_api',
                      'jio_policy_api')
-
 class Auth(controller.V3Controller):
 
     # Note(atiwari): From V3 auth controller code we are
@@ -557,12 +556,12 @@ class Auth(controller.V3Controller):
             auth_context = self.get_auth_context(context)
             user_id = auth_context.get('user_id')
             project_id = auth_context.get('project_id')
-            effect = self.jio_policy_api.is_user_authorized(user_id,
-                                                            project_id,
-                                                            action,
-                                                            resource)
+            is_authorized = self.jio_policy_api.is_user_authorized(user_id,
+                                                                   project_id,
+                                                                   action,
+                                                                   resource)
 
-            if not effect:
+            if not is_authorized:
                 raise exception.Forbidden(message='Policy does not allow'
                                                   ' to perform this action')
 

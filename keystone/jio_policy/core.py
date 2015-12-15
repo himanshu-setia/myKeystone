@@ -78,7 +78,7 @@ class Manager(manager.Manager):
     def detach_policy_from_group(self, policy_id, group_id):
         self.identity_api.get_group(group_id)
         self.driver.detach_policy_from_group(policy_id, group_id)
-    
+
     def is_user_authorized(self, user_id, project_id, action, resource):
         group_ids = self._get_group_ids_for_user_id(user_id)
         ref = self.driver.is_user_authorized(user_id,
@@ -91,6 +91,7 @@ class Manager(manager.Manager):
     def _get_group_ids_for_user_id(self, user_id):
         return [x['id'] for
                 x in self.identity_api.list_groups_for_user(user_id)]
+
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -170,8 +171,8 @@ class Driver(object):
     @abc.abstractmethod
     def is_user_authorized(self, userid, groupids, projectid, action,
                            resource):
-        """Deletes a policy blob.
-        :raises: keystone.exception.PolicyNotFound
+        """Checks if userid is allowed to do action on resource
+        :raises: keystone.exception.ActionNotFound
+                 keystone.exception.ResourceNotFound
         """
         raise exception.NotImplemented()
-

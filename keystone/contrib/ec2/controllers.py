@@ -275,27 +275,21 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             if resource is None:
                 raise exception.ValidationError(attribute='resource',
                                                 target='query_string')
-        
+            if resource.split(':')[3] == 's3':
+                if resource.split(':')[2] != projectid:
+                    resource = resource.replace(':s3:bucket:',
+                                                ':s3:foreign_bucket:')
             # get user id
             auth_context = self.get_auth_context(context)
             user_id = auth_context.get('user_id')
             project_id = auth_context.get('project_id')
-            effect = self.jio_policy_api.is_user_authorized(user_id,
-                                                            project_id,
-                                                            action,
-                                                            resource)
-
-            # if service is s3, and project_id_from_user is not same as
-            # project_id_from_resource, explicitly allow as per the requirement
-            # from Object Storage team
-            if effect is False and resource.split(':')[3]=='s3':
-                project_id_from_resource = resource.split(':')[2]
-                if project_id != project_id_from_resource:
-                    effect = True
-            
-            if not effect:
-                raise exception.Forbidden(message='Policy does not allow to perform this action')
- 
+            is_authorized = self.jio_policy_api.is_user_authorized(user_id,
+                                                                   project_id,
+                                                                   action,
+                                                                   resource)
+            if not is_authorized:
+                raise exception.Forbidden(message='Policy does not allow to'
+                                          'perform this action')
         (user_ref, tenant_ref, metadata_ref, roles_ref,
          catalog_ref) = self._authenticate(credentials=credentials,
                                            ec2credentials=ec2Credentials)

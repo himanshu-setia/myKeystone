@@ -253,6 +253,13 @@ class PolicyNotFound(NotFound):
 class PolicyAssociationNotFound(NotFound):
     message_format = _("Could not find policy association")
 
+class ActionNotFound(NotFound):
+    message_format = _("Could not find action: %(action)s")
+    code = 400
+
+class ResourceNotFound(NotFound):
+    message_format = _("Could not find resource: %(resource)s")
+    code = 400
 
 class RoleNotFound(NotFound):
     message_format = _("Could not find role: %(role_id)s")
