@@ -275,10 +275,10 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             if resource is None:
                 raise exception.ValidationError(attribute='resource',
                                                 target='query_string')
-            if resource.split(':')[3] == 's3':
-                if resource.split(':')[2] != projectid:
-                    resource = resource.replace(':s3:bucket:',
-                                                ':s3:foreign_bucket:')
+            if resource.split(':')[2] == 's3':
+                if resource.split(':')[3] != projectid:
+                    resource = 'jrn:jcs:s3:' + projectid + ':foreign_bucket'
+
             # get user id
             auth_context = self.get_auth_context(context)
             user_id = auth_context.get('user_id')
