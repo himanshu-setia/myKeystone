@@ -23,6 +23,7 @@ from sqlalchemy.orm import load_only
 from sqlalchemy import or_
 from sqlalchemy import and_
 
+
 class JioPolicyModel(sql.ModelBase, sql.DictBase):
     __tablename__ = 'jio_policy'
     attributes = ['id', 'project_id', 'created_at', 'deleted_at']
@@ -257,49 +258,102 @@ class Policy(jio_policy.Driver):
                     policy_id=row.id).delete()
             session.delete(policy_ref)
 
-    def get_user_policy(self, userid, groupid, action, resource):
+    def is_user_authorized(self, user_id, group_id, project_id, action, resource):
         session = sql.get_session()
-
         # query action id from action name in action table
-        action_info = session.query(ActionModel.id).filter(ActionModel.action_name==action).first()
-        resource_direct = session.query(ResourceModel.id).filter(ResourceModel.name==resource).first()
-        # modified resource for wildcard checks
+        action_info = session.query(ActionModel.id).\
+            filter(ActionModel.action_name == action).first()
+        if action_info is None:
+            raise exception.ActionNotFound(action=action)
+        else:
+            action_info = action_info[0]
+
+        resource_direct = session.query(ResourceModel.id).\
+            filter(ResourceModel.name == resource).first()
         resource_generic = resource[:resource.rfind(':')+1]+'*'
-        resource_indirect = session.query(ResourceModel.id).filter(ResourceModel.name==resource_generic).first()
+        resource_indirect = session.query(ResourceModel.id).\
+            filter(ResourceModel.name == resource_generic).\
+            first()
 
-        if resource_direct == []:
-            resource_direct = None
+        if resource_direct is not None:
+            resource_direct = resource_direct[0]
 
-        if resource_indirect == []:
-            resource_indirect = None
+        if resource_indirect is not None:
+            resource_indirect = resource_indirect[0]
 
-        user_query = session.query(PolicyActionResourceModel.effect,PolicyUserGroupModel)
-        user_query = user_query.filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.policy_id)
-        user_query = user_query.filter(PolicyActionResourceModel.action_id.in_(action_info))
-        user_query = user_query.filter(PolicyUserGroupModel.user_group_id==userid)
-        user_query = user_query.filter(or_(PolicyActionResourceModel.resource_id.in_(resource_direct), PolicyActionResourceModel.resource_id.in_(resource_indirect))).all()
+        if resource_direct is None and resource_indirect is None:
+            raise exception.ResourceNotFound(resource=resource)
 
-        group_query = session.query(PolicyActionResourceModel.effect,PolicyUserGroupModel)
-        group_query = group_query.filter(PolicyActionResourceModel.policy_id==PolicyUserGroupModel.policy_id)
-        group_query = group_query.filter(PolicyActionResourceModel.action_id.in_(action_info))
-        group_query = group_query.filter(PolicyUserGroupModel.user_group_id.in_(groupid))
-        group_query = group_query.filter(or_(PolicyActionResourceModel.resource_id.in_(resource_direct), PolicyActionResourceModel.resource_id.in_(resource_indirect))).all()
+        user_query = session.query(PolicyActionResourceModel.effect,
+                                   PolicyUserGroupModel,
+                                   JioPolicyModel)
+        user_query = user_query.\
+            filter(PolicyActionResourceModel.policy_id ==
+                   PolicyUserGroupModel.policy_id)
+        user_query = user_query.\
+            filter(PolicyActionResourceModel.policy_id == JioPolicyModel.id)
+        user_query = user_query.\
+            filter(JioPolicyModel.project_id == project_id)
+        user_query = user_query.\
+            filter(PolicyActionResourceModel.action_id == action_info)
+        user_query = user_query.\
+            filter(PolicyUserGroupModel.user_group_id == user_id)
+        user_query = user_query.\
+            filter(
+                   or_(
+                       PolicyActionResourceModel.resource_id ==
+                       resource_direct,
+                       PolicyActionResourceModel.resource_id ==
+                       resource_indirect
+                          )
+                  ).all()
+
+        if group_id != []:
+            group_query = session.query(PolicyActionResourceModel.effect,
+                                        PolicyUserGroupModel,
+                                        JioPolicyModel)
+            group_query = group_query.\
+                filter(PolicyActionResourceModel.policy_id ==
+                       PolicyUserGroupModel.policy_id)
+            group_query = group_query.\
+                filter(PolicyActionResourceModel.policy_id ==
+                       JioPolicyModel.id)
+            group_query = group_query.\
+                filter(JioPolicyModel.project_id == project_id)
+            group_query = group_query.\
+                filter(PolicyActionResourceModel.action_id ==
+                       action_info)
+            group_query = group_query.\
+                filter(PolicyUserGroupModel.user_group_id.
+                       in_(group_id))
+            group_query = group_query.\
+                filter(
+                       or_(
+                           PolicyActionResourceModel.resource_id ==
+                           resource_direct,
+                           PolicyActionResourceModel.resource_id ==
+                           resource_indirect
+                              )
+                      ).all()
+        else:
+            group_query = None
 
         # add assert and debug prints
 
-        if not user_query and not group_query:
-            return False
-
-        result = True
+        is_authorized = True
         if user_query:
             for row in user_query:
-                result = result and row[0]
+                is_authorized = is_authorized and row[0]
 
         if group_query:
             for row in group_query:
-                result = result and row[0]
+                is_authorized = is_authorized and row[0]
 
-        return result
+        if not user_query and not group_query:
+            is_authorized = False
+
+        return is_authorized
+
 
     def _attach_policy_to_user_group(self, policy_id, user_group_id,
                                      type=None):
