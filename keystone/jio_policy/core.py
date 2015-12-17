@@ -169,7 +169,7 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def is_user_authorized(self, userid, groupids, projectid, action,
+    def is_user_authorized(self, user_id, group_id, project_id, action,
                            resource):
         """Checks if userid is allowed to do action on resource
         :raises: keystone.exception.ActionNotFound

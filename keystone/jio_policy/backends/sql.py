@@ -256,7 +256,7 @@ class Policy(jio_policy.Driver):
                     policy_id=row.id).delete()
             session.delete(policy_ref)
 
-    def is_user_authorized(self, userid, groupid, projectid, action, resource):
+    def is_user_authorized(self, user_id, group_id, project_id, action, resource):
         session = sql.get_session()
         # query action id from action name in action table
         action_info = session.query(ActionModel.id).\
@@ -291,11 +291,11 @@ class Policy(jio_policy.Driver):
         user_query = user_query.\
             filter(PolicyActionResourceModel.policy_id == JioPolicyModel.id)
         user_query = user_query.\
-            filter(JioPolicyModel.project_id == projectid)
+            filter(JioPolicyModel.project_id == project_id)
         user_query = user_query.\
             filter(PolicyActionResourceModel.action_id == action_info)
         user_query = user_query.\
-            filter(PolicyUserGroupModel.user_group_id == userid)
+            filter(PolicyUserGroupModel.user_group_id == user_id)
         user_query = user_query.\
             filter(
                    or_(
@@ -306,7 +306,7 @@ class Policy(jio_policy.Driver):
                           )
                   ).all()
 
-        if groupid != []:
+        if group_id != []:
             group_query = session.query(PolicyActionResourceModel.effect,
                                         PolicyUserGroupModel,
                                         JioPolicyModel)
@@ -317,13 +317,13 @@ class Policy(jio_policy.Driver):
                 filter(PolicyActionResourceModel.policy_id ==
                        JioPolicyModel.id)
             group_query = group_query.\
-                filter(JioPolicyModel.project_id == projectid)
+                filter(JioPolicyModel.project_id == project_id)
             group_query = group_query.\
                 filter(PolicyActionResourceModel.action_id ==
                        action_info)
             group_query = group_query.\
                 filter(PolicyUserGroupModel.user_group_id.
-                       in_(groupid))
+                       in_(group_id))
             group_query = group_query.\
                 filter(
                        or_(
