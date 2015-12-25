@@ -108,7 +108,7 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def create_policy(self, service, project_id, policy_id, policy):
+    def create_policy(self, project_id, policy_id, policy):
         """Store a policy blob.
 
         :raises: keystone.exception.Conflict
