@@ -388,6 +388,20 @@ class Policy(jio_policy.Driver):
         self._detach_policy_from_user_group(policy_id, group_id,
                                             type='GroupPolicy')
 
+    def list_actions(self, hints):
+        session = sql.get_session()
+        query = session.query(ActionModel).all()
+        refs = sql.filter_limit_query(ActionModel, query, hints)
+        ret = []
+        attrs_to_return = ['id', 'action_name', 'service_type']
+        for ref in refs:
+            new_ref = {}
+            for r in attrs_to_return:
+                new_ref[r] = ref.get(r)
+                ret.append(new_ref)
+        return ret
+
+
 def create_action(action_id, action_name, service_type):
     ref = dict()
     ref['id'] = action_id
