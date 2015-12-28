@@ -152,7 +152,6 @@ class Identity(identity.Driver):
     @sql.truncated
     def list_user_summary_for_group(self, hints, group_id):
         session = sql.get_session()
-        self.get_group(group_id)
         query = session.query(User.id,User.name).join(UserGroupMembership)
         query = query.filter(UserGroupMembership.group_id == group_id)
 
@@ -325,14 +324,8 @@ class Identity(identity.Driver):
 
 
     def count_groups_for_user(self, user_id):
-        # TODO(henry-nash) We could implement full filtering here by enhancing
-        # the join below.  However, since it is likely to be a fairly rare
-        # occurrence to filter on more than the user_id already being used
-        # here, this is left as future enhancement and until then we leave
-        # it for the controller to do for us.
         session = sql.get_session()
-        self.get_user(user_id)
-        query = session.query(Group).join(UserGroupMembership)
+        query = session.query(UserGroupMembership)
         query = query.filter(UserGroupMembership.user_id == user_id)
 
         return query.count()
@@ -348,19 +341,12 @@ class Identity(identity.Driver):
         query = session.query(User).join(UserGroupMembership)
         query = query.filter(UserGroupMembership.group_id == group_id)
 
-	print query.count()
         return [identity.filter_user(u.to_dict()) for u in query]
 
 
     def count_users_in_group(self, group_id):
-        # TODO(henry-nash) We could implement full filtering here by enhancing
-        # the join below.  However, since it is likely to be a fairly rare
-        # occurrence to filter on more than the group_id already being used
-        # here, this is left as future enhancement and until then we leave
-        # it for the controller to do for us.
         session = sql.get_session()
-        self.get_group(group_id)
-        query = session.query(User).join(UserGroupMembership)
+        query = session.query(UserGroupMembership)
         query = query.filter(UserGroupMembership.group_id == group_id)
 
         return query.count()
@@ -398,13 +384,11 @@ class Identity(identity.Driver):
 	
         ref_list = []
         for ref in refs:
-  		dict = ref.to_dict()
-		#dict['Policies'] =  get_group_policies(ref.id)
-		dict['UserCount'] = self.count_users_in_group(ref.id) 
-		ref_list.append(dict)
+  	    dict = ref.to_dict()
+	    dict['UserCount'] = self.count_users_in_group(ref.id) 
+	    ref_list.append(dict)
 
         return ref_list
-
 	
     def _get_group(self, session, group_id):
         ref = session.query(Group).get(group_id)

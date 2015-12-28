@@ -90,7 +90,6 @@ class JioPolicyV3(controller.V3Controller):
 
     @controller.protected()
     def list_policy_summary(self, context, jio_policy_id):
-        import pdb;pdb.set_trace();
 	refs = self.jio_policy_api.list_policy_summary(jio_policy_id)
 
 	for ref in refs:
@@ -99,5 +98,7 @@ class JioPolicyV3(controller.V3Controller):
 	    else:
 		ref['Entity Name'] = (self.identity_api.get_group(ref['Entity Name']))['name']
 
-	return refs
+	summary_ref = {}
+	summary_ref['Attached Entities'] = refs 
+	return summary_ref
 

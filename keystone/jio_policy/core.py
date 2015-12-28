@@ -78,9 +78,6 @@ class Manager(manager.Manager):
         self.identity_api.get_group(group_id)
         self.driver.attach_policy_to_group(policy_id, group_id)
 
-    def list_policy_summary_for_group(self, group_id, hints=None):
-        return self.driver.list_policy_summary_for_group(hints,group_id)        
-
     def detach_policy_from_group(self, policy_id, group_id):
         self.identity_api.get_group(group_id)
         self.driver.detach_policy_from_group(policy_id, group_id)
