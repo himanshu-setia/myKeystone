@@ -267,19 +267,26 @@ class Policy(jio_policy.Driver):
             action_info = action_info[0]
 
         resource_direct = session.query(ResourceModel.id).\
-            filter(ResourceModel.name == resource).first()
+            filter(ResourceModel.name == resource).all()
         resource_generic = resource[:resource.rfind(':')+1]+'*'
         resource_indirect = session.query(ResourceModel.id).\
             filter(ResourceModel.name == resource_generic).\
-            first()
+            all()
 
-        if resource_direct is not None:
-            resource_direct = resource_direct[0]
+        # converts a list of tuples to a list
+        if resource_direct != []:
+            j = 0
+            for i in resource_direct:
+                resource_direct[j] = i[0]
+                j = j+1
 
-        if resource_indirect is not None:
-            resource_indirect = resource_indirect[0]
+        if resource_indirect != []:
+            j = 0
+            for i in resource_indirect:
+                resource_indirect[j] = i[0]
+                j = j+1
 
-        if resource_direct is None and resource_indirect is None:
+        if resource_direct == [] and resource_indirect == []:
             raise exception.ResourceNotFound(resource=resource)
 
         user_query = session.query(PolicyActionResourceModel.effect,
@@ -299,10 +306,10 @@ class Policy(jio_policy.Driver):
         user_query = user_query.\
             filter(
                    or_(
-                       PolicyActionResourceModel.resource_id ==
-                       resource_direct,
-                       PolicyActionResourceModel.resource_id ==
-                       resource_indirect
+                       PolicyActionResourceModel.resource_id.
+                       in_(resource_direct),
+                       PolicyActionResourceModel.resource_id.
+                       in_(resource_indirect)
                           )
                   ).all()
 
@@ -327,10 +334,10 @@ class Policy(jio_policy.Driver):
             group_query = group_query.\
                 filter(
                        or_(
-                           PolicyActionResourceModel.resource_id ==
-                           resource_direct,
-                           PolicyActionResourceModel.resource_id ==
-                           resource_indirect
+                           PolicyActionResourceModel.resource_id.
+                           in_(resource_direct),
+                           PolicyActionResourceModel.resource_id.
+                           in_(resource_indirect)
                               )
                       ).all()
         else:
@@ -351,7 +358,6 @@ class Policy(jio_policy.Driver):
             is_authorized = False
 
         return is_authorized
-
 
     def _attach_policy_to_user_group(self, policy_id, user_group_id,
                                      type=None):
@@ -385,6 +391,7 @@ class Policy(jio_policy.Driver):
     def detach_policy_from_group(self, policy_id, group_id):
         self._detach_policy_from_user_group(policy_id, group_id,
                                             type='GroupPolicy')
+
 
 def create_action(action_id, action_name, service_type):
     ref = dict()
