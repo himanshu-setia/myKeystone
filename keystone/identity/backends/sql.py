@@ -20,7 +20,6 @@ from keystone import exception
 from keystone.i18n import _
 from keystone import identity
 
-
 CONF = cfg.CONF
 
 
@@ -122,7 +121,49 @@ class Identity(identity.Driver):
         session = sql.get_session()
         query = session.query(User)
         user_refs = sql.filter_limit_query(User, query, hints)
-        return [identity.filter_user(x.to_dict()) for x in user_refs]
+
+        ref_list = []
+        for ref in user_refs:
+	    dict = ref.to_dict()
+            dict['GroupCount'] = self.count_groups_for_user(ref.id)
+	    if not dict['password']:
+		dict['password'] = 'No'
+            else:
+		dict['password'] = 'Yes'
+            ref_list.append(dict)
+
+	return ref_list
+
+    @sql.truncated
+    def list_user_summary_for_group(self, hints, group_id):
+        session = sql.get_session()
+        self.get_group(group_id)
+        query = session.query(User.id,User.name).join(UserGroupMembership)
+        query = query.filter(UserGroupMembership.group_id == group_id)
+
+        ref_list = []
+        for ref in query:
+	    dict = {}
+            dict['id'] = ref.id
+	    dict['name'] = ref.name
+            ref_list.append(dict)
+
+        return ref_list
+
+    @sql.truncated
+    def list_group_summary_for_user(self, hints, user_id):
+        session = sql.get_session()
+        query = session.query(Group.id,Group.name).join(UserGroupMembership)
+        query = query.filter(UserGroupMembership.user_id == user_id)
+
+        ref_list = []
+        for ref in query:
+            dict = {}
+            dict['id'] = ref.id
+            dict['name'] = ref.name
+            ref_list.append(dict)
+
+        return ref_list
 
     def _get_user(self, session, user_id):
         user_ref = session.query(User).get(user_id)
@@ -222,6 +263,20 @@ class Identity(identity.Driver):
         query = query.filter(UserGroupMembership.user_id == user_id)
         return [g.to_dict() for g in query]
 
+
+    def count_groups_for_user(self, user_id):
+        # TODO(henry-nash) We could implement full filtering here by enhancing
+        # the join below.  However, since it is likely to be a fairly rare
+        # occurrence to filter on more than the user_id already being used
+        # here, this is left as future enhancement and until then we leave
+        # it for the controller to do for us.
+        session = sql.get_session()
+        self.get_user(user_id)
+        query = session.query(Group).join(UserGroupMembership)
+        query = query.filter(UserGroupMembership.user_id == user_id)
+
+        return query.count()
+
     def list_users_in_group(self, group_id, hints):
         # TODO(henry-nash) We could implement full filtering here by enhancing
         # the join below.  However, since it is likely to be a fairly rare
@@ -233,7 +288,22 @@ class Identity(identity.Driver):
         query = session.query(User).join(UserGroupMembership)
         query = query.filter(UserGroupMembership.group_id == group_id)
 
+	print query.count()
         return [identity.filter_user(u.to_dict()) for u in query]
+
+
+    def count_users_in_group(self, group_id):
+        # TODO(henry-nash) We could implement full filtering here by enhancing
+        # the join below.  However, since it is likely to be a fairly rare
+        # occurrence to filter on more than the group_id already being used
+        # here, this is left as future enhancement and until then we leave
+        # it for the controller to do for us.
+        session = sql.get_session()
+        self.get_group(group_id)
+        query = session.query(User).join(UserGroupMembership)
+        query = query.filter(UserGroupMembership.group_id == group_id)
+
+        return query.count()
 
     def delete_user(self, user_id):
         session = sql.get_session()
@@ -259,11 +329,20 @@ class Identity(identity.Driver):
 
     @sql.truncated
     def list_groups(self, hints):
-        session = sql.get_session()
+	session = sql.get_session()
         query = session.query(Group)
         refs = sql.filter_limit_query(Group, query, hints)
-        return [ref.to_dict() for ref in refs]
+	
+        ref_list = []
+        for ref in refs:
+  		dict = ref.to_dict()
+		#dict['Policies'] =  get_group_policies(ref.id)
+		dict['UserCount'] = self.count_users_in_group(ref.id) 
+		ref_list.append(dict)
 
+        return ref_list
+
+	
     def _get_group(self, session, group_id):
         ref = session.query(Group).get(group_id)
         if not ref:

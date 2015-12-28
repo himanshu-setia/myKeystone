@@ -82,3 +82,22 @@ class Routers(wsgi.RoutersBase):
             path_vars={
                 'user_id': json_home.Parameters.USER_ID,
             })
+
+        self._add_resource(
+            mapper, user_controller,
+            path='/groups/{group_id}/summary',
+            get_action='list_group_summary',
+            rel=json_home.build_v3_resource_relation('group_summary'),
+            path_vars={
+                'group_id': json_home.Parameters.GROUP_ID,
+            })
+
+	self._add_resource(
+            mapper, group_controller,
+            path='/users/{user_id}/summary',
+            get_action='list_user_summary',
+            rel=json_home.build_v3_resource_relation('user_summary'),
+            path_vars={
+                'user_id': json_home.Parameters.USER_ID,
+            })
+
