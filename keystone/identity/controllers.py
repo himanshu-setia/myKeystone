@@ -281,8 +281,8 @@ class UserV3(controller.V3Controller):
         user_refs = self.identity_api.list_user_summary_for_group(group_id,
             domain_scope=self._get_domain_id_for_list_request(context),
             hints=hints)
-        #refs = self.jio_policy_api.list_policy_summary_for_group(group_id,hints=hints)
-        policy_refs = self.jio_policy_api.get_group_policies(group_id)
+        
+	policy_refs = self.jio_policy_api.get_group_policies(group_id)
 
         refs = {}
         refs['Users'] =  user_refs
@@ -378,8 +378,8 @@ class GroupV3(controller.V3Controller):
         user_refs = self.identity_api.list_group_summary_for_user(user_id,
             domain_scope=self._get_domain_id_for_list_request(context),
             hints=hints)
-        #refs = self.jio_policy_api.list_policy_summary_for_group(group_id,hints=hints)
-        policy_refs = self.jio_policy_api.get_user_policies(user_id)
+        
+	policy_refs = self.jio_policy_api.get_user_policies(user_id)
 
         refs = {}
         refs['Groups'] =  user_refs

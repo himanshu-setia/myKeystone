@@ -333,25 +333,6 @@ class Policy(jio_policy.Driver):
 
         return policy_list
 
-    @sql.truncated
-    def list_policy_summary_for_group(self, hints, group_id):
-        session = sql.get_session()
-	ref = session.query(JioPolicyModel, PolicyUserGroupModel).filter(JioPolicyModel.id == PolicyUserGroupModel.policy_id).filter(PolicyUserGroupModel.user_group_id == group_id).all()
-	#        query = query.filter(PolicyUserGroupModel.user_group_id == group_id)
-	#        query = query.filter(PolicyUserGroupModel.policy_id==JioPolicyModel.id).all()
-	#	with session.begin():
-	 #          ref_list = []
-	  #         for ref in query:
-	   #           dict = {}
-           # dict['id'] = ref[indx].id
-            #dict['name'] = ref[indx].name
-	    #          id = ref.policy_id
-	     
-	     #         policy_ref = self._get_policy(session,id)
-	#	      ref_list.append(dict)
-
-        return ref_list
-
     def get_user_policy(self, userid, groupid, action, resource):
         session = sql.get_session()
 
