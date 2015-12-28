@@ -26,6 +26,10 @@ class JioPolicyV3(controller.V3Controller):
     collection_name = 'policies'
     member_name = 'policy'
 
+    def list_actions(self, context):
+        ref = self.jio_policy_api.list_actions()
+        return ref
+
     @controller.protected()
     @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):

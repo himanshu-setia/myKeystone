@@ -43,6 +43,9 @@ class Manager(manager.Manager):
     def __init__(self):
         super(Manager, self).__init__(CONF.jio_policy.driver)
 
+    def list_actions(self, hints=None):
+        return self.driver.list_actions(hints)
+
     def create_policy(self, project_id, policy_id, policy):
         ref = self.driver.create_policy(project_id, policy_id, policy)
         return ref
@@ -96,8 +99,16 @@ class Manager(manager.Manager):
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
 
+    def list_actions(self):
+        """" LISTS all the actions
+
+        :raises: keystone.exception.ActionNotFound
+
+        """
+        raise exception.NotImplemented()
+
     @abc.abstractmethod
-    def create_policy(self, service, project_id, policy_id, policy):
+    def create_policy(self, project_id, policy_id, policy):
         """Store a policy blob.
 
         :raises: keystone.exception.Conflict
