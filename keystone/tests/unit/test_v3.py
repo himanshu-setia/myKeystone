@@ -366,12 +366,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         resource = 'jrn:jcs:'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
         statement1['resource'] =[resource]
         statement1['effect'] = 'allow'
-        statement2 = dict()
-        statement2['action'] = [action.get('name')]
-        resource2 = 'jrn:jcs:'+self.project_id+':'+self.service.get('type')+':*'
-        statement2['resource'] =[resource2]
-        statement2['effect'] = 'allow'
-        ref['statement'] = [statement1,statement2]
+        ref['statement'] = [statement1]
         return ref
 
     def new_jio_policy_with_wildcards_ref(self):
