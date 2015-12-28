@@ -793,6 +793,42 @@ class Manager(manager.Manager):
         return self._set_domain_id_and_mapping(
             ref_list, domain_scope, driver, mapping.EntityType.USER)
 
+    @manager.response_truncated
+    @domains_configured
+    @exception_translated('user')
+    def list_user_summary_for_group(self, group_id, domain_scope=None, hints=None):
+        driver = self._select_identity_driver(domain_scope)
+        hints = hints or driver_hints.Hints()
+        if driver.is_domain_aware():
+            # Force the domain_scope into the hint to ensure that we only get
+            # back domains for that scope.
+            self._ensure_domain_id_in_hints(hints, domain_scope)
+        else:
+            # We are effectively satisfying any domain_id filter by the above
+            # driver selection, so remove any such filter.
+            self._mark_domain_id_filter_satisfied(hints)
+	ref_list = driver.list_user_summary_for_group(hints,group_id)
+        return self._set_domain_id_and_mapping(
+            ref_list, domain_scope, driver, mapping.EntityType.USER)
+
+    @manager.response_truncated
+    @domains_configured
+    @exception_translated('group')
+    def list_group_summary_for_user(self, user_id, domain_scope=None, hints=None):
+        driver = self._select_identity_driver(domain_scope)
+        hints = hints or driver_hints.Hints()
+        if driver.is_domain_aware():
+            # Force the domain_scope into the hint to ensure that we only get
+            # back domains for that scope.
+            self._ensure_domain_id_in_hints(hints, domain_scope)
+        else:
+            # We are effectively satisfying any domain_id filter by the above
+            # driver selection, so remove any such filter.
+            self._mark_domain_id_filter_satisfied(hints)
+        ref_list = driver.list_group_summary_for_user(hints,user_id)
+        return self._set_domain_id_and_mapping(
+            ref_list, domain_scope, driver, mapping.EntityType.GROUP)
+
     @domains_configured
     @exception_translated('user')
     def update_user(self, user_id, user_ref, initiator=None):
@@ -1014,6 +1050,7 @@ class Manager(manager.Manager):
         ref_list = driver.list_groups(hints)
         return self._set_domain_id_and_mapping(
             ref_list, domain_scope, driver, mapping.EntityType.GROUP)
+
 
     @manager.response_truncated
     @domains_configured
