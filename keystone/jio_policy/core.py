@@ -75,6 +75,9 @@ class Manager(manager.Manager):
         self.identity_api.get_group(group_id)
         self.driver.attach_policy_to_group(policy_id, group_id)
 
+    def list_policy_summary_for_group(self, group_id, hints=None):
+        return self.driver.list_policy_summary_for_group(hints,group_id)        
+
     def detach_policy_from_group(self, policy_id, group_id):
         self.identity_api.get_group(group_id)
         self.driver.detach_policy_from_group(policy_id, group_id)
@@ -83,6 +86,15 @@ class Manager(manager.Manager):
         group_ids = self._get_group_ids_for_user_id(user_id)
         ref = self.driver.get_user_policy(user_id, group_ids, action, resource)
         return ref
+
+    def list_policy_summary(self,policy_id):
+	return self.driver.list_policy_summary(policy_id)
+
+    def get_group_policies(self, groupid):
+	return self.driver.get_group_policies(groupid)
+
+    def get_user_policies(self, userid):
+        return self.driver.get_user_policies(userid)
 
     def _get_group_ids_for_user_id(self, user_id):
         return [x['id'] for
