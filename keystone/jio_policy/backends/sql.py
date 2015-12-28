@@ -170,6 +170,8 @@ class Policy(jio_policy.Driver):
         count = self._find_attachment_count(session, policy_id)
         # TODO(ajayaa) Query for only required columns.
         ref = session.query(JioPolicyModel).get(policy_id)
+        if not ref:
+            raise exception.PolicyNotFound(policy_id=policy_id)
         ret = jsonutils.loads(ref.policy_blob)
         ret['created_at'] = ref.created_at
         ret['updated_at'] = ref.updated_at
@@ -391,6 +393,19 @@ class Policy(jio_policy.Driver):
     def detach_policy_from_group(self, policy_id, group_id):
         self._detach_policy_from_user_group(policy_id, group_id,
                                             type='GroupPolicy')
+
+    def list_actions(self, hints):
+        session = sql.get_session()
+        query = session.query(ActionModel).all()
+        refs = sql.filter_limit_query(ActionModel, query, hints)
+        ret = []
+        attrs_to_return = ['id', 'action_name', 'service_type']
+        for ref in refs:
+            new_ref = {}
+            for r in attrs_to_return:
+                new_ref[r] = ref.get(r)
+                ret.append(new_ref)
+        return ret
 
 
 def create_action(action_id, action_name, service_type):

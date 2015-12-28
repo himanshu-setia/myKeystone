@@ -55,6 +55,7 @@ class Parameters(object):
     ROLE_ID = build_v3_parameter_relation('role_id')
     SERVICE_ID = build_v3_parameter_relation('service_id')
     USER_ID = build_v3_parameter_relation('user_id')
+    JIO_POLICY_ID = build_v3_parameter_relation('jio_policy_id')
 
 
 class Status(object):

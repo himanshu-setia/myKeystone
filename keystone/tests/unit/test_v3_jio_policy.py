@@ -1,5 +1,6 @@
 import uuid
 import copy
+import unittest
 
 from keystone.tests.unit import test_v3
 from keystone.common import dependency
@@ -13,9 +14,9 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         self.jio_policy_id = self.jio_policy.get('id')
         self.jio_policy_api.create_policy(self.project_id, self.jio_policy_id, copy.deepcopy(self.jio_policy))
 
-    def test_get_jio_policy(self): 
-        r = self.get( 
-                '/jio_policies/%(policy_id)s' % { 
+    def test_get_jio_policy(self):
+        r = self.get(
+                '/jio_policies/%(policy_id)s' % {
                     'policy_id': self.jio_policy_id})
         return self.assertValidJioPolicyResponse(r, self.jio_policy)
 
@@ -65,7 +66,6 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
                      token = uuid.uuid4().hex,
                      expected_status = 401)
 
-    @unittest.skip("Failing currently. @ajayaa. pls fix.")
     def test_get_jio_policy_with_invalid_policy_id_fail(self):
         false_policy_id = uuid.uuid4().hex
         r = self.get(
@@ -75,21 +75,21 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
 
     def test_attach_policy_to_user(self):
         r = self.put(
-                '/jio_policies/%(policy_id)s/users/%(user_id)s' % 
+                '/jio_policies/%(policy_id)s/users/%(user_id)s' %
                 {'policy_id': self.jio_policy_id, 'user_id': self.user_id})
-        
+
     def test_detach_policy_from_user(self):
         r = self.delete(
                        '/jio_policies/%(policy_id)s/users/%(user_id)s' % {
                            'policy_id': self.jio_policy_id, 'user_id': self.user_id})
-        
+
     def test_attach_policy_to_group(self):
         new_group = {'domain_id': self.domain_id, 'name': uuid.uuid4().hex}
         new_group = self.identity_api.create_group(new_group)
         r = self.put(
-                    '/jio_policies/%(policy_id)s/groups/%(group_id)s' % 
+                    '/jio_policies/%(policy_id)s/groups/%(group_id)s' %
                     {'policy_id': self.jio_policy_id, 'group_id':  new_group['id']})
-        
+
     def test_detach_policy_from_group(self):
         new_group = {'domain_id': self.domain_id, 'name': uuid.uuid4().hex}
         new_group = self.identity_api.create_group(new_group)

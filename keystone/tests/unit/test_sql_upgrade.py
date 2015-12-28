@@ -109,6 +109,9 @@ INITIAL_TABLE_STRUCTURE = {
     'assignment': [
         'type', 'actor_id', 'target_id', 'role_id', 'inherited',
     ],
+}
+
+JIO_POLICY_TABLE_STRUCTURE = {
     'action': [
 	'id', 'action_name', 'service_type',
     ],
@@ -116,7 +119,7 @@ INITIAL_TABLE_STRUCTURE = {
 	'id', 'name','service_type',
     ],
     'jio_policy': [
-            'id', 'project_id', 'created_at', 'deleted_at','updated_at', 'policy_blob'
+            'id', 'project_id', 'created_at', 'deleted_at','updated_at', 'policy_blob', 'name'
     ],
     'policy_action_resource': [
 	'policy_id', 'action_id', 'resource_id', 'effect'
@@ -686,6 +689,11 @@ class SqlUpgradeTests(SqlMigrateBase):
                          "Non-InnoDB tables exist")
 
         connection.close()
+
+    def test_add_jio_policy_related_tables(self):
+        self.upgrade(68)
+        for table in JIO_POLICY_TABLE_STRUCTURE:
+            self.assertTableColumns(table, JIO_POLICY_TABLE_STRUCTURE[table])
 
 
 class VersionTests(SqlMigrateBase):
