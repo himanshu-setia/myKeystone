@@ -538,34 +538,57 @@ class Auth(controller.V3Controller):
             del token_data['token']['catalog']
         return render_token_data_response(token_id, token_data)
 
-    def validate_token_with_action_resource(self, context):
+    def _validate_token_with_action_resource(self, action, resource, user_id,
+                                             project_id):
+        is_authorized = False
+        if len(action) != len(resource):
+            raise exception.ValidationError(
+                    attribute="equal number of actions and resources",
+                                            target="authorize call")
+        for act, res in zip(action, resource):
+            is_authorized = is_authorized and self.jio_policy_api.\
+                is_user_authorized(user_id, project_id, act, res)
+
+        if not is_authorized:
+            raise exception.Forbidden(
+                    message='Policy does not allow to perform this action')
+
+        return self.validate_token(context)
+
+    def validate_token_with_action_resource_get(self, context):
         query_string = context.get('query_string', None)
         if not query_string:
             raise exception.ValidationError(attribute="action and resource",
                                             target="query_string")
-        else:
-            action = query_string.pop('action', None)
-            if action is None:
-                raise exception.ValidationError(attribute="action",
-                                                target="query_string")
-            resource = query_string.get('resource', None)
-            if resource is None:
-                raise exception.ValidationError(attribute="resource",
-                                                target="query_string")
-            # get user id
-            auth_context = self.get_auth_context(context)
-            user_id = auth_context.get('user_id')
-            project_id = auth_context.get('project_id')
-            is_authorized = self.jio_policy_api.is_user_authorized(user_id,
-                                                                   project_id,
-                                                                   action,
-                                                                   resource)
+        action = query_string.pop('action', None)
+        if action is None:
+            raise exception.ValidationError(attribute="action",
+                                            target="query_string")
+        resource = query_string.get('resource', None)
+        if resource is None:
+            raise exception.ValidationError(attribute="resource",
+                                            target="query_string")
+        # get user id
+        auth_context = self.get_auth_context(context)
+        user_id = auth_context.get('user_id')
+        project_id = auth_context.get('project_id')
+        return self._validate_token_with_action_resource(
+                    [action], [resource], user_id, project_id)
 
-            if not is_authorized:
-                raise exception.Forbidden(message='Policy does not allow'
-                                                  ' to perform this action')
-
-        return self.validate_token(context)
+    def validate_token_with_action_resource_post(self, context, **kwargs):
+        action = kwargs.get('actions', None)
+        if not action:
+            raise exception.ValidationError(attribute="actions",
+                                            target="body")
+        resource = kwargs.get('resources', None)
+        if not resource:
+            raise exception.ValidationError(attribute="resources",
+                                            target="body")
+        auth_context = self.get_auth_context(context)
+        user_id = auth_context.get('user_id')
+        project_id = auth_context.get('project_id')
+        return self._validate_token_with_action_resource(
+                    action, resource, user_id, project_id)
 
     @controller.protected()
     def revocation_list(self, context, auth=None):
