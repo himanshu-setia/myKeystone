@@ -34,7 +34,8 @@ class Routers(wsgi.RoutersBase):
         self._add_resource(
             mapper, auth_controller,
             path='/authorize',
-            get_action='validate_token_with_action_resource',
+            get_action='validate_token_with_action_resource_get',
+            post_action='validate_token_with_action_resource_post',
             rel=json_home.build_v3_resource_relation('authorize'))
 
         self._add_resource(
