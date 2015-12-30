@@ -348,11 +348,10 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         return ref
 
     def new_action_ref(self):
-    	#TODO: create a new action from DB operation	
         action_id =  uuid.uuid4().hex
         action_name = 'jrn:jcs:' + self.service.get('type') + ':'+ uuid.uuid4().hex
         service_type = self.service.get('type')
-    	return jio_policy_sql.create_action(action_id, action_name, service_type)
+        return jio_policy_sql.create_action(action_id, action_name, service_type)
 
     def new_jio_policy_ref(self):
         ref = dict()
@@ -362,8 +361,8 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         action = self.new_action_ref()
         statement1 = dict()
         statement1['action'] = [action.get('name')]
-        #TODO: rrawat ; Change of project_id to domain_id. and change of format of resourceid
-        resource = 'jrn:jcs:'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
+        #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
+        resource = 'jrn:jcs:'+':'+self.service.get('type')+':'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
         statement1['resource'] =[resource]
         statement1['effect'] = 'allow'
         ref['statement'] = [statement1]
@@ -377,13 +376,14 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         action = self.new_action_ref()
         statement1 = dict()
         statement1['action'] = [action.get('name')]
-        #TODO: rrawat ; Change of project_id to domain_id. and change of format of resourceid
-        resource = 'jrn:jcs:'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
+        #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
+        resource = 'jrn:jcs:'+':'+self.service.get('type')+':'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
         statement1['resource'] =[resource]
         statement1['effect'] = 'allow'
         statement2 = dict()
         statement2['action'] = [action.get('name')]
-        resource2 = 'jrn:jcs:'+self.project_id+':'+self.service.get('type')+':*'
+        #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
+        resource2 = 'jrn:jcs:'+':'+self.service.get('type')+':'+self.project_id+':'+self.service.get('type')+':*'
         statement2['resource'] =[resource2]
         statement2['effect'] = 'deny'
         ref['statement'] = [statement1,statement2]
