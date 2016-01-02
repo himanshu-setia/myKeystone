@@ -79,7 +79,7 @@ class Policy(jio_policy.Driver):
         if len(ls) < 5:
             raise exception.ValidationError(attribute='service name',
                                             target='resource')
-        return ls[3]
+        return ls[2]
 
     @sql.handle_conflicts(conflict_type='policy')
     def create_policy(self, project_id, policy_id, policy):
