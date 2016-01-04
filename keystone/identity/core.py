@@ -35,6 +35,7 @@ from keystone.i18n import _, _LW
 from keystone.identity.mapping_backends import mapping
 from keystone import notifications
 
+import datetime
 
 CONF = cfg.CONF
 
@@ -1050,6 +1051,17 @@ class Manager(manager.Manager):
                                                 group_entity_id)
 
     @domains_configured
+    def get_user_history(self, user_id):
+        domain_id, driver, entity_id = (
+            self._get_domain_driver_and_entity_id(user_id))
+        return driver.get_user_history(user_id, CONF.password_policy.num_password_saved)
+
+    def update_user_history(self, user_id, original_password, count):
+        domain_id, driver, entity_id = (
+            self._get_domain_driver_and_entity_id(user_id))
+        driver.update_user_history(user_id, original_password, count)
+
+    @domains_configured
     def change_password(self, context, user_id, original_password,
                         new_password):
 
@@ -1057,7 +1069,12 @@ class Manager(manager.Manager):
         self.authenticate(context, user_id, original_password)
 
         update_dict = {'password': new_password}
+        expiry_days = CONF.password_policy.expiry_days
+        if expiry_days is not None:
+            update_dict['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
+
         self.update_user(user_id, update_dict)
+        self.update_user_history(user_id, original_password, CONF.password_policy.num_password_saved)
 
 
 @six.add_metaclass(abc.ABCMeta)
