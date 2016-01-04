@@ -275,14 +275,9 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             if resource is None:
                 raise exception.ValidationError(attribute='resource',
                                                 target='query_string')
-            if resource.split(':')[2] == 's3':
-                if resource.split(':')[3] != projectid:
-                    resource = 'jrn:jcs:s3:' + projectid + ':foreign_bucket'
-
             # get user id
-            auth_context = self.get_auth_context(context)
-            user_id = auth_context.get('user_id')
-            project_id = auth_context.get('project_id')
+            user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
+            project_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["project_id"]
             is_authorized = self.jio_policy_api.is_user_authorized(user_id,
                                                                    project_id,
                                                                    action,

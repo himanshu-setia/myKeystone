@@ -539,7 +539,7 @@ class Auth(controller.V3Controller):
         return render_token_data_response(token_id, token_data)
 
     def _validate_token_with_action_resource(self, action, resource, user_id,
-                                             project_id):
+                                             project_id, context):
         is_authorized = False
         if len(action) != len(resource):
             raise exception.ValidationError(
@@ -573,7 +573,7 @@ class Auth(controller.V3Controller):
         user_id = auth_context.get('user_id')
         project_id = auth_context.get('project_id')
         return self._validate_token_with_action_resource(
-                    [action], [resource], user_id, project_id)
+                    [action], [resource], user_id, project_id, context)
 
     def validate_token_with_action_resource_post(self, context, **kwargs):
         action = kwargs.get('actions', None)
@@ -588,7 +588,7 @@ class Auth(controller.V3Controller):
         user_id = auth_context.get('user_id')
         project_id = auth_context.get('project_id')
         return self._validate_token_with_action_resource(
-                    action, resource, user_id, project_id)
+                    action, resource, user_id, project_id, context)
 
     @controller.protected()
     def revocation_list(self, context, auth=None):
