@@ -548,7 +548,13 @@ class UserSelfServiceChangingPasswordsTestCase(test_v3.RestfulTestCase):
         self.user_ref = self.new_user_ref(domain_id=self.domain['id'])
         password = self.user_ref['password']
         self.user_ref = self.identity_api.create_user(self.user_ref)
-        self.user_ref['password'] = password
+        # self.user_ref['password'] = password
+        self.user_ref['old_password'] = password
+        new_password = self.get_policy_password()
+        context = {'environment': {'REMOTE_USER': self.user_ref,
+                                   'AUTH_TYPE': 'Negotiate'}}
+        self.identity_api.change_password(context, self.user_ref["id"], password, new_password)
+        self.user_ref['password'] = new_password
         self.token = self.get_request_token(self.user_ref['password'], 201)
 
     def get_request_token(self, password, expected_status):
@@ -575,7 +581,7 @@ class UserSelfServiceChangingPasswordsTestCase(test_v3.RestfulTestCase):
         self.v3_authenticate_token(old_token_auth, expected_status=201)
 
         # change password
-        new_password = uuid.uuid4().hex
+        new_password = self.get_policy_password()
         self.change_password(password=new_password,
                              original_password=self.user_ref['password'],
                              expected_status=204)
@@ -590,7 +596,7 @@ class UserSelfServiceChangingPasswordsTestCase(test_v3.RestfulTestCase):
         self.get_request_token(new_password, expected_status=201)
 
     def test_changing_password_with_missing_original_password_fails(self):
-        r = self.change_password(password=uuid.uuid4().hex,
+        r = self.change_password(password=self.get_policy_password(),
                                  expected_status=400)
         self.assertThat(r.result['error']['message'],
                         matchers.Contains('original_password'))
@@ -602,8 +608,8 @@ class UserSelfServiceChangingPasswordsTestCase(test_v3.RestfulTestCase):
                         matchers.Contains('password'))
 
     def test_changing_password_with_incorrect_password_fails(self):
-        self.change_password(password=uuid.uuid4().hex,
-                             original_password=uuid.uuid4().hex,
+        self.change_password(password=self.get_policy_password(),
+                             original_password=self.get_policy_password(),
                              expected_status=401)
 
     def test_changing_password_with_disabled_user_fails(self):
@@ -612,7 +618,7 @@ class UserSelfServiceChangingPasswordsTestCase(test_v3.RestfulTestCase):
         self.patch('/users/%s' % self.user_ref['id'],
                    body={'user': self.user_ref})
 
-        self.change_password(password=uuid.uuid4().hex,
+        self.change_password(password=self.get_policy_password(),
                              original_password=self.user_ref['password'],
                              expected_status=401)
 
@@ -623,10 +629,36 @@ class UserSelfServiceChangingPasswordsTestCase(test_v3.RestfulTestCase):
         log_fix = self.useFixture(fixtures.FakeLogger(level=logging.DEBUG))
 
         # change password
-        new_password = uuid.uuid4().hex
+        new_password = self.get_policy_password()
         self.change_password(password=new_password,
                              original_password=self.user_ref['password'],
                              expected_status=204)
 
         self.assertNotIn(self.user_ref['password'], log_fix.output)
         self.assertNotIn(new_password, log_fix.output)
+
+    def test_changing_password_not_complying_policy_fails(self):
+        password = "1234"
+        r = self.change_password(password=password,
+                                 original_password=self.user_ref['password'],
+                                 expected_status=400)
+
+        self.assertThat(r.result['error']['message'],
+                        matchers.Contains('password'))
+
+    def test_changing_password_with_same_password_fails(self):
+        r = self.change_password(password=self.user_ref['password'],
+                                 original_password=self.user_ref['password'],
+                                 expected_status=400)
+
+        self.assertThat(r.result['error']['message'],
+                        matchers.Contains('password'))
+
+    def test_changing_password_with_last_used_password_fails(self):
+        #user previous password as the new password to change
+        r = self.change_password(password=self.user_ref['old_password'],
+                                original_password=self.user_ref['password'],
+                                expected_status=400)
+
+        self.assertThat(r.result['error']['message'],
+                        matchers.Contains('Cannot use old passwords'))
