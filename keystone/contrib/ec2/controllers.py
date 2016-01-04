@@ -325,7 +325,6 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                 is_authorized = is_authorized and self.jio_policy_api.\
                     is_user_authorized(user_id, project_id, act, res)
 
-
             if not is_authorized:
                 raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
