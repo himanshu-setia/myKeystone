@@ -1314,8 +1314,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
              **kwargs)
 
     def assertValidJioPolicy(self, entity, ref=None):
-        self.assertIsNotNone(entity.get('statement'))
-        self.assertIsNotNone(entity.get('name'))
         self.assertIsNotNone(entity.get('id'))
         self.assertIsNotNone(entity.get('name'))
         if ref:
