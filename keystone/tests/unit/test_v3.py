@@ -617,7 +617,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         """
         entities = resp.result.get(key)
         self.assertIsNotNone(entities)
-        
+
         if expected_length is not None:
             self.assertEqual(expected_length, len(entities))
         elif ref is not None:
@@ -1308,7 +1308,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         return self.assertValidListResponse(
              resp,
              'policies',
-             self.assertValidJioPolicy,
+             self.assertValidJioListPolicy,
              keys_to_check=['name'],
              *args,
              **kwargs)
