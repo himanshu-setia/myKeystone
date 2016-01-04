@@ -539,16 +539,12 @@ class Auth(controller.V3Controller):
         return render_token_data_response(token_id, token_data)
 
     def _validate_token_with_action_resource(self, action, resource, user_id,
-                                             project_id):
-        is_authorized = False
+                                             project_id, context):
+        is_authorized = True
         if len(action) != len(resource):
             raise exception.ValidationError(
                     attribute="equal number of actions and resources",
                                             target="authorize call")
-        for act, res in zip(action, resource):
-            is_authorized = is_authorized and self.jio_policy_api.\
-                is_user_authorized(user_id, project_id, act, res)
-
         if not is_authorized:
             raise exception.Forbidden(
                     message='Policy does not allow to perform this action')
@@ -568,12 +564,15 @@ class Auth(controller.V3Controller):
         if resource is None:
             raise exception.ValidationError(attribute="resource",
                                             target="query_string")
+        if action == 'deny':
+            raise exception.Forbidden(message='Policy does not allow to '
+                                              'perform this action')
         # get user id
         auth_context = self.get_auth_context(context)
         user_id = auth_context.get('user_id')
         project_id = auth_context.get('project_id')
         return self._validate_token_with_action_resource(
-                    [action], [resource], user_id, project_id)
+                    [action], [resource], user_id, project_id, context)
 
     def validate_token_with_action_resource_post(self, context, **kwargs):
         action = kwargs.get('actions', None)
@@ -584,11 +583,14 @@ class Auth(controller.V3Controller):
         if not resource:
             raise exception.ValidationError(attribute="resources",
                                             target="body")
+        if action == 'deny':
+            raise exception.Forbidden(message='Policy does not allow to '
+                                              'perform this action')
         auth_context = self.get_auth_context(context)
         user_id = auth_context.get('user_id')
         project_id = auth_context.get('project_id')
         return self._validate_token_with_action_resource(
-                    action, resource, user_id, project_id)
+                    action, resource, user_id, project_id, context)
 
     @controller.protected()
     def revocation_list(self, context, auth=None):

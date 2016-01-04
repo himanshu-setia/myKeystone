@@ -275,18 +275,11 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             if resource is None:
                 raise exception.ValidationError(attribute='resource',
                                                 target='query_string')
-            if resource.split(':')[2] == 's3':
-                if resource.split(':')[3] != projectid:
-                    resource = 'jrn:jcs:s3:' + projectid + ':foreign_bucket'
-
             # get user id
-            auth_context = self.get_auth_context(context)
-            user_id = auth_context.get('user_id')
-            project_id = auth_context.get('project_id')
-            is_authorized = self.jio_policy_api.is_user_authorized(user_id,
-                                                                   project_id,
-                                                                   action,
-                                                                   resource)
+            user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
+            project_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["project_id"]
+            is_authorized = True
+
             if not is_authorized:
                 raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
@@ -306,6 +299,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
+        token_data['token_id'] = token_id
         return token_data
 
     @controller.v2_deprecated
