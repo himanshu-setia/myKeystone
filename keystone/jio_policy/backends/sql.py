@@ -26,7 +26,7 @@ from sqlalchemy import and_
 
 class JioPolicyModel(sql.ModelBase, sql.DictBase):
     __tablename__ = 'jio_policy'
-    attributes = ['id','name', 'project_id', 'created_at', 'deleted_at']
+    attributes = ['id','name', 'project_id', 'created_at', 'deleted_at', 'policy_blob']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
     project_id = sql.Column(sql.String(64), nullable=False)
@@ -285,18 +285,24 @@ class Policy(jio_policy.Driver):
 =======
     def list_policy_summary(self,policy_id):
 	session = sql.get_session()
-
+	policy = self._get_policy(session,policy_id)
         query = session.query(PolicyUserGroupModel).filter_by(policy_id = policy_id) \
             .with_entities(
                     PolicyUserGroupModel.user_group_id, PolicyUserGroupModel.type)
 
-        summary_list = []
+        summary_list = {}
+	summary_list['Policy Document'] =policy.policy_blob
+	summary_list['Attached Entities'] = query.count()
+	summary_list['Policy JRN'] = 'jrn:jcs:iam:'  ':policy:' + policy.name	
+	
+	sum_list = []
         for row in query:
   	    dict = {}
 	    dict['Entity Name'] = row.user_group_id
 	    dict['Type'] = row.type
-            summary_list.append(dict)
+            sum_list.append(dict)
 
+	summary_list['Attached Entities'] = sum_list
         return summary_list 
 
     def get_group_policies(self,groupid):
