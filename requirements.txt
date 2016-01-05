@@ -9,7 +9,7 @@ python-eventlet>=0.16.1
 python-greenlet>=0.3.2
 python-iso8601>=0.1.9
 python-jsonschema>=2.0.0
-python-keystoneclient>=1:1.1.0
+python-keystoneclient
 python-keystonemiddleware>=1.5.0
 python-kombu>=2.4.8
 python-ldap>=2.4
@@ -19,7 +19,7 @@ python-msgpack>=0.4.0
 python-netaddr>=0.7.12
 python-oauthlib>=0.6
 python-oslo-concurrency>=1.8.0
-python-oslo-config>=1:1.9.3
+python-oslo-config
 python-oslo-db>=1.7.0
 python-oslo-i18n>=1.5.0
 python-oslo-log>=1.0.0
