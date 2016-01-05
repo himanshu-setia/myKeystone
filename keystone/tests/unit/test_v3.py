@@ -1304,6 +1304,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             **kwargs)
 
     def assertValidJioPolicyListResponse(self, resp, *args, **kwargs):
+        import pdb; pdb.set_trace()
         return self.assertValidListResponse(
              resp,
              'policies',

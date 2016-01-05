@@ -216,7 +216,7 @@ def upgrade(migrate_engine):
     # create all tables
     tables = [credential, domain, endpoint, group,
               policy, project, role, service,
-              token, trust, trust_role, user,
+              token, trust, trust_role, user, user_history,
               user_group_membership, region, assignment]
 
     for table in tables:
