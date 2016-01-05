@@ -29,7 +29,7 @@ class JioPolicyV3(controller.V3Controller):
     @controller.protected()
     @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
-        policy_id = uuid.uuid4().hex
+	policy_id = uuid.uuid4().hex
         try:
             project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
                 'project_id']
@@ -85,7 +85,7 @@ class JioPolicyV3(controller.V3Controller):
                                                             group_id)
 
     @controller.protected()
-    def list_policy_summary(self, context, jio_policy_id):
+    def get_policy_summary(self, context, jio_policy_id):
 	refs = self.jio_policy_api.list_policy_summary(jio_policy_id)
 
 	for ref in refs:
@@ -94,7 +94,5 @@ class JioPolicyV3(controller.V3Controller):
 	    else:
 		ref['Entity Name'] = (self.identity_api.get_group(ref['Entity Name']))['name']
 
-	summary_ref = {}
-	summary_ref['Attached Entities'] = refs 
-	return summary_ref
+	return refs
 

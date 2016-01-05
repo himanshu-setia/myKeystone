@@ -224,15 +224,6 @@ class UserV3(controller.V3Controller):
         refs = self.identity_api.list_users(
             domain_scope=self._get_domain_id_for_list_request(context),
             hints=hints)
-
-        for indx,ref in enumerate(refs):
-            userid = ref['id']
-            policies = self.jio_policy_api.get_user_policies(userid)
-            if not policies:
-                refs[indx]['Policies'] = ''
-            else:
-                refs[indx]['Policies'] = policies
-
 	return UserV3.wrap_collection(context, refs, hints=hints)
 
     @controller.filterprotected('domain_id', 'enabled', 'name')
@@ -276,21 +267,20 @@ class UserV3(controller.V3Controller):
         return self.identity_api.delete_user(user_id, initiator)
 
     @controller.filterprotected('domain_id', 'name')
-    def list_group_summary(self, context,filters, group_id):
+    def get_group_summary(self, context,filters, group_id):
         hints = GroupV3.build_driver_hints(context, filters)
-        user_refs = self.identity_api.list_user_summary_for_group(group_id,
+        refs = self.identity_api.list_user_summary_for_group(group_id,
             domain_scope=self._get_domain_id_for_list_request(context),
             hints=hints)
         
 	policy_refs = self.jio_policy_api.get_group_policies(group_id)
 
-        refs = {}
-        refs['Users'] =  user_refs
         if not policy_refs:
             refs['Policies'] = ''
         else:
             refs['Policies'] = policy_refs
-        return refs
+        
+	return refs
 
     @controller.protected()
     def change_password(self, context, user_id, user):
@@ -373,16 +363,14 @@ class GroupV3(controller.V3Controller):
         self.identity_api.delete_group(group_id, initiator)
 
     @controller.filterprotected('domain_id', 'name')
-    def list_user_summary(self, context,filters, user_id):
+    def get_user_summary(self, context,filters, user_id):
         hints = GroupV3.build_driver_hints(context, filters)
-        user_refs = self.identity_api.list_group_summary_for_user(user_id,
+        refs = self.identity_api.list_group_summary_for_user(user_id,
             domain_scope=self._get_domain_id_for_list_request(context),
             hints=hints)
         
 	policy_refs = self.jio_policy_api.get_user_policies(user_id)
 
-        refs = {}
-        refs['Groups'] =  user_refs
         if not policy_refs:
             refs['Policies'] = ''
         else:
