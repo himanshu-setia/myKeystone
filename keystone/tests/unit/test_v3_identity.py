@@ -124,22 +124,18 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         r = self.get('/users/%(user_id)s/summary' % {
             'user_id': self.user['id']})
 	
-	print(": summary ...",r.body,type(r.body))
-	print(r.body.find(self.group_id))
-	print(r.body.find(self.user['name']))
 	return (r.body.find(self.group_id) != -1 and r.body.find(self.user['name']) != -1)
 
     def test_get_group_summary(self):
         """Call ``GET /groups/{group_id}/summary``."""
 
+        self.put('/groups/%(group_id)s/users/%(user_id)s' % {
+            'group_id': self.group_id, 'user_id': self.user['id']})
+
         r = self.get('/groups/%(group_id)s/summary' % {
             'group_id': self.group_id})
 
-        print(": summary ...",r.body,type(r.body))
-        print(r.body.find(self.user_id))
-        print(r.body.find(self.user['name']))
-	print(r.body.find(self.group['name']))
-        return (r.body.find(self.group_id) != -1 and r.body.find(self.user['nae']) != -1)
+        return (r.body.find(self.user_id) != -1 and r.body.find(self.group['name']) != -1)
 
     def test_list_users_with_multiple_backends(self):
         """Call ``GET /users`` when multiple backends is enabled.
