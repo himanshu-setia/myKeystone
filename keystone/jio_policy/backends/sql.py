@@ -83,7 +83,7 @@ class Policy(jio_policy.Driver):
 
     @sql.handle_conflicts(conflict_type='policy')
     def create_policy(self, project_id, policy_id, policy):
-        ref = copy.deepcopy(policy)
+	ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.get('name', None)
         statement = policy.get('statement', None)
@@ -291,6 +291,7 @@ class Policy(jio_policy.Driver):
 	summary_list['Policy Document'] =policy.policy_blob
 	summary_list['Attached Entities'] = query.count()
 	summary_list['Policy JRN'] = 'jrn:jcs:iam:'  ':policy:' + policy.name	
+        summary_list['Creation Time'] = policy.created_at
 	
 	sum_list = []
         for row in query:
