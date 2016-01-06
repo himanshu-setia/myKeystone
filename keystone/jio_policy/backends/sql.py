@@ -280,9 +280,6 @@ class Policy(jio_policy.Driver):
                     policy_id=row.id).delete()
             session.delete(policy_ref)
 
-<<<<<<< HEAD
-    def is_user_authorized(self, user_id, group_id, project_id, action, resource):
-=======
     def list_policy_summary(self,policy_id):
 	session = sql.get_session()
 	policy = self._get_policy(session,policy_id)
