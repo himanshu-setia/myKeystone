@@ -649,7 +649,6 @@ class UserSelfServiceChangingPasswordsTestCase(test_v3.RestfulTestCase):
         # level.
 
         log_fix = self.useFixture(fixtures.FakeLogger(level=logging.DEBUG))
-	print "done"
         # change password
         new_password = self.get_policy_password()
         self.change_password(password=new_password,
