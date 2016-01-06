@@ -338,7 +338,7 @@ class Policy(jio_policy.Driver):
 
         return policy_list
 
-    def get_user_policy(self, userid, groupid, action, resource):
+    def is_user_authorized(self, user_id, group_id, project_id, action, resource): 
         session = sql.get_session()
         # query action id from action name in action table
         action_info = session.query(ActionModel.id).\
