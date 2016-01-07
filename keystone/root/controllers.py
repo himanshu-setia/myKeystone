@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from oslo_config import cfg
 from oslo_log import log
 
 from keystone.common import controller
@@ -22,6 +23,7 @@ from keystone import notifications
 from keystone import identity
 from keystone import jio_policy
 import json
+
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
