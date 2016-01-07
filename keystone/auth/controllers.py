@@ -586,6 +586,7 @@ class Auth(controller.V3Controller):
         except KeyError as e:
             raise exception.ValidationError(attribute="action and resource",
                                             target="body")
+
         auth_context = self.get_auth_context(context)
         user_id = auth_context.get('user_id')
         project_id = auth_context.get('project_id')

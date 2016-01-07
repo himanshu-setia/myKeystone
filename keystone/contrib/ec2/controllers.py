@@ -301,6 +301,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
+        token_data['token_id'] = token_id
         return token_data
 
     @controller.v2_deprecated

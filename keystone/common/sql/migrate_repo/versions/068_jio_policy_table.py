@@ -26,6 +26,17 @@ def upgrade(migrate_engine):
             ),
             mysql_engine='InnoDB',
             mysql_charset='utf8')
+    resource_type = sql.Table(
+            'resource_type', meta,
+            sql.Column('id', sql.String(length=64), primary_key=True),
+            sql.Column('name', sql.String(length=255), nullable=False),
+            sql.Column('service_type', sql.String(length=255), nullable=False),
+            sql.ForeignKeyConstraint(
+                ['service_type'], ['service.type'],
+                name='fk_resource_type_service_type'
+            ),
+            mysql_engine='InnoDB',
+            mysql_charset='utf8')
     resource = sql.Table(
             'resource', meta,
             sql.Column('id', sql.String(length=64), primary_key=True),
@@ -85,10 +96,25 @@ def upgrade(migrate_engine):
             ),
             mysql_engine='InnoDB',
             mysql_charset='utf8')
+    action_resource_type_mapping = sql.Table(
+            'action_resource_type_mapping', meta,
+            sql.Column('action_id', sql.String(length=64), nullable=False),
+            sql.Column('resource_type_id', sql.String(length=64), nullable=False),
+            sql.PrimaryKeyConstraint('action_id', 'resource_type_id'),
+            sql.ForeignKeyConstraint(
+                ['action_id'], ['action.id'],
+                name='fk_mapping_action_id'
+            ),
+            sql.ForeignKeyConstraint(
+                ['resource_type_id'], ['resource_type.id'],
+                name='fk_mapping_resource_type_id'
+            ),
+            mysql_engine='InnoDB',
+            mysql_charset='utf8')
 
     # create policy related tables
-    tables = [action, resource, jio_policy, policy_action_resource,
-            policy_user_group_mapping]
+    tables = [action, resource_type, resource, jio_policy, policy_action_resource,
+            policy_user_group_mapping, action_resource_type_mapping]
     for table in tables:
         try:
             table.create()

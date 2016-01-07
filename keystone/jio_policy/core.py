@@ -95,6 +95,8 @@ class Manager(manager.Manager):
         return [x['id'] for
                 x in self.identity_api.list_groups_for_user(user_id)]
 
+    def is_action_resource_type_allowed(self, action_name, resource_type):
+        return self.driver.is_action_resource_type_allowed(self, action_name, resource_type)
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -187,3 +189,8 @@ class Driver(object):
                  keystone.exception.ResourceNotFound
         """
         raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def is_action_resource_type_allowed(self, action_name, resource_type):
+        raise exception.NotImplemented()
+

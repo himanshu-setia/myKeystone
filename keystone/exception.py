@@ -474,3 +474,6 @@ class OAuthHeadersMissingError(UnexpectedError):
                              'HTTPd or Apache, ensure WSGIPassAuthorization '
                              'is set to On.')
     title = 'Error retrieving OAuth headers'
+
+class PasswordExpired(ValidationError):
+    message_format = _('User password has expired.')
