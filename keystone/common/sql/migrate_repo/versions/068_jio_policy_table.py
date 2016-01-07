@@ -43,8 +43,8 @@ def upgrade(migrate_engine):
             sql.Column('name', sql.String(length=255), nullable=False),
             sql.Column('service_type', sql.String(length=255), nullable=False),
             sql.ForeignKeyConstraint(
-                ['service_type'], ['service.type'],
-                name='fk_resource_service_type'
+                            ['service_type'], ['service.type'],
+                             name='fk_resource_service_type'
             ),
             mysql_engine='InnoDB',
             mysql_charset='utf8')
