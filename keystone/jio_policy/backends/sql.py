@@ -66,14 +66,18 @@ class ResourceModel(sql.ModelBase):
     attributes = ['id', 'name', 'resource_type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
-    resource_type = sql.Column(sql.String(64), nullable=False)
+    service_type = sql.Column(sql.String(64), nullable=False)
 
 
 class ActionResourceMappingModel(sql.ModelBase):
-    __tablename__ = 'action_resource_mapping'
+    __tablename__ = 'action_resource_type_mapping'
     attributes = ['action_id', 'resource_type_id']
-    action_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
-    resource_type_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
+    action_id = sql.Column(sql.String(64), 
+                    sql.ForeignKey('action.id'), 
+                    primary_key=True)
+    resource_type_id = sql.Column(sql.String(64), 
+                  sql.ForeignKey('resource_type.id'),
+                  primary_key=True)
 
 
 class PolicyUserGroupModel(sql.ModelBase):
@@ -97,7 +101,7 @@ class Policy(jio_policy.Driver):
         return ls[2]
 
     @classmethod
-    def _get_resource_type(cls, resource)
+    def _get_resource_type(cls, resource):
         ls = resource.split(':')
         if len(ls) < 5:
               return None
@@ -140,15 +144,15 @@ class Policy(jio_policy.Driver):
                         action_id = session.query(ActionModel).filter_by(
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
-                        resource_type = _get_resource_type(pair[2])
-                        if resource_types not None and is_action_resource_type_allowed(action, resource_type) is False:
+                        resource_type = Policy._get_resource_type(pair[1][1])
+                        if resource_type is not None and self.is_action_resource_type_allowed(pair[0], resource_type) is False:
                             raise exception.ValidationError(
                                     attribute='valid resource type', target='resource')
 
                         session.add(
                             PolicyActionResourceModel(
                                 policy_id=policy_id, action_id=action_id,
-                                resource_id=pair[1], effect=effect))
+                                resource_id=pair[1][0], effect=effect))
 
                 except sql.NotFound:
                     raise exception.ValidationError(
@@ -436,11 +440,9 @@ class Policy(jio_policy.Driver):
 
     def is_action_resource_type_allowed(self, action_name, resource_type):
         session = sql.get_session()
-        query = session.query(ActionModel.id, ResourceTypeModel.id).join(ActionResourceMappingModel)
-        query = query.filter(ActionModel.action_name = action_name)
-        query = query.filter(ResourceTypeModel.name = resource_type)
-        query = query.filter(ActionResourceMappingModel.action_id == ActionModel.id)
-        rows = query.filter(ActionResourceMappingModel.resource_type_id = ResourceTypeModel.id).count()
+        query = session.query(ActionModel).join(ActionResourceMappingModel).join(ResourceTypeModel)
+        query = query.filter(ActionModel.action_name == action_name)
+        rows = query.filter(ResourceTypeModel.name == resource_type).count()
         return True if rows > 0 else False
 
 def create_action(action_id, action_name, service_type):
@@ -450,8 +452,8 @@ def create_action(action_id, action_name, service_type):
     ref['service_type'] = service_type
     session = sql.get_session()
     with session.begin():
-	try:
-        session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
-	except sql.DBReferenceError:
-        raise exception.ValidationError(attribute='valid service name', target='resource')
+    	try:
+            session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
+    	except sql.DBReferenceError:
+            raise exception.ValidationError(attribute='valid service name', target='resource')
     return ref
