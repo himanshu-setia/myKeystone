@@ -66,14 +66,18 @@ class ResourceModel(sql.ModelBase):
     attributes = ['id', 'name', 'resource_type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
-    resource_type = sql.Column(sql.String(64), nullable=False)
+    service_type = sql.Column(sql.String(64), nullable=False)
 
 
 class ActionResourceMappingModel(sql.ModelBase):
-    __tablename__ = 'action_resource_mapping'
+    __tablename__ = 'action_resource_type_mapping'
     attributes = ['action_id', 'resource_type_id']
-    action_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
-    resource_type_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
+    action_id = sql.Column(sql.String(64), 
+                    sql.ForeignKey('action.id'), 
+                    primary_key=True)
+    resource_type_id = sql.Column(sql.String(64), 
+                  sql.ForeignKey('resource_type.id'),
+                  primary_key=True)
 
 
 class PolicyUserGroupModel(sql.ModelBase):
