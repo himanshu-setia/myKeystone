@@ -53,12 +53,27 @@ class ActionModel(sql.ModelBase):
     service_type = sql.Column(sql.String(255), nullable=False)
 
 
-class ResourceModel(sql.ModelBase):
-    __tablename__ = 'resource'
-    attirbutes = ['id', 'resource_name', 'service_type']
+class ResourceTypeModel(sql.ModelBase):
+    __tablename__ = 'resource_type'
+    attributes = ['id', 'name', 'service_type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
     service_type = sql.Column(sql.String(255), nullable=False)
+
+
+class ResourceModel(sql.ModelBase):
+    __tablename__ = 'resource'
+    attributes = ['id', 'name', 'resource_type']
+    id = sql.Column(sql.String(64), primary_key=True)
+    name = sql.Column(sql.String(255), nullable=False)
+    resource_type = sql.Column(sql.String(64), nullable=False)
+
+
+class ActionResourceMappingModel(sql.ModelBase):
+    __tablename__ = 'action_resource_mapping'
+    attributes = ['action_id', 'resource_type_id']
+    action_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
+    resource_type_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
 
 
 class PolicyUserGroupModel(sql.ModelBase):
@@ -80,6 +95,13 @@ class Policy(jio_policy.Driver):
             raise exception.ValidationError(attribute='service name',
                                             target='resource')
         return ls[2]
+
+    @classmethod
+    def _get_resource_type(cls, resource)
+        ls = resource.split(':')
+        if len(ls) < 5:
+              return None
+        return ls[4]
 
     @sql.handle_conflicts(conflict_type='policy')
     def create_policy(self, project_id, policy_id, policy):
@@ -107,20 +129,27 @@ class Policy(jio_policy.Driver):
                                                     target='effect')
                 resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                 try:
-                    for pair in zip(resource_ids, resource):
+                    zip_resource = zip(resource_ids, resource)
+                    for pair in zip_resource:
                         session.add(ResourceModel(id=pair[0], name=pair[1],
                                     service_type=Policy._get_service_name(
                                         pair[1])))
 
-                    for pair in itertools.product(action, resource_ids):
+                    for pair in itertools.product(action, zip_resource):
+                        #check if action is allowed in resource type
                         action_id = session.query(ActionModel).filter_by(
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
+                        resource_type = _get_resource_type(pair[2])
+                        if resource_types not None and is_action_resource_type_allowed(action, resource_type) is False:
+                            raise exception.ValidationError(
+                                    attribute='valid resource type', target='resource')
 
                         session.add(
                             PolicyActionResourceModel(
                                 policy_id=policy_id, action_id=action_id,
                                 resource_id=pair[1], effect=effect))
+
                 except sql.NotFound:
                     raise exception.ValidationError(
                             attribute='valid action', target='policy')
@@ -405,6 +434,15 @@ class Policy(jio_policy.Driver):
                 ret.append(new_ref)
         return ret
 
+    def is_action_resource_type_allowed(self, action_name, resource_type):
+        session = sql.get_session()
+        query = session.query(ActionModel.id, ResourceTypeModel.id).join(ActionResourceMappingModel)
+        query = query.filter(ActionModel.action_name = action_name)
+        query = query.filter(ResourceTypeModel.name = resource_type)
+        query = query.filter(ActionResourceMappingModel.action_id == ActionModel.id)
+        rows = query.filter(ActionResourceMappingModel.resource_type_id = ResourceTypeModel.id).count()
+        return True if rows > 0 else False
+
 def create_action(action_id, action_name, service_type):
     ref = dict()
     ref['id'] = action_id
@@ -413,7 +451,7 @@ def create_action(action_id, action_name, service_type):
     session = sql.get_session()
     with session.begin():
 	try:
-            session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
+        session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
 	except sql.DBReferenceError:
-            raise exception.ValidationError(attribute='valid service name', target='resource')
+        raise exception.ValidationError(attribute='valid service name', target='resource')
     return ref
