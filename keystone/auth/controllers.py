@@ -576,13 +576,15 @@ class Auth(controller.V3Controller):
                     [action], [resource], user_id, project_id, context)
 
     def validate_token_with_action_resource_post(self, context, **kwargs):
-        action = kwargs.get('actions', None)
-        if not action:
-            raise exception.ValidationError(attribute="actions",
+        act_res_list = kwargs.get('action_resource_list', None)
+        if not act_res_list:
+            raise exception.ValidationError(attribute="action and resource",
                                             target="body")
-        resource = kwargs.get('resources', None)
-        if not resource:
-            raise exception.ValidationError(attribute="resources",
+        try:
+            action = [item['action'] for item in act_res_list]
+            resource = [item['resource'] for item in act_res_list]
+        except KeyError as e:
+            raise exception.ValidationError(attribute="action and resource",
                                             target="body")
         auth_context = self.get_auth_context(context)
         user_id = auth_context.get('user_id')
