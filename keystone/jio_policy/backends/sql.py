@@ -452,8 +452,8 @@ def create_action(action_id, action_name, service_type):
     ref['service_type'] = service_type
     session = sql.get_session()
     with session.begin():
-    	try:
+        try:
             session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
-    	except sql.DBReferenceError:
+        except sql.DBReferenceError:
             raise exception.ValidationError(attribute='valid service name', target='resource')
     return ref
