@@ -63,7 +63,7 @@ class ResourceTypeModel(sql.ModelBase):
 
 class ResourceModel(sql.ModelBase):
     __tablename__ = 'resource'
-    attributes = ['id', 'name', 'resource_type']
+    attributes = ['id', 'name', 'service_type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
     service_type = sql.Column(sql.String(64), nullable=False)
