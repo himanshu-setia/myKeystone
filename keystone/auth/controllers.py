@@ -545,10 +545,6 @@ class Auth(controller.V3Controller):
             raise exception.ValidationError(
                     attribute="equal number of actions and resources",
                                             target="authorize call")
-        for act, res in zip(action, resource):
-            is_authorized = is_authorized and self.jio_policy_api.\
-                is_user_authorized(user_id, project_id, act, res)
-
         if not is_authorized:
             raise exception.Forbidden(
                     message='Policy does not allow to perform this action')
@@ -568,6 +564,9 @@ class Auth(controller.V3Controller):
         if resource is None:
             raise exception.ValidationError(attribute="resource",
                                             target="query_string")
+        if action == 'deny':
+            raise exception.Forbidden(message='Policy does not allow to '
+                                              'perform this action')
         # get user id
         auth_context = self.get_auth_context(context)
         user_id = auth_context.get('user_id')
@@ -586,6 +585,9 @@ class Auth(controller.V3Controller):
         except KeyError as e:
             raise exception.ValidationError(attribute="action and resource",
                                             target="body")
+        if action == 'deny':
+            raise exception.Forbidden(message='Policy does not allow to '
+                                              'perform this action')
         auth_context = self.get_auth_context(context)
         user_id = auth_context.get('user_id')
         project_id = auth_context.get('project_id')

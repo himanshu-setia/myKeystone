@@ -98,7 +98,10 @@ INITIAL_TABLE_STRUCTURE = {
     ],
     'user': [
         'id', 'name', 'extra', 'password', 'enabled', 'domain_id',
-        'default_project_id',
+        'default_project_id', 'expiry'
+    ],
+    'user_history':[
+        'date', 'id', 'userid', 'password'
     ],
     'user_group_membership': [
         'user_id', 'group_id',
@@ -109,6 +112,21 @@ INITIAL_TABLE_STRUCTURE = {
     'assignment': [
         'type', 'actor_id', 'target_id', 'role_id', 'inherited',
     ],
+    'action': [
+	'id', 'action_name', 'service_type',
+    ],
+    'resource': [
+	'id', 'name','service_type',
+    ],
+    'jio_policy': [
+	'id', 'project_id', 'created_at', 'deleted_at'
+    ],
+    'policy_action_resource': [
+	'policy_id', 'action_id', 'resource_id', 'effect'
+    ],
+    'policy_user_group_mapping': [
+	'type', 'user_group_id', 'policy_id'
+    ]
 }
 
 JIO_POLICY_TABLE_STRUCTURE = {
