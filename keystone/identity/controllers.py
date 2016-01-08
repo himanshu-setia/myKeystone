@@ -258,8 +258,8 @@ class UserV3(controller.V3Controller):
             hints=hints)
         return UserV3.wrap_collection(context, refs, hints=hints)
 
-    @controller.filterprotected('domain_id', 'enabled', 'name')
-    def list_users_in_group(self, context, filters, group_id):
+    #@controller.filterprotected('domain_id', 'enabled', 'name')
+    def list_users_in_group(self, context,group_id,filters={'domain_id', 'enabled', 'name'}):
         hints = UserV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_users_in_group(group_id, hints=hints)
         return UserV3.wrap_collection(context, refs, hints=hints)
@@ -365,8 +365,8 @@ class GroupV3(controller.V3Controller):
             hints=hints)
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
-    @controller.filterprotected('name')
-    def list_groups_for_user(self, context, filters, user_id):
+    #@controller.filterprotected('name')
+    def list_groups_for_user(self, context, user_id,filters='name'):
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_groups_for_user(user_id, hints=hints)
         return GroupV3.wrap_collection(context, refs, hints=hints)
