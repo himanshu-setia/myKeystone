@@ -142,32 +142,32 @@ class Identity(identity.Driver):
 	    dict = ref.to_dict()
             dict['GroupCount'] = self.count_groups_for_user(ref.id)
 	    if not dict['password']:
-		dict['password'] = 'No'
+                dict['password'] = 'No'
             else:
-		dict['password'] = 'Yes'
+                dict['password'] = 'Yes'
             ref_list.append(dict)
 
-	return ref_list
+        return ref_list
 
     @sql.truncated
     def list_user_summary_for_group(self, hints, group_id):
         session = sql.get_session()
-	group = self._get_group(session,group_id)
-	query = session.query(User.id,User.name).join(UserGroupMembership)
+        group = self._get_group(session,group_id)
+        query = session.query(User.id,User.name).join(UserGroupMembership)
         query = query.filter(UserGroupMembership.group_id == group_id)
 
         ref_list = {}
         ref_list['Group JRN'] = 'jrn:jcs:iam:' + group.domain_id + ':group:' + group.name
         ref_list['Attached Users'] = query.count()
 
-	dict_list = []
+        dict_list = []
         for ref in query:
 	    dict = {}
             dict['id'] = ref.id
 	    dict['name'] = ref.name
             dict_list.append(dict)
 
-	ref_list['Users'] = dict_list
+        ref_list['Users'] = dict_list
         return ref_list
 
     @sql.truncated
@@ -391,7 +391,7 @@ class Identity(identity.Driver):
 
     @sql.truncated
     def list_groups(self, hints):
-	session = sql.get_session()
+        session = sql.get_session()
         query = session.query(Group)
         refs = sql.filter_limit_query(Group, query, hints)
 	

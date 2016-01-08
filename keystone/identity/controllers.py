@@ -256,7 +256,7 @@ class UserV3(controller.V3Controller):
         refs = self.identity_api.list_users(
             domain_scope=self._get_domain_id_for_list_request(context),
             hints=hints)
-	return UserV3.wrap_collection(context, refs, hints=hints)
+        return UserV3.wrap_collection(context, refs, hints=hints)
 
     @controller.filterprotected('domain_id', 'enabled', 'name')
     def list_users_in_group(self, context, filters, group_id):
@@ -314,14 +314,14 @@ class UserV3(controller.V3Controller):
             domain_scope=self._get_domain_id_for_list_request(context),
             hints=hints)
         
-	policy_refs = self.jio_policy_api.get_group_policies(group_id)
+        policy_refs = self.jio_policy_api.get_group_policies(group_id)
 
         if not policy_refs:
             refs['Policies'] = ''
         else:
             refs['Policies'] = policy_refs
         
-	return refs
+        return refs
 
     @controller.protected()
     def change_password(self, context, user_id, user):
@@ -392,7 +392,7 @@ class GroupV3(controller.V3Controller):
 
     @controller.filterprotected('name')
     def list_groups_for_user(self, context, filters, user_id):
-	hints = GroupV3.build_driver_hints(context, filters)
+        hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_groups_for_user(user_id, hints=hints)
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
@@ -422,7 +422,7 @@ class GroupV3(controller.V3Controller):
             domain_scope=self._get_domain_id_for_list_request(context),
             hints=hints)
         
-	policy_refs = self.jio_policy_api.get_user_policies(user_id)
+        policy_refs = self.jio_policy_api.get_user_policies(user_id)
 
         if not policy_refs:
             refs['Policies'] = ''

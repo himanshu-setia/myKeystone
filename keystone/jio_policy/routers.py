@@ -63,7 +63,7 @@ class Routers(wsgi.RoutersBase):
                     'group_id': json_home.Parameters.GROUP_ID
                 })
         
-	self._add_resource(
+        self._add_resource(
                 mapper, policy_controller,
                 path='/actions',
                 get_action='list_actions',

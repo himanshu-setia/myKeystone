@@ -33,7 +33,7 @@ class JioPolicyV3(controller.V3Controller):
     @controller.protected()
     @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
-	policy_id = uuid.uuid4().hex
+        policy_id = uuid.uuid4().hex
         try:
             project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
                 'project_id']
