@@ -12,12 +12,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import hashlib
+
+
 from oslo_config import cfg
 from oslo_log import log
 from oslo_middleware import sizelimit
 from oslo_serialization import jsonutils
 import six
-
+import requests
 from keystone.common import authorization
 from keystone.common import wsgi
 from keystone import exception
@@ -25,8 +28,36 @@ from keystone.i18n import _LW
 from keystone.models import token_model
 from keystone.openstack.common import versionutils
 
+
+
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
+ec2_opts = [
+    cfg.StrOpt('keystone_url',
+               default='http://localhost:5000/v2.0',
+               help='URL to get token from ec2 request.'),
+    cfg.StrOpt('keystone_ec2_tokens_url',
+               default='$keystone_url/ec2tokens',
+               help='URL to get token from ec2 request.'),
+    cfg.IntOpt('ec2_timestamp_expiry',
+               default=300,
+               help='Time in seconds before ec2 timestamp expires'),
+]
+
+
+CONF = cfg.CONF
+CONF.register_opts(ec2_opts)
+
+
+EMPTY_SHA256_HASH = (
+    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+# This is the buffer size used when calculating sha256 checksums.
+# Experimenting with various buffer sizes showed that this value generally
+# gave the best result (in terms of performance).
+PAYLOAD_BUFFER = 1024 * 1024
+
+
+
 
 
 # Header used to transmit the auth token
@@ -194,7 +225,6 @@ class AuthContextMiddleware(wsgi.Middleware):
 
     def _build_auth_context(self, request):
         token_id = request.headers.get(AUTH_TOKEN_HEADER).strip()
-
         if token_id == CONF.admin_token:
             # NOTE(gyee): no need to proceed any further as the special admin
             # token is being handled by AdminTokenAuthMiddleware. This code
@@ -218,12 +248,131 @@ class AuthContextMiddleware(wsgi.Middleware):
             LOG.warning(_LW('RBAC: Invalid token'))
             raise exception.Unauthorized()
 
+
+
+    """Authenticate an EC2 request with keystone and convert to context."""
+
+    def _get_signature(self, req):
+        """Extract the signature from the request.
+        This can be a get/post variable or for version 4 also in a header
+        called 'Authorization'.
+        - params['Signature'] == version 0,1,2,3
+        - params['X-Amz-Signature'] == version 4
+        - header 'Authorization' == version 4
+        """
+        sig = req.params.get('Signature') or req.params.get('X-Amz-Signature')
+        if sig is not None:
+            return sig
+
+        if 'Authorization' not in req.headers:
+            return None
+
+        auth_str = req.headers['Authorization']
+        if not auth_str.startswith('AWS4-HMAC-SHA256'):
+            return None
+
+        return auth_str.partition("Signature=")[2].split(',')[0]
+
+    def _get_access(self, req):
+        """Extract the access key identifier.
+        For version 0/1/2/3 this is passed as the AccessKeyId parameter, for
+        version 4 it is either an X-Amz-Credential parameter or a Credential=
+        field in the 'Authorization' header string.
+        """
+        access = req.params.get('AWSAccessKeyId')
+        if access is not None:
+            return access
+
+        cred_param = req.params.get('X-Amz-Credential')
+        if cred_param:
+            access = cred_param.split("/")[0]
+            if access is not None:
+                return access
+
+        if 'Authorization' not in req.headers:
+            return None
+        auth_str = req.headers['Authorization']
+        if not auth_str.startswith('AWS4-HMAC-SHA256'):
+            return None
+        cred_str = auth_str.partition("Credential=")[2].split(',')[0]
+        return cred_str.split("/")[0]
+
+
+    def _verify_signature(self, req):
+       body_hash = hashlib.sha256(req.body).hexdigest()
+       
+       signature = self._get_signature(req)
+       LOG.warning(_LW( signature))
+       if not signature:
+           msg = ("Signature not provided")
+           return
+       access = self._get_access(req)
+       if not access:
+           msg = _("Access key not provided")
+           return 
+
+       if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
+           params = {}
+       else:
+           # Make a copy of args for authentication and signature verification
+           params = dict(req.params)
+           # Not part of authentication args
+           params.pop('Signature', None)
+           params.pop('signature', None)
+
+       cred_dict = {
+           'access': access,
+           'signature': signature,
+           'host': req.host,
+           'verb': req.method,
+           'path': req.path,
+           'params': params,
+           'headers': req.headers,
+           'body_hash': body_hash
+       }
+       LOG.warning(cred_dict)
+
+       token_url = CONF.keystone_ec2_tokens_url
+       if "ec2" in token_url:
+           creds = {'ec2Credentials': cred_dict}
+       else:
+           creds = {'auth': {'OS-KSEC2:ec2Credentials': cred_dict}}
+       creds_json = jsonutils.dumps(creds)
+       headers = {'Content-Type': 'application/json'}
+
+       verify = False #CONF.ssl_ca_file or not CONF.ssl_insecure
+       LOG.warning("making the ec2 request2")
+       LOG.warning(creds_json)
+       response = requests.request('POST', token_url, verify=verify,
+                                   data=creds_json, headers=headers)
+       status_code = response.status_code
+       result = response.json() 
+       
+       LOG.warning(result)
+       if status_code != 200:
+           msg = response.reason
+           return
+       token_id = None
+       if 'token' in result:
+                # NOTE(andrey-mp): response from keystone v3
+           token_id = response.headers['x-subject-token']
+       else: 
+           token_id = result['access']['token']['id']
+       req.headers[AUTH_TOKEN_HEADER] = token_id
+       return token_id
     def process_request(self, request):
         if AUTH_TOKEN_HEADER not in request.headers:
             LOG.debug(('Auth token not in the request header. '
                        'Will not build auth context.'))
-            return
-
+            LOG.warning(request.path)
+            if 'ec2' in request.path:
+                return
+            else:
+                LOG.warning("calling verify signature")
+                token_id = self._verify_signature(request)
+                if not token_id:
+                    return;
+#            return
         if authorization.AUTH_CONTEXT_ENV in request.environ:
             msg = _LW('Auth context already exists in the request environment')
             LOG.warning(msg)
@@ -232,3 +381,4 @@ class AuthContextMiddleware(wsgi.Middleware):
         auth_context = self._build_auth_context(request)
         LOG.debug('RBAC: auth_context: %s', auth_context)
         request.environ[authorization.AUTH_CONTEXT_ENV] = auth_context
+
