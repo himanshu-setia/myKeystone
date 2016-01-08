@@ -23,7 +23,6 @@ from keystone import notifications
 from keystone import identity
 from keystone import jio_policy
 from keystone import credential as cred
-from keystone import jio_policy
 
 import json
 CONF = cfg.CONF
