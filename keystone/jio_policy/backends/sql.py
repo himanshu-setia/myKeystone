@@ -124,6 +124,13 @@ class Policy(jio_policy.Driver):
                 action = stmt.get('action', None)
                 effect = stmt.get('effect', None)
                 resource = stmt.get('resource', None)
+                # Autofill account id in resource
+                # Assumption account_id == domain_id == project_id
+                if resource.split(':')[3]=='':
+                    var=resource.split(':')
+                    var[3]=project_id
+                    resource=':'.join(var)
+
                 if effect == 'allow':
                     effect = True
                 elif effect == 'deny':
