@@ -22,9 +22,9 @@ from keystone.i18n import _, _LW
 from keystone import notifications
 from keystone import identity
 from keystone import jio_policy
-import json
 from keystone import credential as cred
 
+import json
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
@@ -153,7 +153,7 @@ class RootV3(controller.V3Controller):
         if Action == 'ListActions':
             return jio_policy_controller.list_actions(context)
         elif Action == 'CreatePolicy':
-            policy_document = query_strings['PolicyDocument']
+            policy_document = json.loads(query_strings['PolicyDocument'])['policy']
             return jio_policy_controller.create_policy(context, policy_document)
         elif Action == 'ListPolicies':
             return jio_policy_controller.list_policies(context)
