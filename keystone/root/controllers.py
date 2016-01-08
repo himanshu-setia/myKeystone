@@ -21,6 +21,7 @@ from keystone.i18n import _, _LW
 from keystone import notifications
 from keystone import identity
 from keystone import jio_policy
+import json
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
