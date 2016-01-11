@@ -62,81 +62,35 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         """Call ``POST /users``."""
         self.get('/?Action=CreateUser', expected_status=400)
 
+
     def test_list_users(self):
         """Call ``GET /users``."""
-        resource_url = '/users'
+        resource_url = '/?Action=ListUsers'
         r = self.get(resource_url)
         self.assertValidUserListResponse(r, ref=self.user,
                                          resource_url=resource_url)
-
-    def test_list_users_with_multiple_backends(self):
-        """Call ``GET /users`` when multiple backends is enabled.
-
-        In this scenario, the controller requires a domain to be specified
-        either as a filter or by using a domain scoped token.
-
-        """
-        self.config_fixture.config(group='identity',
-                                   domain_specific_drivers_enabled=True)
-
-        # Create a user with a role on the domain so we can get a
-        # domain scoped token
-        domain = self.new_domain_ref()
-        self.resource_api.create_domain(domain['id'], domain)
-        user = self.new_user_ref(domain_id=domain['id'])
-        password = user['password']
-        user = self.identity_api.create_user(user)
-        user['password'] = password
-        self.assignment_api.create_grant(
-            role_id=self.role_id, user_id=user['id'],
-            domain_id=domain['id'])
-
-        ref = self.new_user_ref(domain_id=domain['id'])
-        ref_nd = ref.copy()
-        ref_nd.pop('domain_id')
-        auth = self.build_authentication_request(
-            user_id=user['id'],
-            password=user['password'],
-            domain_id=domain['id'])
-
-        # First try using a domain scoped token
-        resource_url = '/users'
-        r = self.get(resource_url, auth=auth)
-        self.assertValidUserListResponse(r, ref=user,
-                                         resource_url=resource_url)
-
-        # Now try with an explicit filter
-        resource_url = ('/users?domain_id=%(domain_id)s' %
-                        {'domain_id': domain['id']})
-        r = self.get(resource_url)
-        self.assertValidUserListResponse(r, ref=user,
-                                         resource_url=resource_url)
-
-        # Now try the same thing without a domain token or filter,
-        # which should fail
-        r = self.get('/users', expected_status=exception.Unauthorized.code)
 
     def test_list_users_with_static_admin_token_and_multiple_backends(self):
         # domain-specific operations with the bootstrap ADMIN token is
         # disallowed when domain-specific drivers are enabled
         self.config_fixture.config(group='identity',
                                    domain_specific_drivers_enabled=True)
-        self.get('/users', token=CONF.admin_token,
+        self.get('/?Action=ListUsers', token=CONF.admin_token,
                  expected_status=exception.Unauthorized.code)
 
     def test_list_users_no_default_project(self):
         """Call ``GET /users`` making sure no default_project_id."""
         user = self.new_user_ref(self.domain_id)
         user = self.identity_api.create_user(user)
-        resource_url = '/users'
+        resource_url = '/?Action=ListUsers'
         r = self.get(resource_url)
         self.assertValidUserListResponse(r, ref=user,
                                          resource_url=resource_url)
 
     def test_get_user(self):
         """Call ``GET /users/{user_id}``."""
-        r = self.get('/users/%(user_id)s' % {
-            'user_id': self.user['id']})
+        ref = '/?Action=GetUser' + '&Id=' + self.user['id']
+        r = self.get(ref)
         self.assertValidUserResponse(r, self.user)
 
     def test_get_user_with_default_project(self):
@@ -144,91 +98,62 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         user = self.new_user_ref(domain_id=self.domain_id,
                                  project_id=self.project_id)
         user = self.identity_api.create_user(user)
-        r = self.get('/users/%(user_id)s' % {'user_id': user['id']})
+        ref = '/?Action=GetUser' + '&Id=' + user['id']
+        r = self.get(ref)
         self.assertValidUserResponse(r, user)
 
     def test_add_user_to_group(self):
         """Call ``PUT /groups/{group_id}/users/{user_id}``."""
-        self.put('/groups/%(group_id)s/users/%(user_id)s' % {
-            'group_id': self.group_id, 'user_id': self.user['id']})
+        ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
+        self.get(ref,expected_status=204)
 
     def test_list_groups_for_user(self):
         """Call ``GET /users/{user_id}/groups``."""
 
-        self.user1 = self.new_user_ref(
-            domain_id=self.domain['id'])
-        password = self.user1['password']
-        self.user1 = self.identity_api.create_user(self.user1)
-        self.user1['password'] = password
-        self.user2 = self.new_user_ref(
-            domain_id=self.domain['id'])
-        password = self.user2['password']
-        self.user2 = self.identity_api.create_user(self.user2)
-        self.user2['password'] = password
-        self.put('/groups/%(group_id)s/users/%(user_id)s' % {
-            'group_id': self.group_id, 'user_id': self.user1['id']})
-
-        # Scenarios below are written to test the default policy configuration
-
-        # One should be allowed to list one's own groups
-        auth = self.build_authentication_request(
-            user_id=self.user1['id'],
-            password=self.user1['password'])
-        resource_url = ('/users/%(user_id)s/groups' %
-                        {'user_id': self.user1['id']})
-        r = self.get(resource_url, auth=auth)
-        self.assertValidGroupListResponse(r, ref=self.group,
-                                          resource_url=resource_url)
-
         # Administrator is allowed to list others' groups
-        resource_url = ('/users/%(user_id)s/groups' %
-                        {'user_id': self.user1['id']})
+        ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
+        self.get(ref,expected_status=204)
+	
+        resource_url = '/?Action=ListGroupsForUser&Id=' + self.user['id']
         r = self.get(resource_url)
         self.assertValidGroupListResponse(r, ref=self.group,
                                           resource_url=resource_url)
-
-        # Ordinary users should not be allowed to list other's groups
-        auth = self.build_authentication_request(
-            user_id=self.user2['id'],
-            password=self.user2['password'])
-        r = self.get('/users/%(user_id)s/groups' % {
-            'user_id': self.user1['id']}, auth=auth,
-            expected_status=exception.ForbiddenAction.code)
 
     def test_check_user_in_group(self):
         """Call ``HEAD /groups/{group_id}/users/{user_id}``."""
-        self.put('/groups/%(group_id)s/users/%(user_id)s' % {
-            'group_id': self.group_id, 'user_id': self.user['id']})
-        self.head('/groups/%(group_id)s/users/%(user_id)s' % {
-            'group_id': self.group_id, 'user_id': self.user['id']})
+        ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
+        self.get(ref,expected_status=204)
+
+        ref= '/?Action=CheckUserInGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
+        self.get(ref,expected_status=204)
 
     def test_list_users_in_group(self):
         """Call ``GET /groups/{group_id}/users``."""
-        self.put('/groups/%(group_id)s/users/%(user_id)s' % {
-            'group_id': self.group_id, 'user_id': self.user['id']})
-        resource_url = ('/groups/%(group_id)s/users' %
-                        {'group_id': self.group_id})
+        ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
+        self.get(ref,expected_status=204)
+
+        resource_url= '/?Action=ListUserInGroup' + '&Id=' + self.group_id
         r = self.get(resource_url)
+
         self.assertValidUserListResponse(r, ref=self.user,
                                          resource_url=resource_url)
-        self.assertIn('/groups/%(group_id)s/users' % {
-            'group_id': self.group_id}, r.result['links']['self'])
 
     def test_remove_user_from_group(self):
         """Call ``DELETE /groups/{group_id}/users/{user_id}``."""
-        self.put('/groups/%(group_id)s/users/%(user_id)s' % {
-            'group_id': self.group_id, 'user_id': self.user['id']})
-        self.delete('/groups/%(group_id)s/users/%(user_id)s' % {
-            'group_id': self.group_id, 'user_id': self.user['id']})
+        ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
+        self.get(ref,expected_status=204)
+
+        ref= '/?Action=RemoveUserFromGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
+        self.get(ref,expected_status=204)
 
     def test_update_user(self):
         """Call ``PATCH /users/{user_id}``."""
-        user = self.new_user_ref(domain_id=self.domain_id)
-        del user['id']
-        r = self.patch('/users/%(user_id)s' % {
-            'user_id': self.user['id']},
-            body={'user': user})
-        self.assertValidUserResponse(r, user)
+        ref = self.new_user_ref(domain_id=self.domain_id)
+        del ref['id']
+        user = '/?Action=UpdateUser' + '&Name=' + ref['name'] + '&Id=' + self.user['id'] + '&Description=' + ref['description'] +'&Email='+ ref['email'] + '&DomainId=' + ref['domain_id']
+        r = self.get(user)
+        print r
+        self.assertValidUserResponse(r, ref)
 
     def test_admin_password_reset(self):
         # bootstrap a user as admin
