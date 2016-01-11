@@ -155,56 +155,6 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         print r
         self.assertValidUserResponse(r, ref)
 
-    def test_admin_password_reset(self):
-        # bootstrap a user as admin
-        user_ref = self.new_user_ref(domain_id=self.domain['id'])
-        password = user_ref['password']
-        user_ref = self.identity_api.create_user(user_ref)
-
-        # auth as user should work before a password change
-        old_password_auth = self.build_authentication_request(
-            user_id=user_ref['id'],
-            password=password)
-        r = self.v3_authenticate_token(old_password_auth, expected_status=201)
-        old_token = r.headers.get('X-Subject-Token')
-
-        # auth as user with a token should work before a password change
-        old_token_auth = self.build_authentication_request(token=old_token)
-        self.v3_authenticate_token(old_token_auth, expected_status=201)
-
-        # administrative password reset
-        new_password = uuid.uuid4().hex
-        self.patch('/users/%s' % user_ref['id'],
-                   body={'user': {'password': new_password}},
-                   expected_status=200)
-
-        # auth as user with original password should not work after change
-        self.v3_authenticate_token(old_password_auth, expected_status=401)
-
-        # auth as user with an old token should not work after change
-        self.v3_authenticate_token(old_token_auth, expected_status=404)
-
-        # new password should work
-        new_password_auth = self.build_authentication_request(
-            user_id=user_ref['id'],
-            password=new_password)
-        self.v3_authenticate_token(new_password_auth, expected_status=201)
-
-    def test_update_user_domain_id(self):
-        """Call ``PATCH /users/{user_id}`` with domain_id."""
-        user = self.new_user_ref(domain_id=self.domain['id'])
-        user = self.identity_api.create_user(user)
-        user['domain_id'] = CONF.identity.default_domain_id
-        r = self.patch('/users/%(user_id)s' % {
-            'user_id': user['id']},
-            body={'user': user},
-            expected_status=exception.ValidationError.code)
-        self.config_fixture.config(domain_id_immutable=False)
-        user['domain_id'] = self.domain['id']
-        r = self.patch('/users/%(user_id)s' % {
-            'user_id': user['id']},
-            body={'user': user})
-        self.assertValidUserResponse(r, user)
 
     def test_delete_user(self):
         """Call ``DELETE /users/{user_id}``.
@@ -242,8 +192,8 @@ class IdentityTestCase(test_v3.RestfulTestCase):
                   expected_status=200)
 
         # Now delete the user
-        self.delete('/users/%(user_id)s' % {
-            'user_id': self.user['id']})
+        user = '/?Action=DeleteUser' + '&Id=' + self.user['id']
+        self.get(user, expected_status=204)
 
         # Deleting the user should have deleted any credentials
         # that reference this project
@@ -263,57 +213,43 @@ class IdentityTestCase(test_v3.RestfulTestCase):
     def test_create_group(self):
         """Call ``POST /groups``."""
         ref = self.new_group_ref(domain_id=self.domain_id)
-        r = self.post(
-            '/groups',
-            body={'group': ref})
-        return self.assertValidGroupResponse(r, ref)
-
+        group = '/?Action=CreateGroup' + '&Name=' + ref['name'] + '&Description=' + ref['description'] +'&DomainId=' + ref['domain_id'] 
+        self.get(group, expected_status=200)
+    
     def test_create_group_400(self):
         """Call ``POST /groups``."""
-        self.post('/groups', body={'group': {}}, expected_status=400)
+        self.get('/?Action=CreateGroup', expected_status=400)
+
+        """Call ``DELETE /groups/{group_id}``."""
+        self.delete('/groups/%(group_id)s' % {
+            'group_id': self.group_id})
 
     def test_list_groups(self):
         """Call ``GET /groups``."""
-        resource_url = '/groups'
+        resource_url = '/?Action=ListGroups'
         r = self.get(resource_url)
         self.assertValidGroupListResponse(r, ref=self.group,
                                           resource_url=resource_url)
 
     def test_get_group(self):
         """Call ``GET /groups/{group_id}``."""
-        r = self.get('/groups/%(group_id)s' % {
-            'group_id': self.group_id})
+        ref = '/?Action=GetGroup' + '&Id=' + self.group_id
+        r = self.get(ref)
         self.assertValidGroupResponse(r, self.group)
 
     def test_update_group(self):
         """Call ``PATCH /groups/{group_id}``."""
-        group = self.new_group_ref(domain_id=self.domain_id)
-        del group['id']
-        r = self.patch('/groups/%(group_id)s' % {
-            'group_id': self.group_id},
-            body={'group': group})
-        self.assertValidGroupResponse(r, group)
-
-    def test_update_group_domain_id(self):
-        """Call ``PATCH /groups/{group_id}`` with domain_id."""
-        group = self.new_group_ref(domain_id=self.domain['id'])
-        group = self.identity_api.create_group(group)
-        group['domain_id'] = CONF.identity.default_domain_id
-        r = self.patch('/groups/%(group_id)s' % {
-            'group_id': group['id']},
-            body={'group': group},
-            expected_status=exception.ValidationError.code)
-        self.config_fixture.config(domain_id_immutable=False)
-        group['domain_id'] = self.domain['id']
-        r = self.patch('/groups/%(group_id)s' % {
-            'group_id': group['id']},
-            body={'group': group})
-        self.assertValidGroupResponse(r, group)
+        ref = self.new_group_ref(domain_id=self.domain_id)
+        del ref['id']
+        group = '/?Action=UpdateGroup' + '&Name=' + ref['name'] + '&Id=' + self.group_id + '&Description=' + ref['description']
+        r = self.get(group)
+        print r
+        self.assertValidGroupResponse(r, ref)
 
     def test_delete_group(self):
         """Call ``DELETE /groups/{group_id}``."""
-        self.delete('/groups/%(group_id)s' % {
-            'group_id': self.group_id})
+        group = '/?Action=DeleteGroup' + '&Id=' + self.group_id
+        self.get(group,expected_status=204)
 
     def test_create_user_password_not_logged(self):
         # When a user is created, the password isn't logged at any level.
