@@ -97,6 +97,9 @@ class RootV3(controller.V3Controller):
         elif Action == 'GetGroup':
             return group_controller.get_group(context,query_string['Id'])
 
+        elif Action == 'ListGroups':
+            return group_controller.list_groups(context)
+          
         elif Action == 'UpdateGroup':
             group = {}
             if 'Description' in query_string:
