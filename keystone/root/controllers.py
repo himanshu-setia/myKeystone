@@ -60,7 +60,8 @@ class RootV3(controller.V3Controller):
             return user_controller.create_user(context,user)
         elif Action == 'GetUser':
             return user_controller.get_user(context,query_string['Id'])
-
+        elif Action == 'ListUsers':
+            return user_controller.list_users(context)
         elif Action == 'UpdateUser':
             user = {}
             if 'Description' in query_string:
