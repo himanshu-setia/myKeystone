@@ -538,9 +538,25 @@ class Auth(controller.V3Controller):
             del token_data['token']['catalog']
         return render_token_data_response(token_id, token_data)
 
+    def validate_token_data(self, context):
+        token_id = context.get('subject_token_id')
+        include_catalog = 'nocatalog' not in context['query_string']
+        token_data = self.token_provider_api.validate_v3_token(
+            token_id)
+        if not include_catalog and 'catalog' in token_data['token']:
+            del token_data['token']['catalog']
+        return token_data
+
+    def render_response(self,token_data, context):
+        token_id = context.get('subject_token_id')
+        return render_token_data_response(token_id, token_data)
+
+
+
+
     def _validate_token_with_action_resource(self, action, resource, user_id,
                                              project_id, context):
-        is_authorized = False
+        is_authorized = True
         if len(action) != len(resource):
             raise exception.ValidationError(
                     attribute="equal number of actions and resources",
@@ -553,9 +569,11 @@ class Auth(controller.V3Controller):
             raise exception.Forbidden(
                     message='Policy does not allow to perform this action')
 
-        return self.validate_token(context)
+        #return self.validate_token(context)
 
     def validate_token_with_action_resource_get(self, context):
+        token_data = self.validate_token_data(context)
+        print token_data
         query_string = context.get('query_string', None)
         if not query_string:
             raise exception.ValidationError(attribute="action and resource",
@@ -570,12 +588,15 @@ class Auth(controller.V3Controller):
                                             target="query_string")
         # get user id
         auth_context = self.get_auth_context(context)
-        user_id = auth_context.get('user_id')
-        project_id = auth_context.get('project_id')
-        return self._validate_token_with_action_resource(
+        user_id = token_data["token"]["user"]["id"]
+        project_id = token_data["token"]["project"]["id"]
+        self._validate_token_with_action_resource(
                     [action], [resource], user_id, project_id, context)
+        return self.render_response(token_data,context)
 
     def validate_token_with_action_resource_post(self, context, **kwargs):
+        token_data = self.validate_token_data(context)
+        print token_data
         act_res_list = kwargs.get('action_resource_list', None)
         if not act_res_list:
             raise exception.ValidationError(attribute="action and resource",
@@ -586,12 +607,12 @@ class Auth(controller.V3Controller):
         except KeyError as e:
             raise exception.ValidationError(attribute="action and resource",
                                             target="body")
-
         auth_context = self.get_auth_context(context)
-        user_id = auth_context.get('user_id')
-        project_id = auth_context.get('project_id')
-        return self._validate_token_with_action_resource(
+        user_id = token_data["token"]["user"]["id"]
+        project_id = token_data["token"]["project"]["id"]
+        self._validate_token_with_action_resource(
                     action, resource, user_id, project_id, context)
+        return self.render_response(token_data,context)
 
     @controller.protected()
     def revocation_list(self, context, auth=None):
