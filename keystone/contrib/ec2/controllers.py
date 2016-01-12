@@ -306,7 +306,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                           'perform this action')
             else:
                 raise exception.ValidationError(attribute="action and resource",
-                                            target="query string")
+                                            target="query_string")
         else:
             act_res_list = ec2Credentials["action_resource_list"]
             if not act_res_list:
