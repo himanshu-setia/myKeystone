@@ -153,19 +153,19 @@ class Policy(jio_policy.Driver):
 	    #The logic to find the users anf groups for the policy should be ideally be
             #done in one pass through the table. Currently its done in 2 passes to keep
             #it separate for groups and users, but for optimization can be done in 1 pass.
-	    new_ref['Attached Groups'] = self.count_groups_for_policy(new_ref['id'])
-	    new_ref['Attached Users'] = self.count_users_for_policy(new_ref['id'])
+            new_ref['Attached Groups'] = self.count_groups_for_policy(new_ref['id'])
+            new_ref['Attached Users'] = self.count_users_for_policy(new_ref['id'])
             ret.append(new_ref)
         return ret
 
     def count_groups_for_policy(self,policy_id):
         session = sql.get_session()
 
-	query = session.query(PolicyUserGroupModel)
+        query = session.query(PolicyUserGroupModel)
         query = query.filter(PolicyUserGroupModel.policy_id == policy_id)
         query = query.filter(PolicyUserGroupModel.type == 'GroupPolicy')
 
-	return query.count()
+        return query.count()
 
     def count_users_for_policy(self,policy_id):
         session = sql.get_session()
@@ -281,33 +281,33 @@ class Policy(jio_policy.Driver):
             session.delete(policy_ref)
 
     def list_policy_summary(self,policy_id):
-	session = sql.get_session()
-	policy = self._get_policy(session,policy_id)
+        session = sql.get_session()
+        policy = self._get_policy(session,policy_id)
         query = session.query(PolicyUserGroupModel).filter_by(policy_id = policy_id) \
             .with_entities(
                     PolicyUserGroupModel.user_group_id, PolicyUserGroupModel.type)
 
         summary_list = {}
-	summary_list['Policy Document'] =policy.policy_blob
-	summary_list['Attached Entities'] = query.count()
-	summary_list['Policy JRN'] = 'jrn:jcs:iam:'  ':policy:' + policy.name	
+        summary_list['Policy Document'] =policy.policy_blob
+        summary_list['Attached Entities'] = query.count()
+        summary_list['Policy JRN'] = 'jrn:jcs:iam:'  ':policy:' + policy.name	
         summary_list['Creation Time'] = policy.created_at
 	
-	sum_list = []
+        sum_list = []
         for row in query:
-  	    dict = {}
-	    dict['Entity Name'] = row.user_group_id
-	    dict['Type'] = row.type
+            dict = {}
+            dict['Entity Name'] = row.user_group_id
+            dict['Type'] = row.type
             sum_list.append(dict)
 
-	summary_list['Attached Entities'] = sum_list
+        summary_list['Attached Entities'] = sum_list
         return summary_list 
 
     def get_group_policies(self,groupid):
         session = sql.get_session()
 
         group_query = session.query(JioPolicyModel.name,PolicyUserGroupModel)
-	group_query = group_query.filter(PolicyUserGroupModel.policy_id==JioPolicyModel.id)
+        group_query = group_query.filter(PolicyUserGroupModel.policy_id==JioPolicyModel.id)
         group_query = group_query.filter(PolicyUserGroupModel.user_group_id==groupid)
         group_query = group_query.filter(PolicyUserGroupModel.type == 'GroupPolicy').all()
 	#if group_query.count() == 0:

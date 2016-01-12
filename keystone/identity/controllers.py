@@ -384,9 +384,9 @@ class GroupV3(controller.V3Controller):
             groupid = ref['id']
             policies = self.jio_policy_api.get_group_policies(groupid)
             if not policies: 
-		refs[indx]['Policies'] = '' 
+                refs[indx]['Policies'] = '' 
             else:
-		refs[indx]['Policies'] = policies
+                    refs[indx]['Policies'] = policies
 
         return GroupV3.wrap_collection(context, refs, hints=hints)
 

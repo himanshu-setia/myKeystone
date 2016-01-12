@@ -139,9 +139,9 @@ class Identity(identity.Driver):
 
         ref_list = []
         for ref in user_refs:
-	    dict = ref.to_dict()
+            dict = ref.to_dict()
             dict['GroupCount'] = self.count_groups_for_user(ref.id)
-	    if not dict['password']:
+            if not dict['password']:
                 dict['password'] = 'No'
             else:
                 dict['password'] = 'Yes'
@@ -162,9 +162,9 @@ class Identity(identity.Driver):
 
         dict_list = []
         for ref in query:
-	    dict = {}
+            dict = {}
             dict['id'] = ref.id
-	    dict['name'] = ref.name
+            dict['name'] = ref.name
             dict_list.append(dict)
 
         ref_list['Users'] = dict_list
@@ -173,23 +173,23 @@ class Identity(identity.Driver):
     @sql.truncated
     def list_group_summary_for_user(self, hints, user_id):
         session = sql.get_session()
-	user = self._get_user(session,user_id)
+        user = self._get_user(session,user_id)
         query = session.query(Group.id,Group.name).join(UserGroupMembership)
         query = query.filter(UserGroupMembership.user_id == user_id)
 
         ref_list = {}
-	ref_list['User JRN'] = 'jrn:jcs:iam:' + user.domain_id + ':user:' + user.name
-	ref_list['Has Password'] = ('No','Yes')[user.password is not None]
+        ref_list['User JRN'] = 'jrn:jcs:iam:' + user.domain_id + ':user:' + user.name
+        ref_list['Has Password'] = ('No','Yes')[user.password is not None]
         ref_list['Attached Groups'] = query.count()
 
-	dict_list = []
-	for ref in query:
+        dict_list = []
+        for ref in query:
             dict = {}
             dict['id'] = ref.id
             dict['name'] = ref.name
             dict_list.append(dict)
 
-	ref_list['Groups'] = dict_list
+        ref_list['Groups'] = dict_list
         return ref_list
 
     def _get_user(self, session, user_id):
@@ -397,9 +397,9 @@ class Identity(identity.Driver):
 	
         ref_list = []
         for ref in refs:
-  	    dict = ref.to_dict()
-	    dict['UserCount'] = self.count_users_in_group(ref.id) 
-	    ref_list.append(dict)
+            dict = ref.to_dict()
+            dict['UserCount'] = self.count_users_in_group(ref.id) 
+            ref_list.append(dict)
 
         return ref_list
 	
