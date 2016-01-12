@@ -275,9 +275,10 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             if resource is None:
                 raise exception.ValidationError(attribute='resource',
                                                 target='query_string')
+            # CHANGE ONLY FOR MOCK AUTHORIZE
             # get user id
-            user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
-            project_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["project_id"]
+            #user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
+            #project_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["project_id"]
             is_authorized = True
 
             if not is_authorized:
