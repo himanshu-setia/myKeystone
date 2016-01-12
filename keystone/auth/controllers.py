@@ -1,4 +1,14 @@
-# Copyright 2013 OpenStack Foundation
+#i   def validate_token(self, context):
+        token_id = context.get('subject_token_id')
+        include_catalog = 'nocatalog' not in context['query_string']
+        token_data = self.token_provider_api.validate_v3_token(
+            token_id)
+        if not include_catalog and 'catalog' in token_data['token']:
+            del token_data['token']['catalog']
+        return render_token_data_response(token_id, token_data)
+
+
+ Copyright 2013 OpenStack Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -573,7 +583,6 @@ class Auth(controller.V3Controller):
 
     def validate_token_with_action_resource_get(self, context):
         token_data = self.validate_token_data(context)
-        print token_data
         query_string = context.get('query_string', None)
         if not query_string:
             raise exception.ValidationError(attribute="action and resource",
@@ -596,7 +605,6 @@ class Auth(controller.V3Controller):
 
     def validate_token_with_action_resource_post(self, context, **kwargs):
         token_data = self.validate_token_data(context)
-        print token_data
         act_res_list = kwargs.get('action_resource_list', None)
         if not act_res_list:
             raise exception.ValidationError(attribute="action and resource",
