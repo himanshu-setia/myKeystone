@@ -136,6 +136,9 @@ class RootV3(controller.V3Controller):
                 credential['user_id'] = query_string['UserId']
             return credential_controller.create_credential(context,credential)
 
+        elif Action == 'ListCredentials':
+            return credential_controller.list_credentials(context)
+
         elif Action == 'GetCredential':
             return credential_controller.get_credential(context,query_string['Id'])
 
