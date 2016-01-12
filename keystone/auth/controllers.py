@@ -528,7 +528,7 @@ class Auth(controller.V3Controller):
         token_id = context.get('subject_token_id')
         return self.token_provider_api.revoke_token(token_id)
 
-    @controller.protected()
+    # REMOVING ROLES CHECK FOR VALIDATE_TOKEN, onlu for mock
     def validate_token(self, context):
         token_id = context.get('subject_token_id')
         include_catalog = 'nocatalog' not in context['query_string']
