@@ -53,12 +53,31 @@ class ActionModel(sql.ModelBase):
     service_type = sql.Column(sql.String(255), nullable=False)
 
 
-class ResourceModel(sql.ModelBase):
-    __tablename__ = 'resource'
-    attirbutes = ['id', 'resource_name', 'service_type']
+class ResourceTypeModel(sql.ModelBase):
+    __tablename__ = 'resource_type'
+    attributes = ['id', 'name', 'service_type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
     service_type = sql.Column(sql.String(255), nullable=False)
+
+
+class ResourceModel(sql.ModelBase):
+    __tablename__ = 'resource'
+    attributes = ['id', 'name', 'service_type']
+    id = sql.Column(sql.String(64), primary_key=True)
+    name = sql.Column(sql.String(255), nullable=False)
+    service_type = sql.Column(sql.String(64), nullable=False)
+
+
+class ActionResourceMappingModel(sql.ModelBase):
+    __tablename__ = 'action_resource_type_mapping'
+    attributes = ['action_id', 'resource_type_id']
+    action_id = sql.Column(sql.String(64), 
+                    sql.ForeignKey('action.id'), 
+                    primary_key=True)
+    resource_type_id = sql.Column(sql.String(64), 
+                  sql.ForeignKey('resource_type.id'),
+                  primary_key=True)
 
 
 class PolicyUserGroupModel(sql.ModelBase):
@@ -81,14 +100,19 @@ class Policy(jio_policy.Driver):
                                             target='resource')
         return ls[2]
 
+    @classmethod
+    def _get_resource_type(cls, resource):
+        ls = resource.split(':')
+        if len(ls) < 5:
+              return None
+        return ls[4]
+
     @sql.handle_conflicts(conflict_type='policy')
     def create_policy(self, project_id, policy_id, policy):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
-
         name = policy.get('name', None)
         statement = policy.get('statement', None)
-
         created_at = datetime.utcnow()
 
         with sql.transaction() as session:
@@ -100,6 +124,13 @@ class Policy(jio_policy.Driver):
                 action = stmt.get('action', None)
                 effect = stmt.get('effect', None)
                 resource = stmt.get('resource', None)
+                # Autofill account id in resource
+                # Assumption account_id == domain_id == project_id
+                if resource.split(':')[3]=='':
+                    var=resource.split(':')
+                    var[3]=project_id
+                    resource=':'.join(var)
+
                 if effect == 'allow':
                     effect = True
                 elif effect == 'deny':
@@ -109,20 +140,27 @@ class Policy(jio_policy.Driver):
                                                     target='effect')
                 resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                 try:
-                    for pair in zip(resource_ids, resource):
+                    zip_resource = zip(resource_ids, resource)
+                    for pair in zip_resource:
                         session.add(ResourceModel(id=pair[0], name=pair[1],
                                     service_type=Policy._get_service_name(
                                         pair[1])))
 
-                    for pair in itertools.product(action, resource_ids):
+                    for pair in itertools.product(action, zip_resource):
+                        #check if action is allowed in resource type
                         action_id = session.query(ActionModel).filter_by(
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
+                        resource_type = Policy._get_resource_type(pair[1][1])
+                        if resource_type is not None and self.is_action_resource_type_allowed(pair[0], resource_type) is False:
+                            raise exception.ValidationError(
+                                    attribute='valid resource type', target='resource')
 
                         session.add(
                             PolicyActionResourceModel(
                                 policy_id=policy_id, action_id=action_id,
-                                resource_id=pair[1], effect=effect))
+                                resource_id=pair[1][0], effect=effect))
+
                 except sql.NotFound:
                     raise exception.ValidationError(
                             attribute='valid action', target='policy')
@@ -407,6 +445,12 @@ class Policy(jio_policy.Driver):
                 ret.append(new_ref)
         return ret
 
+    def is_action_resource_type_allowed(self, action_name, resource_type):
+        session = sql.get_session()
+        query = session.query(ActionModel).join(ActionResourceMappingModel).join(ResourceTypeModel)
+        query = query.filter(ActionModel.action_name == action_name)
+        rows = query.filter(ResourceTypeModel.name == resource_type).count()
+        return True if rows > 0 else False
 
 def create_action(action_id, action_name, service_type):
     ref = dict()
@@ -415,8 +459,8 @@ def create_action(action_id, action_name, service_type):
     ref['service_type'] = service_type
     session = sql.get_session()
     with session.begin():
-	try:
+        try:
             session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
-	except sql.DBReferenceError:
+        except sql.DBReferenceError:
             raise exception.ValidationError(attribute='valid service name', target='resource')
     return ref

@@ -30,6 +30,7 @@ from keystone.policy.backends import rules
 from keystone.tests import unit as tests
 from keystone.tests.unit import rest
 from keystone.jio_policy.backends import sql as jio_policy_sql
+import random
 
 
 CONF = cfg.CONF
@@ -95,6 +96,7 @@ class AuthTestMixin(object):
                                      username=None, user_domain_id=None,
                                      user_domain_name=None, password=None,
                                      kerberos=False, **kwargs):
+
         """Build auth dictionary.
 
         It will create an auth dictionary based on all the arguments
@@ -214,7 +216,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         self.default_domain_project_id = uuid.uuid4().hex
         self.default_domain_project = self.new_project_ref(
-            domain_id=DEFAULT_DOMAIN_ID)
+          domain_id=DEFAULT_DOMAIN_ID)
         self.default_domain_project['id'] = self.default_domain_project_id
         self.resource_api.create_project(self.default_domain_project_id,
                                          self.default_domain_project)
@@ -306,11 +308,50 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         ref['parent_id'] = parent_id
         return ref
 
+    def get_policy_password(self):
+        pw_min_len = CONF.password_policy.min_length
+        mypw = ""
+
+        u_case = CONF.password_policy.num_uppercase
+        if u_case > 0:
+            for i in range(u_case):
+                set = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                next_index = random.randrange(len(set))
+                mypw += set[next_index]
+
+        l_case = CONF.password_policy.num_lowercase
+        if l_case > 0:
+            for i in range(l_case):
+                set = "abcdefghijklmnopqrstuvwxyz"
+                next_index = random.randrange(len(set))
+                mypw += set[next_index]
+
+        numeric = CONF.password_policy.num_numeric
+        if numeric > 0:
+            for i in range(numeric):
+                nums = "0123456789"
+                next_index = random.randrange(len(nums))
+                mypw += nums[next_index]
+
+        specialchar = CONF.password_policy.num_specialchars
+        if specialchar > 0:
+            for i in range(specialchar):
+                s_chars = "~!@#$%^&*()_+-=:';,./<>""?{}[]\|"
+                next_index = random.randrange(len(nums))
+                mypw += s_chars[next_index]
+
+        if len(mypw) < pw_min_len:
+            for x in range(len(mypw), pw_min_len):
+                alphabet = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                next_index = random.randrange(len(alphabet))
+                mypw += alphabet[next_index]
+        return mypw
+
     def new_user_ref(self, domain_id, project_id=None):
         ref = self.new_ref()
         ref['domain_id'] = domain_id
         ref['email'] = uuid.uuid4().hex
-        ref['password'] = uuid.uuid4().hex
+        ref['password'] = self.get_policy_password()
         if project_id:
             ref['default_project_id'] = project_id
         return ref
@@ -575,8 +616,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         """
         entities = resp.result.get(key)
-        self.assertIsNotNone(entities)
-
+        self.assertIsNotNone(entities) 
         if expected_length is not None:
             self.assertEqual(expected_length, len(entities))
         elif ref is not None:
@@ -1251,7 +1291,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         auth_info = auth.controllers.AuthInfo.create(no_context, auth_data)
         auth_context = {'extras': {}, 'method_names': []}
         return context, auth_info, auth_context
-    
+
     # Jio policy
     def assertValidJioPolicyResponse(self, resp, *args, **kwargs):
         return self.assertValidResponse(
@@ -1261,8 +1301,9 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             keys_to_check=['name', 'service', 'statement'],
             *args,
             **kwargs)
-    
+
     def assertValidJioPolicyListResponse(self, resp, *args, **kwargs):
+        import pdb; pdb.set_trace()
         return self.assertValidListResponse(
              resp,
              'policies',
@@ -1307,6 +1348,7 @@ class AuthContextMiddlewareTestCase(RestfulTestCase):
         # test to make sure AuthContextMiddleware successful build the auth
         # context from the incoming auth token
         admin_token = self.get_scoped_token()
+
         req = self._mock_request_object(admin_token)
         application = None
         middleware.AuthContextMiddleware(application).process_request(req)

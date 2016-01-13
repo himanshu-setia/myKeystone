@@ -351,7 +351,7 @@ class AuthContextMiddleware(wsgi.Middleware):
        LOG.warning(result)
        if status_code != 200:
            msg = response.reason
-           return
+           raise exception.Unauthorized()
        token_id = None
        if 'token' in result:
                 # NOTE(andrey-mp): response from keystone v3
