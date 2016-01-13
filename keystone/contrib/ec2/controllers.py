@@ -341,8 +341,10 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
-        token_data['token_id'] = token_id
-        return token_data
+        response = dict(domain_id=token_data["access"]["token"]["tenant"]["domain_id"],
+                        user_id=token_data["access"]["user"]["id"],
+                        token_id=token_data["access"]["token"]["id"])
+        return response
 
     @controller.v2_deprecated
     def get_credential(self, context, user_id, credential_id):

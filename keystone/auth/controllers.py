@@ -536,7 +536,9 @@ class Auth(controller.V3Controller):
             token_id)
         if not include_catalog and 'catalog' in token_data['token']:
             del token_data['token']['catalog']
-        return render_token_data_response(token_id, token_data)
+        response = dict(domain_id=token_data["token"]["user"]["domain"]["id"],
+                        user_id=token_data["token"]["user"]["id"])
+        return render_token_data_response(token_id, response)
 
     def _validate_token_with_action_resource(self, action, resource, user_id,
                                              project_id, context):
