@@ -59,6 +59,12 @@ class Ec2Extension(wsgi.ExtensionRouter):
             controller=ec2_controller,
             action='delete_credential',
             conditions=dict(method=['DELETE']))
+        mapper.connect(
+            '/ec2-auth',
+            controller=ec2_controller,
+            action='authorise_with_action_resource',
+            conditions=dict(method=['POST']))
+
 
 
 class Ec2ExtensionV3(wsgi.V3ExtensionRouter):

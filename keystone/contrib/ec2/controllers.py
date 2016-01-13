@@ -35,6 +35,7 @@ Glance to list images needed to perform the requested task.
 import abc
 import sys
 import uuid
+import json
 
 from keystoneclient.contrib.ec2 import utils as ec2_utils
 from oslo_serialization import jsonutils
@@ -265,30 +266,69 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
 
     @controller.v2_deprecated
     def authenticate(self, context, credentials=None, ec2Credentials=None):
-        query_string = context.pop('query_string', None)
-        if query_string:
-            action = query_string.pop('action', None)
-            if action is None:
-                raise exception.ValidationError(attribute='action',
-                                                target='query_string')
-            resource = query_string.pop('resource', None)
-            if resource is None:
-                raise exception.ValidationError(attribute='resource',
-                                                target='query_string')
-            # get user id
-            user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
-            project_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["project_id"]
-            is_authorized = self.jio_policy_api.is_user_authorized(user_id,
-                                                                   project_id,
-                                                                   action,
-                                                                   resource)
-            if not is_authorized:
-                raise exception.Forbidden(message='Policy does not allow to'
-                                          'perform this action')
         (user_ref, tenant_ref, metadata_ref, roles_ref,
          catalog_ref) = self._authenticate(credentials=credentials,
                                            ec2credentials=ec2Credentials)
 
+        # NOTE(morganfainberg): Make sure the data is in correct form since it
+        # might be consumed external to Keystone and this is a v2.0 controller.
+        # The token provider does not explicitly care about user_ref version
+        # in this case, but the data is stored in the token itself and should
+        # match the version
+        user_ref = self.v3_to_v2_user(user_ref)
+        auth_token_data = dict(user=user_ref,
+                               tenant=tenant_ref,
+                               metadata=metadata_ref,
+                               id='placeholder')
+        (token_id, token_data) = self.token_provider_api.issue_v2_token(
+            auth_token_data, roles_ref, catalog_ref)
+        return token_data
+
+
+
+    @controller.v2_deprecated
+    def authorise_with_action_resource(self, context, credentials=None, ec2Credentials=None):
+        (user_ref, tenant_ref, metadata_ref, roles_ref,
+         catalog_ref) = self._authenticate(credentials=credentials,
+                                           ec2credentials=ec2Credentials)
+        # get user id
+        user_id = user_ref["id"]
+        project_id = tenant_ref["id"]
+        query_string = context.get('query_string', None)
+        if query_string:
+            action = query_string.pop('action', None)
+            resource = query_string.get('resource', None)
+            if action and resource:
+                is_authorized = self.jio_policy_api.\
+                    is_user_authorized(user_id, project_id, action, resource)
+                if not is_authorized:
+                    raise exception.Forbidden(message='Policy does not allow to'
+                                          'perform this action')
+            else:
+                raise exception.ValidationError(attribute="action and resource",
+                                            target="query_string")
+        else:
+            act_res_list = ec2Credentials["action_resource_list"]
+            if not act_res_list:
+                act_res_list = credentials["action_resource_list"]
+            if not act_res_list:
+                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials')
+            act_res_list = json.loads(act_res_list)
+            try:
+                action = [item['action'] for item in act_res_list]
+                resource = [item['resource'] for item in act_res_list]
+            except KeyError as e:
+                raise exception.ValidationError(attribute="action and resource",
+                                            target="body")
+            is_authorized = True
+            for act, res in zip(action, resource):
+                is_authorized = is_authorized and self.jio_policy_api.\
+                    is_user_authorized(user_id, project_id, act, res)
+
+
+            if not is_authorized:
+                raise exception.Forbidden(message='Policy does not allow to'
+                                          'perform this action')
         # NOTE(morganfainberg): Make sure the data is in correct form since it
         # might be consumed external to Keystone and this is a v2.0 controller.
         # The token provider does not explicitly care about user_ref version
