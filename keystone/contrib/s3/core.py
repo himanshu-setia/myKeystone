@@ -56,10 +56,21 @@ class S3Extension(wsgi.V3ExtensionRouter):
         # validation
         self._add_resource(
             mapper, controller,
-            path='/sign-auth',
+            path='/s3tokens',
             post_action='authenticate',
             rel=json_home.build_v3_extension_resource_relation(
+                's3tokens', '1.0', 's3tokens'))
+    def add_routes(self, mapper):
+        controller = S3Controller()
+        # validation
+        self._add_resource(
+            mapper, controller,
+            path='/sign-auth',
+            post_action='authorise_with_action_resource',
+            rel=json_home.build_v3_extension_resource_relation(
                 'sign-auth', '1.0', 'sign-auth'))
+
+
 
 
 class S3Controller(controllers.Ec2Controller):
