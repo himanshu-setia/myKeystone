@@ -14,7 +14,7 @@
 
 import functools
 import uuid
-
+import copy
 from oslo_config import cfg
 from oslo_log import log
 from oslo_utils import strutils
@@ -29,10 +29,14 @@ from keystone import exception
 from keystone.i18n import _, _LW
 from keystone.models import token_model
 
-
 LOG = log.getLogger(__name__)
 CONF = cfg.CONF
-
+action_default_service = 'iam'
+resource_default_service = 'identity'
+jio_delimiter = ':'
+jio_namespace = 'jrn:jcs'
+jio_admin_domain_default = 'jcs_domain'
+res_postfix = 'Id'
 
 def v2_deprecated(f):
     """No-op decorator in preparation for deprecating Identity API v2.
@@ -86,7 +90,6 @@ def _build_policy_check_credentials(self, action, context, kwargs):
     auth_context = authorization.token_to_auth_context(token_ref)
 
     return auth_context
-
 
 def protected(callback=None):
     """Wraps API calls with role based access controls (RBAC).
@@ -163,6 +166,88 @@ def protected(callback=None):
         return inner
     return wrapper
 
+def jio_admin_protected():
+    def protected(f):
+        @functools.wraps(f)
+        def wrapper(self, context, *args, **kwargs):
+            if 'is_admin' in context and context['is_admin']:
+                LOG.warning(_LW('User is admin; Bypassing authorization'))
+            elif 'is_jio_admin' in context and context['is_jio_admin']:
+                LOG.warning(_LW('User is Jio admin; Bypassing authorization'))
+            else:
+                auth_context = self.get_auth_context(context)
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s disallowed by jio admin filter.')
+                            %{'action': f.__name__, 'user_id':auth_context.get('user_id')}))
+
+            return f(self, context, *args, **kwargs)
+        return wrapper
+    return protected
+
+def jio_policy_filterprotected(**params):
+    def _filterprotected(f):
+        @functools.wraps(f)
+        def wrapper(self, context, *args, **kwargs):
+            import pdb; pdb.set_trace()
+            if 'is_admin' in context and context['is_admin']:
+                LOG.warning(_LW('User is admin; Bypassing authorization'))
+            elif 'is_jio_admin' in context and context['is_jio_admin']:
+                LOG.warning(_LW('User is Jio admin; Bypassing authorization'))
+            else:
+                if 'Action' in context['query_string']:
+                    action_name = context['query_string']['Action']
+                else:
+                    action_name = f.__name__
+                action = jio_namespace + jio_delimiter + action_default_service + jio_delimiter + action_name
+                auth_context = self.get_auth_context(context)
+                user_id = auth_context.get('user_id')
+                project_id = auth_context.get('project_id')
+                resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
+                resource = resource_pre + project_id 
+                resources = []
+                #TODO(roopali): simplify and optimise.
+                #if params and 'resource' in params:
+                #    resource = resource_pre + params.get('resource')
+                if params and 'args' in params:
+                    items = params.get('args')
+                    
+                    if not isinstance(items, list):
+                        items = items.split()
+                    for item in items:
+                        resourceId=None
+                        resource_item = resource + jio_delimiter + item
+                        if not isinstance(items, list):
+                            item = res_postfix
+                        else:
+                             item = item + res_postfix
+                        if item in context['query_string']:
+                            resourceId= context['query_string'][item]
+                        #elif item in kwargs:
+                        #    resourceId= kwargs[item]
+                        if resourceId is not None:
+                            resources.append(resource_item + jio_delimiter + resourceId)
+                        else:
+                            resources.append(resource_item)
+                else:
+                    resources.append(resource)
+                for r in resources:
+                    try:
+                        effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r)
+                        if effect is False:
+                            LOG.debug('Jio policy based authorization failed')
+                            raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
+                                                 %{'action':action, 'user_id':user_id, 'resource':r}))
+                    except exception.ResourceNotFound:
+                        LOG.debug('Jio policy based authorization failed')
+                        raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
+                                               %{'action':action, 'user_id':user_id, 'resource':r}))
+                LOG.debug('Jio policy based authorization granted')
+            if 'filters' in params:
+                filters = params.get('filters')
+                return f(self, context, filters, *args, **kwargs)
+            else:
+                return f(self, context, *args, **kwargs)
+        return wrapper
+    return _filterprotected
 
 def filterprotected(*filters):
     """Wraps filtered API calls with role based access controls (RBAC)."""
@@ -382,7 +467,7 @@ class V2Controller(wsgi.Application):
         return o
 
 
-@dependency.requires('policy_api', 'token_provider_api')
+@dependency.requires('policy_api', 'token_provider_api', 'jio_policy_api')
 class V3Controller(wsgi.Application):
     """Base controller class for Identity API v3.
 
