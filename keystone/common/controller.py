@@ -255,12 +255,10 @@ def jio_policy_user_filterprotected(**params):
         return wrapper
     return _filterprotected
 
-
 def jio_policy_filterprotected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
-            #import pdb; pdb.set_trace()
             if 'is_admin' in context and context['is_admin']:
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
             elif 'is_jio_admin' in context and context['is_jio_admin']:
