@@ -410,7 +410,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         ref['name'] = uuid.uuid4().hex
         action = self.new_action_ref()
         resource_type = self.new_resource_type_ref()
-        ref1 = jio_policy_sql.get_resource_type(resource_type.get('id'))
         self.action_resource_type_mapping(action.get('id'), resource_type.get('id'))
         statement1 = dict()
         statement1['action'] = [action.get('name')]

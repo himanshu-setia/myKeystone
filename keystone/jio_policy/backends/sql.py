@@ -472,13 +472,6 @@ def create_resource_type(resource_type_id, resource_type_name, service_type):
             raise exception.ValidationError(attribute='valid service name', target='resource')
     return ref
 
-def get_resource_type(resource_type_id):
-    session = sql.get_session()
-    ref = session.query(ResourceTypeModel).get(resource_type_id)
-    if not ref:
-        raise exception.PolicyNotFound(policy_id=resource_type_id)
-    return ref
-
 def create_action_resource_type_mapping(action_id, resource_type_id):
     ref = dict()
     ref['action_id'] = action_id
