@@ -259,7 +259,6 @@ class UserV3(controller.V3Controller):
             hints=hints)
         return UserV3.wrap_collection(context, refs, hints=hints)
 
-    #@controller.filterprotected('domain_id', 'enabled', 'name')
     @controller.jio_policy_filterprotected(args=['Group'], filters=['domain_id', 'enabled', 'name'])
     def list_users_in_group(self, context,group_id,filters={'domain_id', 'enabled', 'name'}):
         hints = UserV3.build_driver_hints(context, filters)
@@ -392,7 +391,6 @@ class GroupV3(controller.V3Controller):
 
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
-    #@controller.filterprotected('name')
     @controller.jio_policy_filterprotected(args=['Group','User'],filters=['name'])
     def list_groups_for_user(self, context, user_id,filters='name'):
         hints = GroupV3.build_driver_hints(context, filters)
