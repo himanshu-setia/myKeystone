@@ -232,7 +232,6 @@ class UserV3(controller.V3Controller):
 
         return True
 
-    #@controller.protected()
     @controller.jio_policy_filterprotected(args='User')
     def create_user(self, context, user):
         self._require_attribute(user, 'name')
