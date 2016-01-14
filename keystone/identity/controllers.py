@@ -391,7 +391,7 @@ class GroupV3(controller.V3Controller):
 
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
-    @controller.jio_policy_filterprotected(args=['Group','User'],filters=['name'])
+    @controller.jio_policy_filterprotected(args='User',filters=['name'])
     def list_groups_for_user(self, context, user_id,filters='name'):
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_groups_for_user(user_id, hints=hints)
