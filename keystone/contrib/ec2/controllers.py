@@ -308,11 +308,13 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                 raise exception.ValidationError(attribute="action and resource",
                                             target="query_string")
         else:
-            act_res_list = ec2Credentials["action_resource_list"]
+            act_res_list = None
+            if ec2Credentials:
+                act_res_list = ec2Credentials.get("action_resource_list", None)
+            if not act_res_list and credentials:
+                act_res_list = credentials.get("action_resource_list",None)
             if not act_res_list:
-                act_res_list = credentials["action_resource_list"]
-            if not act_res_list:
-                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials')
+                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
             act_res_list = json.loads(act_res_list)
             try:
                 action = [item['action'] for item in act_res_list]
