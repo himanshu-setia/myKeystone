@@ -1,6 +1,6 @@
 # Copyright 2013 OpenStack Foundation
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# Liceneed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
@@ -394,16 +394,27 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         service_type = self.service.get('type')
         return jio_policy_sql.create_action(action_id, action_name, service_type)
 
+    def new_resource_type_ref(self):
+        resource_type_id =  uuid.uuid4().hex
+        resource_type_name =  uuid.uuid4().hex
+        service_type = self.service.get('type')
+        return jio_policy_sql.create_resource_type(resource_type_id, resource_type_name, service_type)
+
+    def action_resource_type_mapping(self, action_id, resource_type_id):
+        return jio_policy_sql.create_action_resource_type_mapping(action_id, resource_type_id)
+
     def new_jio_policy_ref(self):
         ref = dict()
         ref['id'] = uuid.uuid4().hex
         ref['service'] = self.service.get('type')
         ref['name'] = uuid.uuid4().hex
         action = self.new_action_ref()
+        resource_type = self.new_resource_type_ref()
+        self.action_resource_type_mapping(action.get('id'), resource_type.get('id'))
         statement1 = dict()
         statement1['action'] = [action.get('name')]
         #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
-        resource = 'jrn:jcs:'+':'+self.service.get('type')+':'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
+        resource = 'jrn:jcs:'+self.service.get('type')+':'+self.project_id+':'+resource_type.get('name')+':'+uuid.uuid4().hex
         statement1['resource'] =[resource]
         statement1['effect'] = 'allow'
         ref['statement'] = [statement1]
@@ -418,13 +429,13 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         statement1 = dict()
         statement1['action'] = [action.get('name')]
         #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
-        resource = 'jrn:jcs:'+':'+self.service.get('type')+':'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
+        resource = 'jrn:jcs:'+self.service.get('type')+':'+self.project_id+':'+self.service.get('type')+':'+uuid.uuid4().hex
         statement1['resource'] =[resource]
         statement1['effect'] = 'allow'
         statement2 = dict()
         statement2['action'] = [action.get('name')]
         #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
-        resource2 = 'jrn:jcs:'+':'+self.service.get('type')+':'+self.project_id+':'+self.service.get('type')+':*'
+        resource2 = 'jrn:jcs:'+self.service.get('type')+':'+self.project_id+':'+self.service.get('type')+':*'
         statement2['resource'] =[resource2]
         statement2['effect'] = 'deny'
         ref['statement'] = [statement1,statement2]

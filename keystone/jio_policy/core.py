@@ -82,13 +82,14 @@ class Manager(manager.Manager):
         self.identity_api.get_group(group_id)
         self.driver.detach_policy_from_group(policy_id, group_id)
 
-    def is_user_authorized(self, user_id, project_id, action, resource):
+    def is_user_authorized(self, user_id, project_id, action, resource, is_implicit_allow):
         group_ids = self._get_group_ids_for_user_id(user_id)
         ref = self.driver.is_user_authorized(user_id,
                                              group_ids,
                                              project_id,
                                              action,
-                                             resource)
+                                             resource,
+                                             is_implicit_allow)
         return ref
 
     def _get_group_ids_for_user_id(self, user_id):

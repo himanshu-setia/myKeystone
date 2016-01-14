@@ -134,6 +134,12 @@ class SqlModels(SqlTests):
                 ('service_type', sql.String, 255))
         self.assertExpectedSchema('action', cols)
 
+    def test_resource_type(self):
+        cols = (('id', sql.String, 64),
+                ('name', sql.String, 255),
+                ('service_type', sql.String, 255))
+        self.assertExpectedSchema('resource_type', cols)
+
     def test_resource(self):
         cols = (('id', sql.String, 64),
                 ('name', sql.String, 255),
@@ -162,6 +168,11 @@ class SqlModels(SqlTests):
                 ('user_group_id', sql.String, 64),
                 ('policy_id', sql.String, 64))
         self.assertExpectedSchema('policy_user_group_mapping', cols)
+
+    def test_action_resource_type_mapping(self):
+        cols = (('action_id', sql.String, 64),
+                ('resource_type_id', sql.String, 64))
+        self.assertExpectedSchema('action_resource_type_mapping', cols)
 
 class SqlIdentity(SqlTests, test_backend.IdentityTests):
     def test_password_hashed(self):
@@ -988,3 +999,5 @@ class DeprecatedDecorators(SqlTests):
         self.assertRaises(versionutils.DeprecatedConfig,
                           self.assignment_api.create_project,
                           project_ref['id'], project_ref)
+
+

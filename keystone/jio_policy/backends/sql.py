@@ -66,7 +66,7 @@ class ResourceModel(sql.ModelBase):
     attributes = ['id', 'name', 'service_type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
-    service_type = sql.Column(sql.String(64), nullable=False)
+    service_type = sql.Column(sql.String(255), nullable=False)
 
 
 class ActionResourceMappingModel(sql.ModelBase):
@@ -95,7 +95,7 @@ class Policy(jio_policy.Driver):
     @classmethod
     def _get_service_name(cls, resource_name):
         ls = resource_name.split(':')
-        if len(ls) < 5:
+        if len(ls) < 3:
             raise exception.ValidationError(attribute='service name',
                                             target='resource')
         return ls[2]
@@ -124,12 +124,6 @@ class Policy(jio_policy.Driver):
                 action = stmt.get('action', None)
                 effect = stmt.get('effect', None)
                 resource = stmt.get('resource', None)
-                # Autofill account id in resource
-                # Assumption account_id == domain_id == project_id
-                if resource.split(':')[3]=='':
-                    var=resource.split(':')
-                    var[3]=project_id
-                    resource=':'.join(var)
 
                 if effect == 'allow':
                     effect = True
@@ -152,9 +146,9 @@ class Policy(jio_policy.Driver):
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
                         resource_type = Policy._get_resource_type(pair[1][1])
-                        if resource_type is not None and self.is_action_resource_type_allowed(pair[0], resource_type) is False:
-                            raise exception.ValidationError(
-                                    attribute='valid resource type', target='resource')
+                        if resource_type is not None and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
+                             raise exception.ValidationError(
+                                     attribute='valid resource type', target='resource')
 
                         session.add(
                             PolicyActionResourceModel(
@@ -296,7 +290,7 @@ class Policy(jio_policy.Driver):
                     policy_id=row.id).delete()
             session.delete(policy_ref)
 
-    def is_user_authorized(self, user_id, group_id, project_id, action, resource):
+    def is_user_authorized(self, user_id, group_id, project_id, action, resource, is_implicit_allow):
         session = sql.get_session()
         # query action id from action name in action table
         action_info = session.query(ActionModel.id).\
@@ -325,9 +319,10 @@ class Policy(jio_policy.Driver):
             for i in resource_indirect:
                 resource_indirect[j] = i[0]
                 j = j+1
-
+        # We should not be raising a error here as missing resource is not an error. We should be returning is_implicit_allow
         if resource_direct == [] and resource_indirect == []:
-            raise exception.ResourceNotFound(resource=resource)
+            return is_implicit_allow
+            #raise exception.ResourceNotFound(resource=resource)
 
         user_query = session.query(PolicyActionResourceModel.effect,
                                    PolicyUserGroupModel,
@@ -395,7 +390,7 @@ class Policy(jio_policy.Driver):
                 is_authorized = is_authorized and row[0]
 
         if not user_query and not group_query:
-            is_authorized = False
+            is_authorized = is_implicit_allow
 
         return is_authorized
 
@@ -445,8 +440,7 @@ class Policy(jio_policy.Driver):
                 ret.append(new_ref)
         return ret
 
-    def is_action_resource_type_allowed(self, action_name, resource_type):
-        session = sql.get_session()
+    def is_action_resource_type_allowed(self, session, action_name, resource_type):
         query = session.query(ActionModel).join(ActionResourceMappingModel).join(ResourceTypeModel)
         query = query.filter(ActionModel.action_name == action_name)
         rows = query.filter(ResourceTypeModel.name == resource_type).count()
@@ -463,4 +457,29 @@ def create_action(action_id, action_name, service_type):
             session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
         except sql.DBReferenceError:
             raise exception.ValidationError(attribute='valid service name', target='resource')
+    return ref
+
+def create_resource_type(resource_type_id, resource_type_name, service_type):
+    ref = dict()
+    ref['id'] = resource_type_id
+    ref['name'] = resource_type_name
+    ref['service_type'] = service_type
+    session = sql.get_session()
+    with session.begin():
+        try:
+            session.add(ResourceTypeModel(id=resource_type_id, name=resource_type_name, service_type=service_type))
+        except sql.DBReferenceError:
+            raise exception.ValidationError(attribute='valid service name', target='resource')
+    return ref
+
+def create_action_resource_type_mapping(action_id, resource_type_id):
+    ref = dict()
+    ref['action_id'] = action_id
+    ref['resource_type_id'] = resource_type_id
+    session = sql.get_session()
+    with session.begin():
+        try:
+            session.add(ActionResourceMappingModel(action_id=action_id, resource_type_id=resource_type_id))
+        except sql.DBReferenceError:
+            raise exception.ValidationError(attribute='valid action id or resource id', target='resource')
     return ref
