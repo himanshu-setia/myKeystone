@@ -45,3 +45,14 @@ class TestAuthWithActionResource(test_v3.RestfulTestCase):
             'action_id': self.jio_policy_with_wildcards.get('statement')[0].get('action')[0],
             'resource_id' : self.jio_policy_with_wildcards.get('statement')[0].get('resource')[0]},
             headers=headers, expected_status = 403)
+
+    def test_jio_policy_for_root_user_ref(self):
+        self.jio_policy_for_root_user = self.new_jio_policy_root_ref()
+        self.jio_policy_api.create_policy(self.project_id, self.jio_policy_for_root_user.get('id'), copy.deepcopy(self.jio_policy_for_root_user))
+        self.jio_policy_api.attach_policy_to_user(self.jio_policy_for_root_user.get('id'), self.user_id)
+        scoped_token = self.get_scoped_token()
+        headers = {'X-Subject-Token': scoped_token}
+        r = self.get('/token-auth?action=%(action_id)s&resource=%(resource_id)s' % {
+            'action_id': self.jio_policy.get('statement')[0].get('action')[0],
+            'resource_id' : self.jio_policy.get('statement')[0].get('resource')[0]},
+            headers=headers)

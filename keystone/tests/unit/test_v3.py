@@ -415,6 +415,12 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
     def action_resource_type_mapping(self, action_id, resource_type_id):
         return jio_policy_sql.create_action_resource_type_mapping(action_id, resource_type_id)
+    
+    def new_action_root_ref(self):
+        action_id =  uuid.uuid4().hex
+        action_name = 'jrn:jcs:*'
+        service_type = self.service.get('type')
+        return jio_policy_sql.create_action(action_id, action_name, service_type)
 
     def new_jio_policy_ref(self):
         ref = dict()
@@ -455,6 +461,20 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         statement2['resource'] =[resource2]
         statement2['effect'] = 'deny'
         ref['statement'] = [statement1,statement2]
+        return ref
+
+    def new_jio_policy_root_ref(self):
+        ref = dict()
+        ref['id'] = uuid.uuid4().hex
+        ref['service'] = self.service.get('type')
+        ref['name'] = uuid.uuid4().hex
+        action = self.new_action_root_ref()
+        statement1 = dict()
+        statement1['action'] = [action.get('name')]
+        resource = 'jrn:jcs:*'+':'+self.project_id+':*' 
+        statement1['resource'] =[resource]
+        statement1['effect'] = 'allow'
+        ref['statement'] = [statement1]
         return ref
 
     def new_trust_ref(self, trustor_user_id, trustee_user_id, project_id=None,
@@ -1427,4 +1447,3 @@ class JsonHomeTestMixin(object):
         # Check that the example relationships are present.
         for rel in self.JSON_HOME_DATA:
             self.assertThat(resp_data['resources'][rel],
-                            matchers.Equals(self.JSON_HOME_DATA[rel]))
