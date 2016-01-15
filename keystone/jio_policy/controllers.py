@@ -30,7 +30,6 @@ class JioPolicyV3(controller.V3Controller):
         ref = self.jio_policy_api.list_actions()
         return ref
 
-    @controller.jio_policy_filterprotected()
     @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
         policy_id = uuid.uuid4().hex

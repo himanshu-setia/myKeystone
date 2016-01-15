@@ -39,7 +39,7 @@ class RootV3(controller.V3Controller):
         user_controller = identity.controllers.UserV3()
         group_controller = identity.controllers.GroupV3()
         credential_controller = cred.controllers.CredentialV3()
-
+        jio_policy_controller = jio_policy.controllers.JioPolicyV3()
         if Action == 'CreateUser':
             user = {}
             if 'DefaultProjectId' in query_string:
@@ -160,35 +160,35 @@ class RootV3(controller.V3Controller):
         if Action == 'ListActions':
             return jio_policy_controller.list_actions(context)
         elif Action == 'CreatePolicy':
-            policy_document = json.loads(query_strings['PolicyDocument'])['policy']
+            policy_document = json.loads(query_string['PolicyDocument'])['policy']
             return jio_policy_controller.create_policy(context, policy_document)
         elif Action == 'ListPolicies':
             return jio_policy_controller.list_policies(context)
         elif Action == 'GetPolicy':
-            jio_policy_id = query_strings['PolicyId']
+            jio_policy_id = query_string['PolicyId']
             return jio_policy_controller.get_policy(context, jio_policy_id)
         elif Action == 'DeletePolicy':
-            jio_policy_id = query_strings['PolicyId']
+            jio_policy_id = query_string['PolicyId']
             return jio_policy_controller.delete_policy(context, jio_policy_id)
         elif Action == 'UpdatePolicy':
-            policy_document = query_strings['PolicyDocument']
-            jio_policy_id = query_strings['PolicyId']
+            policy_document = query_string['PolicyDocument']
+            jio_policy_id = query_string['PolicyId']
             return jio_policy_controller.update_policy(context, jio_policy_id, policy_document)
         elif Action == 'AttachPolicyToUser':
-            jio_policy_id = query_strings['PolicyId']
-            user_id = query_strings['UserId']
+            jio_policy_id = query_string['PolicyId']
+            user_id = query_string['UserId']
             return jio_policy_controller.attach_policy_to_user(context, jio_policy_id, user_id)
         elif Action == 'DetachPolicyFromUser':
-            jio_policy_id = query_strings['PolicyId']
-            user_id = query_strings['UserId']
+            jio_policy_id = query_string['PolicyId']
+            user_id = query_string['UserId']
             jio_policy_controller.detach_policy_from_user(context, jio_policy_id, user_id)
         elif Action == 'AttachPolicyToGroup':
-            jio_policy_id = query_strings['PolicyId']
-            group_id = query_strings['GroupId']
+            jio_policy_id = query_string['PolicyId']
+            group_id = query_string['GroupId']
             return jio_policy_controller.attach_policy_to_group(context, jio_policy_id, group_id)
         elif Action == 'DetachPolicyFromGroup':
-            jio_policy_id = query_strings['PolicyId']
-            group_id = query_strings['GroupId']
+            jio_policy_id = query_string['PolicyId']
+            group_id = query_string['GroupId']
             jio_policy_controller.detach_policy_from_group(context, jio_policy_id,group_id)
         else:
             raise exception.ActionNotFound(action = Action)
