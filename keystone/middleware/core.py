@@ -34,7 +34,7 @@ CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 ec2_opts = [
     cfg.StrOpt('keystone_url',
-               default='http://localhost:5000/v2.0',
+               default='http://127.0.0.1:5000/v2.0',
                help='URL to get token from ec2 request.'),
     cfg.StrOpt('keystone_ec2_tokens_url',
                default='$keystone_url/ec2tokens',
@@ -320,10 +320,11 @@ class AuthContextMiddleware(wsgi.Middleware):
            params.pop('Signature', None)
            params.pop('signature', None)
 
+       host = req.headers.get('X-Forwarded-Host',req.host)
        cred_dict = {
            'access': access,
            'signature': signature,
-           'host': req.host,
+           'host': host,
            'verb': req.method,
            'path': req.path,
            'params': params,
@@ -346,12 +347,12 @@ class AuthContextMiddleware(wsgi.Middleware):
        response = requests.request('POST', token_url, verify=verify,
                                    data=creds_json, headers=headers)
        status_code = response.status_code
-       result = response.json() 
-       
-       LOG.warning(result)
        if status_code != 200:
            msg = response.reason
            raise exception.Unauthorized()
+
+       result = response.json() 
+       LOG.debug(result)
        token_id = None
        if 'token' in result:
                 # NOTE(andrey-mp): response from keystone v3
