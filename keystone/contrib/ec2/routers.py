@@ -65,8 +65,6 @@ class Ec2Extension(wsgi.ExtensionRouter):
             action='authorise_with_action_resource',
             conditions=dict(method=['POST']))
 
-
-
 class Ec2ExtensionV3(wsgi.V3ExtensionRouter):
 
     def add_routes(self, mapper):
@@ -88,6 +86,14 @@ class Ec2ExtensionV3(wsgi.V3ExtensionRouter):
             path_vars={
                 'user_id': json_home.Parameters.USER_ID,
             })
+        # ec2-auth
+        self._add_resource(
+            mapper, ec2_controller,
+            path='/ec2-auth',
+            post_action='authorise_with_action_resource',
+            rel=build_resource_relation(resource_name='ec2-auth')
+            )
+
         self._add_resource(
             mapper, ec2_controller,
             path='/users/{user_id}/credentials/OS-EC2/{credential_id}',

@@ -193,7 +193,7 @@ class User(controller.V2Controller):
         return ref
 
 
-@dependency.requires('identity_api')
+@dependency.requires('identity_api','jio_policy_api')
 class UserV3(controller.V3Controller):
     collection_name = 'users'
     member_name = 'user'
@@ -307,6 +307,22 @@ class UserV3(controller.V3Controller):
 
         return False
 
+    @controller.filterprotected('domain_id', 'name')
+    def get_group_summary(self, context,filters, group_id):
+        hints = GroupV3.build_driver_hints(context, filters)
+        refs = self.identity_api.list_user_summary_for_group(group_id,
+            domain_scope=self._get_domain_id_for_list_request(context),
+            hints=hints)
+        
+        policy_refs = self.jio_policy_api.get_group_policies(group_id)
+
+        if not policy_refs:
+            refs['Policies'] = ''
+        else:
+            refs['Policies'] = policy_refs
+        
+        return refs
+
     @controller.protected()
     def change_password(self, context, user_id, user):
         original_password = user.get('original_password')
@@ -337,7 +353,7 @@ class UserV3(controller.V3Controller):
             raise exception.Unauthorized()
 
 
-@dependency.requires('identity_api')
+@dependency.requires('identity_api','jio_policy_api')
 class GroupV3(controller.V3Controller):
     collection_name = 'groups'
     member_name = 'group'
@@ -363,6 +379,15 @@ class GroupV3(controller.V3Controller):
         refs = self.identity_api.list_groups(
             domain_scope=self._get_domain_id_for_list_request(context),
             hints=hints)
+
+        for indx,ref in enumerate(refs):
+            groupid = ref['id']
+            policies = self.jio_policy_api.get_group_policies(groupid)
+            if not policies: 
+                refs[indx]['Policies'] = '' 
+            else:
+                    refs[indx]['Policies'] = policies
+
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
     #@controller.filterprotected('name')
@@ -389,3 +414,20 @@ class GroupV3(controller.V3Controller):
     def delete_group(self, context, group_id):
         initiator = notifications._get_request_audit_info(context)
         self.identity_api.delete_group(group_id, initiator)
+
+    @controller.filterprotected('domain_id', 'name')
+    def get_user_summary(self, context,filters, user_id):
+        hints = GroupV3.build_driver_hints(context, filters)
+        refs = self.identity_api.list_group_summary_for_user(user_id,
+            domain_scope=self._get_domain_id_for_list_request(context),
+            hints=hints)
+        
+        policy_refs = self.jio_policy_api.get_user_policies(user_id)
+
+        if not policy_refs:
+            refs['Policies'] = ''
+        else:
+            refs['Policies'] = policy_refs
+
+        return refs
+

@@ -401,8 +401,9 @@ class Auth(controller.V3Controller):
             # trusts and have successfully issued a token.
             if trust:
                 self.trust_api.consume_use(trust['id'])
-
-            return render_token_data_response(token_id, token_data,
+            response=dict(expires_at=token_data["token"]["expires_at"],
+                          user_id=token_data["token"]["user"]["id"])
+            return render_token_data_response(token_id, response,
                                               created=True)
         except exception.TrustNotFound as e:
             raise exception.Unauthorized(e)
@@ -528,7 +529,7 @@ class Auth(controller.V3Controller):
         token_id = context.get('subject_token_id')
         return self.token_provider_api.revoke_token(token_id)
 
-    @controller.protected()
+    # REMOVING ROLES CHECK FOR VALIDATE_TOKEN, onlu for mock
     def validate_token(self, context):
         token_id = context.get('subject_token_id')
         include_catalog = 'nocatalog' not in context['query_string']
@@ -536,7 +537,9 @@ class Auth(controller.V3Controller):
             token_id)
         if not include_catalog and 'catalog' in token_data['token']:
             del token_data['token']['catalog']
-        return render_token_data_response(token_id, token_data)
+        response = dict(domain_id=token_data["token"]["user"]["domain"]["id"],
+                        user_id=token_data["token"]["user"]["id"])
+        return render_token_data_response(token_id, response)
 
     def validate_token_data(self, context):
         token_id = context.get('subject_token_id')
