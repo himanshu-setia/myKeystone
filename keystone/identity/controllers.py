@@ -232,7 +232,7 @@ class UserV3(controller.V3Controller):
 
         return True
 
-    @controller.jio_policy_filterprotected(args='User')
+    @controller.jio_policy_filterprotected()
     def create_user(self, context, user):
         self._require_attribute(user, 'name')
         expiry_days = CONF.password_policy.expiry_days
@@ -264,7 +264,7 @@ class UserV3(controller.V3Controller):
         refs = self.identity_api.list_users_in_group(group_id, hints=hints)
         return UserV3.wrap_collection(context, refs, hints=hints)
 
-    @controller.jio_policy_filterprotected(args='User')
+    @controller.jio_policy_user_filterprotected(args='User')
     def get_user(self, context, user_id):
         ref = self.identity_api.get_user(user_id)
         return UserV3.wrap_member(context, ref)
@@ -277,7 +277,7 @@ class UserV3(controller.V3Controller):
         ref = self.identity_api.update_user(user_id, user, initiator)
         return UserV3.wrap_member(context, ref)
 
-    @controller.jio_policy_filterprotected(args='User')
+    @controller.jio_policy_user_filterprotected(args='User')
     def update_user(self, context, user_id, user):
         return self._update_user(context, user_id, user)
 
@@ -293,7 +293,7 @@ class UserV3(controller.V3Controller):
     def remove_user_from_group(self, context, user_id, group_id):
         self.identity_api.remove_user_from_group(user_id, group_id)
 
-    @controller.jio_policy_filterprotected(args='User')
+    @controller.jio_policy_user_filterprotected(args='User')
     def delete_user(self, context, user_id):
         initiator = notifications._get_request_audit_info(context)
         return self.identity_api.delete_user(user_id, initiator)
@@ -323,7 +323,7 @@ class UserV3(controller.V3Controller):
         
         return refs
 
-    @controller.jio_policy_filterprotected(args='User')
+    @controller.jio_policy_user_filterprotected(args='User')
     def change_password(self, context, user_id, user):
         original_password = user.get('original_password')
         if original_password is None:
@@ -362,7 +362,7 @@ class GroupV3(controller.V3Controller):
         super(GroupV3, self).__init__()
         self.get_member_from_driver = self.identity_api.get_group
 
-    @controller.jio_policy_filterprotected(args='Group')
+    @controller.jio_policy_filterprotected()
     def create_group(self, context, group):
         self._require_attribute(group, 'name')
 
