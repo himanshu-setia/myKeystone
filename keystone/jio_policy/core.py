@@ -92,6 +92,15 @@ class Manager(manager.Manager):
                                              is_implicit_allow)
         return ref
 
+    def list_policy_summary(self,policy_id):
+	return self.driver.list_policy_summary(policy_id)
+
+    def get_group_policies(self, groupid):
+	return self.driver.get_group_policies(groupid)
+
+    def get_user_policies(self, userid):
+        return self.driver.get_user_policies(userid)
+
     def _get_group_ids_for_user_id(self, user_id):
         return [x['id'] for
                 x in self.identity_api.list_groups_for_user(user_id)]

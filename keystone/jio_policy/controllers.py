@@ -21,7 +21,7 @@ from keystone import notifications
 from keystone.jio_policy import schema
 
 
-@dependency.requires('jio_policy_api')
+@dependency.requires('jio_policy_api','identity_api')
 class JioPolicyV3(controller.V3Controller):
     collection_name = 'policies'
     member_name = 'policy'
@@ -87,3 +87,18 @@ class JioPolicyV3(controller.V3Controller):
     def detach_policy_from_group(self, context, jio_policy_id, group_id):
         return self.jio_policy_api.detach_policy_from_group(jio_policy_id,
                                                             group_id)
+
+    @controller.protected()
+    def get_policy_summary(self, context, jio_policy_id):
+        refs = self.jio_policy_api.list_policy_summary(jio_policy_id)
+
+        sum_list = refs['Attached Entities']
+        for ref in sum_list:
+	    
+            if ref['Type'] == 'UserPolicy':
+                ref['Entity Name'] = (self.identity_api.get_user(ref['Entity Name']))['name']
+            else:
+                ref['Entity Name'] = (self.identity_api.get_group(ref['Entity Name']))['name']
+
+        return refs
+
