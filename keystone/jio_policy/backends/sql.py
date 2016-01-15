@@ -296,7 +296,7 @@ class Policy(jio_policy.Driver):
                     policy_id=row.id).delete()
             session.delete(policy_ref)
 
-    def is_user_authorized(self, user_id, group_id, project_id, action, resource):
+    def is_user_authorized(self, user_id, group_id, project_id, action, resource, is_implicit_allow):
         session = sql.get_session()
         # query action id from action name in action table
         action_info = session.query(ActionModel.id).\
@@ -325,9 +325,10 @@ class Policy(jio_policy.Driver):
             for i in resource_indirect:
                 resource_indirect[j] = i[0]
                 j = j+1
-
+        # We should not be raising a error here as missing resource is not an error. We should be returning is_implicit_allow
         if resource_direct == [] and resource_indirect == []:
-            raise exception.ResourceNotFound(resource=resource)
+            return is_implicit_allow
+            #raise exception.ResourceNotFound(resource=resource)
 
         user_query = session.query(PolicyActionResourceModel.effect,
                                    PolicyUserGroupModel,
@@ -395,7 +396,7 @@ class Policy(jio_policy.Driver):
                 is_authorized = is_authorized and row[0]
 
         if not user_query and not group_query:
-            is_authorized = False
+            is_authorized = is_implicit_allow
 
         return is_authorized
 

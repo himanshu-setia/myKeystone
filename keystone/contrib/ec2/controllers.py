@@ -298,9 +298,14 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
         if query_string:
             action = query_string.pop('action', None)
             resource = query_string.get('resource', None)
+            imp_allow = query_string.get('implicit_allow', False)
+            if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                imp_allow = True
+            else:
+                imp_allow = False
             if action and resource:
                 is_authorized = self.jio_policy_api.\
-                    is_user_authorized(user_id, project_id, action, resource)
+                    is_user_authorized(user_id, project_id, action, resource, imp_allow)
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
@@ -315,17 +320,22 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                 act_res_list = credentials.get("action_resource_list",None)
             if not act_res_list:
                 raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
-            act_res_list = json.loads(act_res_list)
+            #act_res_list = json.loads(act_res_list)
             try:
                 action = [item['action'] for item in act_res_list]
                 resource = [item['resource'] for item in act_res_list]
+                is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
             except KeyError as e:
                 raise exception.ValidationError(attribute="action and resource",
                                             target="body")
             is_authorized = True
-            for act, res in zip(action, resource):
+            for act, res, imp_allow in zip(action, resource, is_implicit_allow):
+                if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                    imp_allow = True
+                else:
+                    imp_allow = False
                 is_authorized = is_authorized and self.jio_policy_api.\
-                    is_user_authorized(user_id, project_id, act, res)
+                    is_user_authorized(user_id, project_id, act, res, imp_allow)
 
             if not is_authorized:
                 raise exception.Forbidden(message='Policy does not allow to'
