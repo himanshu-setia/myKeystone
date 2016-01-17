@@ -13,7 +13,7 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         self.jio_policy = self.new_jio_policy_ref()
         self.jio_policy_id = self.jio_policy.get('id')
         self.jio_policy_api.create_policy(self.project_id, self.jio_policy_id, copy.deepcopy(self.jio_policy))
-    
+
     def test_get_jio_policy(self):
         r = self.get(
                 '/jio_policies/%(policy_id)s' % {
