@@ -202,13 +202,7 @@ def jio_policy_user_filterprotected(**params):
                 else:
                     action_name = f.__name__
                 action = jio_namespace + jio_delimiter + action_default_service + jio_delimiter + action_name
-                auth_context = self.get_auth_context(context)
-                user_id = auth_context.get('user_id')
                 
-                if user_id == context['query_string']['Id']:
-                    LOG.debug('User id matched. No policy check done')
-                    return
-                           
                 project_id = auth_context.get('project_id')
                 resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
                 resource = resource_pre + project_id 
