@@ -2623,6 +2623,7 @@ class TestAuth(test_v3.RestfulTestCase):
         self.assertValidUnscopedTokenResponse(r)
 
     def test_disabled_default_project_domain_result_in_unscoped_token(self):
+        self.new_root_action()
         domain_ref = self.new_domain_ref()
         r = self.post('/domains', body={'domain': domain_ref})
         domain = self.assertValidDomainResponse(r, domain_ref)

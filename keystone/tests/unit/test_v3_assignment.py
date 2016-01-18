@@ -130,6 +130,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         self.credential_api.create_credential(
             self.credential_id,
             self.credential)
+        self.new_root_action()
 
     # Domain CRUD tests
 
