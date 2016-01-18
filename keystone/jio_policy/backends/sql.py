@@ -366,27 +366,40 @@ class Policy(jio_policy.Driver):
         user_query = user_query.\
             filter(JioPolicyModel.project_id == project_id)
         user_query = user_query.\
-            filter(PolicyActionResourceModel.action_id == action_info)
-        user_query = user_query.\
             filter(PolicyUserGroupModel.user_group_id == user_id)
-        user_query = user_query.\
-            filter(
-                   or_(
-                       PolicyActionResourceModel.action_id.
-                       in_(action_direct),
-                       PolicyActionResourceModel.action_id.
-                       in_(action_indirect)
-                          )
-                  ).all()
-        user_query = user_query.\
-            filter(
-                   or_(
-                       PolicyActionResourceModel.resource_id.
-                       in_(resource_direct),
-                       PolicyActionResourceModel.resource_id.
-                       in_(resource_indirect)
-                          )
-                  ).all()
+        if action_direct != [] and action_indirect != []:
+            user_query = user_query.\
+                filter(
+                       or_(
+                           PolicyActionResourceModel.action_id.
+                           in_(action_direct),
+                           PolicyActionResourceModel.action_id.
+                           in_(action_indirect)
+                              )
+                      )
+        elif action_direct != []:
+            user_query = user_query.\
+                filter(PolicyActionResourceModel.action_id.in_(action_direct))
+        else:
+            user_query = user_query.\
+                filter(PolicyActionResourceModel.action_id.in_(action_indirect))
+ 
+        if resource_direct != [] and resource_indirect != []:
+            user_query = user_query.\
+                filter(
+                       or_(
+                           PolicyActionResourceModel.resource_id.
+                           in_(resource_direct),
+                           PolicyActionResourceModel.resource_id.
+                           in_(resource_indirect)
+                              )
+                      ).all()
+        elif resource_direct != []:
+            user_query = user_query.\
+                filter(PolicyActionResourceModel.resource_id.in_(resource_direct)).all()
+        else:
+            user_query = user_query.\
+                filter(PolicyActionResourceModel.resource_id.in_(resource_indirect)).all()
 
         if group_id != []:
             group_query = session.query(PolicyActionResourceModel.effect,
@@ -401,29 +414,41 @@ class Policy(jio_policy.Driver):
             group_query = group_query.\
                 filter(JioPolicyModel.project_id == project_id)
             group_query = group_query.\
-                filter(PolicyActionResourceModel.action_id ==
-                       action_info)
-            group_query = group_query.\
                 filter(PolicyUserGroupModel.user_group_id.
                        in_(group_id))
-            group_query = group_query.\
-                filter(
-                       or_(
-                           PolicyActionResourceModel.action_id.
-                           in_(action_direct),
-                           PolicyActionResourceModel.action_id.
-                           in_(action_indirect)
-                              )
-                  ).all()
-            group_query = group_query.\
-                filter(
-                       or_(
-                           PolicyActionResourceModel.resource_id.
-                           in_(resource_direct),
-                           PolicyActionResourceModel.resource_id.
-                           in_(resource_indirect)
-                              )
-                      ).all()
+            if action_direct != [] and action_indirect != []:
+                group_query = group_query.\
+                    filter(
+                           or_(
+                               PolicyActionResourceModel.action_id.
+                               in_(action_direct),
+                               PolicyActionResourceModel.action_id.
+                               in_(action_indirect)
+                                  )
+                          )
+            elif action_direct != []:
+                group_query = group_query.\
+                    filter(PolicyActionResourceModel.action_id.in_(action_direct))
+            else:
+                group_query = group_query.\
+                    filter(PolicyActionResourceModel.action_id.in_(action_indirect))
+ 
+            if resource_direct != [] and resource_indirect != []:
+                group_query = group_query.\
+                    filter(
+                           or_(
+                               PolicyActionResourceModel.resource_id.
+                               in_(resource_direct),
+                               PolicyActionResourceModel.resource_id.
+                               in_(resource_indirect)
+                                  )
+                          ).all()
+            elif resource_direct != []:
+                group_query = group_query.\
+                    filter(PolicyActionResourceModel.resource_id.in_(resource_direct)).all()
+            else:
+                group_query = group_query.\
+                    filter(PolicyActionResourceModel.resource_id.in_(resource_indirect)).all()
         else:
             group_query = None
 
