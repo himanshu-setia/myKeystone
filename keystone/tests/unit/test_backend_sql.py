@@ -216,6 +216,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         ref = self.identity_api.create_user(ref)
 
         # assign a new ID with the same name, but this time in uppercase
+        ref['id'] = uuid.uuid4().hex
         ref['name'] = ref['name'].upper()
         self.identity_api.create_user(ref)
 

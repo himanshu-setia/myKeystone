@@ -739,7 +739,7 @@ class Manager(manager.Manager):
         # Generate a local ID - in the future this might become a function of
         # the underlying driver so that it could conform to rules set down by
         # that particular driver type.
-        user['id'] = uuid.uuid4().hex
+        user['id'] = user_ref.get('id', uuid.uuid4().hex)
         ref = driver.create_user(user['id'], user)
         notifications.Audit.created(self._USER, user['id'], initiator)
         return self._set_domain_id_and_mapping(
