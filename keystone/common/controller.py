@@ -172,15 +172,25 @@ def jio_policy_user_filterprotected(**params):
         def wrapper(self, context, *args, **kwargs):
             auth_context = self.get_auth_context(context)
             user_id = auth_context.get('user_id')
+            if 'Action' in context['query_string']:
+                action_name = context['query_string']['Action']
+            else:
+                action_name = f.__name__
+
+            if res_postfix in context['query_string']:
+                if action_name in ['GetCredential','DeleteCredential','UpdateCredential']:
+                    from keystone.credential.backends import  sql as credential_sql
+                    userid = credential_sql.get_userid_from_credential(context['query_string'][res_postfix])
+                else:
+                    userid = context['query_string'][res_postfix]
+
             if 'is_admin' in context and context['is_admin']:
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif res_postfix in context['query_string'] and user_id == context['query_string'][res_postfix]:
-                LOG.debug('User id matched. No policy check done') 
+            elif 'is_jio_admin' in context and context['is_jio_admin']:
+                LOG.warning(_LW('User is Jio admin; Bypassing authorization'))
+            elif user_id == userid:
+                LOG.debug('User id matched. No policy check done')            
             else:
-                if 'Action' in context['query_string']:
-                    action_name = context['query_string']['Action']
-                else:
-                    action_name = f.__name__
                 action = jio_namespace + jio_delimiter + action_default_service + jio_delimiter + action_name
                 
                 project_id = auth_context.get('project_id')
