@@ -232,7 +232,7 @@ class UserV3(controller.V3Controller):
 
         return True
 
-    @controller.jio_policy_filterprotected()
+    @controller.jio_policy_filterprotected(args='User')
     def create_user(self, context, user):
         self._require_attribute(user, 'name')
         expiry_days = CONF.password_policy.expiry_days
@@ -362,7 +362,7 @@ class GroupV3(controller.V3Controller):
         super(GroupV3, self).__init__()
         self.get_member_from_driver = self.identity_api.get_group
 
-    @controller.jio_policy_filterprotected()
+    @controller.jio_policy_filterprotected(args='Group')
     def create_group(self, context, group):
         self._require_attribute(group, 'name')
 
@@ -390,7 +390,7 @@ class GroupV3(controller.V3Controller):
 
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
-    @controller.jio_policy_filterprotected(args='User',filters=['name'])
+    @controller.jio_policy_user_filterprotected(args='User',filters=['name'])
     def list_groups_for_user(self, context, user_id,filters='name'):
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_groups_for_user(user_id, hints=hints)

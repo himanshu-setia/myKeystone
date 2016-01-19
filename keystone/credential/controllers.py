@@ -60,7 +60,7 @@ class CredentialV3(controller.V3Controller):
         else:
             return super(CredentialV3, self)._assign_unique_id(ref)
 
-    @controller.jio_policy_filterprotected()
+    @controller.jio_policy_filterprotected(args='Credential')
     @validation.validated(schema.credential_create, 'credential')
     def create_credential(self, context, credential):
         trust_id = self._get_trust_id_for_request(context)
