@@ -166,24 +166,6 @@ def protected(callback=None):
         return inner
     return wrapper
 
-def jio_admin_protected():
-    def protected(f):
-        @functools.wraps(f)
-        def wrapper(self, context, *args, **kwargs):
-            if 'is_admin' in context and context['is_admin']:
-                LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif 'is_jio_admin' in context and context['is_jio_admin']:
-                LOG.warning(_LW('User is Jio admin; Bypassing authorization'))
-            else:
-                auth_context = self.get_auth_context(context)
-                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s disallowed by jio admin filter.')
-                            %{'action': f.__name__, 'user_id':auth_context.get('user_id')}))
-
-            return f(self, context, *args, **kwargs)
-        return wrapper
-    return protected
-
-
 def jio_policy_user_filterprotected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
@@ -192,8 +174,6 @@ def jio_policy_user_filterprotected(**params):
             user_id = auth_context.get('user_id')
             if 'is_admin' in context and context['is_admin']:
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif 'is_jio_admin' in context and context['is_jio_admin']:
-                LOG.warning(_LW('User is Jio admin; Bypassing authorization'))
             elif res_postfix in context['query_string'] and user_id == context['query_string'][res_postfix]:
                 LOG.debug('User id matched. No policy check done') 
             else:
@@ -208,8 +188,6 @@ def jio_policy_user_filterprotected(**params):
                 resource = resource_pre + project_id 
                 resources = []
                 #TODO(roopali): simplify and optimise.
-                #if params and 'resource' in params:
-                #    resource = resource_pre + params.get('resource')
                 if params and 'args' in params:
                     items = params.get('args')
 
@@ -260,8 +238,6 @@ def jio_policy_filterprotected(**params):
         def wrapper(self, context, *args, **kwargs):
             if 'is_admin' in context and context['is_admin']:
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif 'is_jio_admin' in context and context['is_jio_admin']:
-                LOG.warning(_LW('User is Jio admin; Bypassing authorization'))
             else:
                 if 'Action' in context['query_string']:
                     action_name = context['query_string']['Action']
