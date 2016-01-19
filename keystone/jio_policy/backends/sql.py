@@ -300,6 +300,18 @@ class Policy(jio_policy.Driver):
 
     def is_user_authorized(self, user_id, group_id, project_id, action, resource, is_implicit_allow):
         session = sql.get_session()
+        # resource name must have 5 separators (:) e.g. 
+        # 'jrn:jcs:service:tenantid:rtype:res' is a valid resource name
+        # providing tenantid is optional for a service
+        # but the format should be maintained
+        if len(resource.split(':')) < 6:
+            raise exception.ResourceNotFound(resource=resource)            
+        # in case tenantid is not present in resource, update it
+        if resource.split(':')[3] == '':
+            var = resource.split(':')
+            var[3] = project_id
+            resource = ':'.join(var)
+
         # query action id from action name in action table
         action_direct = session.query(ActionModel.id).\
             filter(ActionModel.action_name == action).all()
