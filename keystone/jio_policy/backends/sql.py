@@ -146,7 +146,7 @@ class Policy(jio_policy.Driver):
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
                         resource_type = Policy._get_resource_type(pair[1][1])
-                        if resource_type is not None and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
+                        if resource_type is not None and resource_type is not '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
                              raise exception.ValidationError(
                                      attribute='valid resource type', target='resource')
 
@@ -470,13 +470,6 @@ def create_resource_type(resource_type_id, resource_type_name, service_type):
             session.add(ResourceTypeModel(id=resource_type_id, name=resource_type_name, service_type=service_type))
         except sql.DBReferenceError:
             raise exception.ValidationError(attribute='valid service name', target='resource')
-    return ref
-
-def get_resource_type(resource_type_id):
-    session = sql.get_session()
-    ref = session.query(ResourceTypeModel).get(resource_type_id)
-    if not ref:
-        raise exception.PolicyNotFound(policy_id=resource_type_id)
     return ref
 
 def create_action_resource_type_mapping(action_id, resource_type_id):

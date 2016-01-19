@@ -13,7 +13,6 @@ class TestAuthWithActionResource(test_v3.RestfulTestCase):
         self.jio_policy_api.create_policy(self.project_id, self.jio_policy.get('id'), copy.deepcopy(self.jio_policy))
         self.jio_policy_api.attach_policy_to_user(self.jio_policy.get('id'), self.user_id)
 
-    @unittest.skip("@himanshu-setia fix this plz.")
     def test_auth_with_action_resource(self):
         scoped_token = self.get_scoped_token()
         headers = {'X-Subject-Token': scoped_token}

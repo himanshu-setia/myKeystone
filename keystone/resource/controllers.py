@@ -33,6 +33,8 @@ from keystone.resource import schema
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
+root_action = 'jrn:jcs:*'
+root_resource = 'jrc:jcs:*:'
 
 @dependency.requires('resource_api')
 class Tenant(controller.V2Controller):
@@ -106,7 +108,7 @@ class Tenant(controller.V2Controller):
         self.resource_api.delete_project(tenant_id, initiator)
 
 
-@dependency.requires('resource_api')
+@dependency.requires('resource_api', 'identity_api', 'jio_policy_api')
 class DomainV3(controller.V3Controller):
     collection_name = 'domains'
     member_name = 'domain'
@@ -115,12 +117,41 @@ class DomainV3(controller.V3Controller):
         super(DomainV3, self).__init__()
         self.get_member_from_driver = self.resource_api.get_domain
 
+    def attach_root_policy(self, user_id):
+        # For root user, account id is same as user id
+        resource = root_resource + user_id+':*'
+        jio_policy = dict()
+        jio_policy['id'] = uuid.uuid4().hex
+        jio_policy['name'] = 'root_policy_'+user_id
+        statement = dict()
+        statement['action'] = [root_action]
+        statement['resource'] =[resource]
+        statement['effect'] = 'allow'
+        jio_policy['statement'] = [statement]
+        policy = self.jio_policy_api.create_policy(user_id, jio_policy.get('id'), jio_policy)
+        self.jio_policy_api.attach_policy_to_user(policy.get('id'), user_id)
+
     @controller.protected()
     @validation.validated(schema.domain_create, 'domain')
     def create_domain(self, context, domain):
         ref = self._assign_unique_id(self._normalize_dict(domain))
         initiator = notifications._get_request_audit_info(context)
         ref = self.resource_api.create_domain(ref['id'], ref, initiator)
+        project = dict()
+        project['domain_id'] = ref['id']
+        project['name'] = ref['name']
+        project['id'] = ref['id']
+        project = self.resource_api.create_project(ref['id'], project,
+                                          initiator=initiator)
+
+        user_ref = dict()
+        user_ref['id'] =  ref['id']
+        user_ref['domain_id'] = ref['id']
+        user_ref['name'] = ref['name']
+        if 'password' in domain and domain.get('password') is not None:
+            user_ref['password'] = domain.get('password')
+        user = self.identity_api.create_user(user_ref, initiator=None)
+        self.attach_root_policy(user.get('id'))
         return DomainV3.wrap_member(context, ref)
 
     @controller.filterprotected('enabled', 'name')
