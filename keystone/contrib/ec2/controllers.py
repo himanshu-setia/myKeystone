@@ -286,7 +286,6 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
 
 
 
-    @controller.v2_deprecated
     def authorise_with_action_resource(self, context, credentials=None, ec2Credentials=None):
         (user_ref, tenant_ref, metadata_ref, roles_ref,
          catalog_ref) = self._authenticate(credentials=credentials,
@@ -340,6 +339,8 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             if not is_authorized:
                 raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
+        
+
         # NOTE(morganfainberg): Make sure the data is in correct form since it
         # might be consumed external to Keystone and this is a v2.0 controller.
         # The token provider does not explicitly care about user_ref version
@@ -352,8 +353,10 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
-        token_data['token_id'] = token_id
-        return token_data
+        response = dict(domain_id=token_data["access"]["token"]["tenant"]["domain_id"],
+                        user_id=token_data["access"]["user"]["id"],
+                        token_id=token_data["access"]["token"]["id"])
+        return response
 
     @controller.v2_deprecated
     def get_credential(self, context, user_id, credential_id):
@@ -432,7 +435,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             raise exception.Forbidden(_('Credential belongs to another user'))
 
 
-@dependency.requires('policy_api', 'token_provider_api')
+@dependency.requires('policy_api', 'token_provider_api', 'jio_policy_api')
 class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
 
     collection_name = 'credentials'
@@ -468,6 +471,76 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
             user_ref['id'], method_names, project_id=project_ref['id'],
             metadata_ref=metadata_ref)
         return render_token_data_response(token_id, token_data)
+
+    def authorise_with_action_resource(self, context, credentials=None, ec2Credentials=None):
+        (user_ref, project_ref, metadata_ref, roles_ref,
+         catalog_ref) = self._authenticate(credentials=credentials,
+                                           ec2credentials=ec2Credentials)
+
+
+        # get user id
+        user_id = user_ref["id"]
+        project_id = project_ref["id"]
+        query_string = context.get('query_string', None)
+        if query_string:
+            action = query_string.pop('action', None)
+            resource = query_string.get('resource', None)
+            imp_allow = query_string.get('implicit_allow', False)
+            if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                imp_allow = True
+            else:
+                imp_allow = False
+            if action and resource:
+                is_authorized = self.jio_policy_api.\
+                    is_user_authorized(user_id, project_id, action, resource, imp_allow)
+                if not is_authorized:
+                    raise exception.Forbidden(message='Policy does not allow to'
+                                          'perform this action')
+            else:
+                raise exception.ValidationError(attribute="action and resource",
+                                            target="query_string")
+        else:
+            act_res_list = None
+            if ec2Credentials:
+                act_res_list = ec2Credentials.get("action_resource_list", None)
+            if not act_res_list and credentials:
+                act_res_list = credentials.get("action_resource_list",None)
+            if not act_res_list:
+                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
+            #act_res_list = json.loads(act_res_list)
+            try:
+                action = [item['action'] for item in act_res_list]
+                resource = [item['resource'] for item in act_res_list]
+                is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
+            except KeyError as e:
+                raise exception.ValidationError(attribute="action and resource",
+                                            target="body")
+            is_authorized = True
+            for act, res, imp_allow in zip(action, resource, is_implicit_allow):
+                if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                    imp_allow = True
+                else:
+                    imp_allow = False
+                is_authorized = is_authorized and self.jio_policy_api.\
+                    is_user_authorized(user_id, project_id, act, res, imp_allow)
+
+            if not is_authorized:
+                raise exception.Forbidden(message='Policy does not allow to'
+                                          'perform this action')
+        
+        method_names = ['ec2credential']
+
+        token_id, token_data = self.token_provider_api.issue_v3_token(
+            user_ref['id'], method_names, project_id=project_ref['id'],
+            metadata_ref=metadata_ref)
+        response = dict(domain_id=token_data["token"]["project"]["domain"]["id"],
+                        user_id=token_data["token"]["user"]["id"],
+                        token_id=token_id)
+
+        return render_token_data_response(token_id,response)
+
+
+
 
     @controller.protected(callback=_check_credential_owner_and_user_id_match)
     def ec2_get_credential(self, context, user_id, credential_id):

@@ -62,10 +62,20 @@ class Routers(wsgi.RoutersBase):
                     'jio_policy_id': json_home.Parameters.JIO_POLICY_ID,
                     'group_id': json_home.Parameters.GROUP_ID
                 })
+        
         self._add_resource(
                 mapper, policy_controller,
                 path='/actions',
                 get_action='list_actions',
                 rel=json_home.build_v3_resource_relation('jio_policy')
                 )
+
+        self._add_resource(
+                mapper, policy_controller,
+                path='/jio_policies/{jio_policy_id}/summary',
+                get_action='get_policy_summary',
+                rel=json_home.build_v3_resource_relation('jio_policy_summary'),
+                path_vars={
+                    'jio_policy_id': json_home.Parameters.JIO_POLICY_ID,
+                })
 

@@ -319,7 +319,7 @@ class Policy(jio_policy.Driver):
             for i in resource_indirect:
                 resource_indirect[j] = i[0]
                 j = j+1
-        # We should not be raising a error here as missing resource is not an error. We should be returning is_implicit_allow
+
         if resource_direct == [] and resource_indirect == []:
             return is_implicit_allow
             #raise exception.ResourceNotFound(resource=resource)

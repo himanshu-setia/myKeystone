@@ -224,9 +224,6 @@ class V2Controller(wsgi.Application):
     def filter_domain_id(ref):
         """Remove domain_id since v2 calls are not domain-aware."""
         if 'domain_id' in ref:
-            if ref['domain_id'] != CONF.identity.default_domain_id:
-                raise exception.Unauthorized(
-                    _('Non-default domain is not supported'))
             del ref['domain_id']
         return ref
 
