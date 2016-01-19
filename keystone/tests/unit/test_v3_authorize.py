@@ -13,7 +13,6 @@ class TestAuthWithActionResource(test_v3.RestfulTestCase):
         self.jio_policy_api.create_policy(self.project_id, self.jio_policy.get('id'), copy.deepcopy(self.jio_policy))
         self.jio_policy_api.attach_policy_to_user(self.jio_policy.get('id'), self.user_id)
 
-    @unittest.skip("@himanshu-setia fix this plz.")
     def test_auth_with_action_resource(self):
         scoped_token = self.get_scoped_token()
         headers = {'X-Subject-Token': scoped_token}
@@ -24,17 +23,17 @@ class TestAuthWithActionResource(test_v3.RestfulTestCase):
 
     def test_auth_with_no_action_resource_fail(self):
         r = self.get('/token-auth',
-                expected_status = 404)
+                expected_status = 400)
 
     def test_auth_with_false_action_fail(self):
         r = self.get('/token-auth?action=%(action_id)s&resource=%(resource_id)s' % {
             'action_id': uuid.uuid4().hex, 'resource_id' : self.jio_policy.get('statement')[0].get('resource')[0]},
-            expected_status = 404)
+            expected_status = 403)
 
     def test_auth_with_false_resource_fail(self):
         r = self.get('/token-auth?action=%(action_id)s&resource=%(resource_id)s' % {
             'action_id' : self.jio_policy.get('statement')[0].get('action')[0], 'resource_id' : uuid.uuid4().hex},
-            expected_status = 404)
+            expected_status = 403)
 
     def test_jio_policy_with_wildcards_attach_user_ref(self):
         self.jio_policy_with_wildcards = self.new_jio_policy_with_wildcards_ref()

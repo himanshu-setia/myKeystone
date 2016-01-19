@@ -146,7 +146,7 @@ class Policy(jio_policy.Driver):
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
                         resource_type = Policy._get_resource_type(pair[1][1])
-                        if resource_type is not None and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
+                        if resource_type is not None and resource_type is not '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
                              raise exception.ValidationError(
                                      attribute='valid resource type', target='resource')
 

@@ -119,7 +119,7 @@ class DomainV3(controller.V3Controller):
 
     def attach_root_policy(self, user_id):
         # For root user, account id is same as user id
-        resource = root_resource + user_id
+        resource = root_resource + user_id+':*'
         jio_policy = dict()
         jio_policy['id'] = uuid.uuid4().hex
         jio_policy['name'] = 'root_policy_'+user_id

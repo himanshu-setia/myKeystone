@@ -551,9 +551,6 @@ class Auth(controller.V3Controller):
         token_id = context.get('subject_token_id')
         return render_token_data_response(token_id, token_data)
 
-
-
-
     def _validate_token_with_action_resource(self, action, resource, user_id,
                                              project_id, is_implicit_allow, context):
         is_authorized = True
