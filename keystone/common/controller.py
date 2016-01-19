@@ -214,7 +214,7 @@ def jio_policy_user_filterprotected(**params):
                     resources.append(resource)
                 for r in resources:
                     try:
-                        effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r)
+                        effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r, False)
                         if effect is False:
                             LOG.debug('Jio policy based authorization failed')
                             raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
@@ -278,7 +278,7 @@ def jio_policy_filterprotected(**params):
                     resources.append(resource)
                 for r in resources:
                     try:
-                        effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r)
+                        effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r, False)
                         if effect is False:
                             LOG.debug('Jio policy based authorization failed')
                             raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
