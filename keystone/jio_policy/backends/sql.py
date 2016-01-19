@@ -305,7 +305,8 @@ class Policy(jio_policy.Driver):
             filter(ActionModel.action_name == action).all()
         action_generic = list()
         action_generic.append('jrn:jcs:*')
-        action_generic.append('jrn:jcs:'+action.split(':')[2]+':*')
+        if len(action.split(':')) > 3:
+            action_generic.append('jrn:jcs:'+action.split(':')[2]+':*')
         action_indirect = session.query(ActionModel.id).\
             filter(ActionModel.action_name.in_(action_generic)).all()
 
@@ -329,10 +330,12 @@ class Policy(jio_policy.Driver):
             filter(ResourceModel.name == resource).all()
         resource_generic = list()
         resource_generic.append(resource[:resource.rfind(':')+1]+'*')
-        resource_generic.append('jrn:jcs:'+resource.split(':')[2]+':*')
-        resource_generic.append('jrn:jcs:*'+resource.split(':')[3]+':*')
-        resource_generic.append('jrn:jcs:'+resource.split(':')[2]+':'+
-                                resource.split(':')[3]+':*')
+        if len(resource.split(':')) > 3:
+            resource_generic.append('jrn:jcs:'+resource.split(':')[2]+':*')
+        if len(resource.split(':')) > 4:
+            resource_generic.append('jrn:jcs:*'+resource.split(':')[3]+':*')
+            resource_generic.append('jrn:jcs:'+resource.split(':')[2]+':'+
+                                    resource.split(':')[3]+':*')
 
         resource_indirect = session.query(ResourceModel.id).\
             filter(ResourceModel.name.in_(resource_generic)).\
