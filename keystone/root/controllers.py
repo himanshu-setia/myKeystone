@@ -70,7 +70,7 @@ class RootV3(controller.V3Controller):
                 user['email'] = query_string['Email']
             if 'Enabled' in query_string:
             	user['enabled'] = (False, True) [query_string['Enabled'] == 'Yes']
-	    if 'Name' in query_string:
+            if 'Name' in query_string:
                 user['name'] = query_string['Name']
             if 'Password' in query_string:
                 user['password'] = query_string['Password']
