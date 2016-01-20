@@ -102,3 +102,11 @@ class Credential(credential.Driver):
             query = session.query(CredentialModel)
             query = query.filter_by(user_id=user_id)
             query.delete()
+
+def get_userid_from_credential(credential_id):
+    session = sql.get_session()
+    ref = session.query(CredentialModel).get(credential_id)
+    if ref is None:
+        raise exception.CredentialNotFound(credential_id=credential_id)
+    return ref['user_id']
+
