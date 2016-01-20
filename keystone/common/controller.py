@@ -195,7 +195,7 @@ def jio_policy_user_filterprotected(**params):
                 
                 project_id = auth_context.get('project_id')
                 resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
-                resource = resource_pre + project_id 
+                resource = resource_pre + project_id  + jio_delimiter
                 resources = []
                 #TODO(roopali): simplify and optimise.
                 if params and 'args' in params:
@@ -206,7 +206,7 @@ def jio_policy_user_filterprotected(**params):
 
                     for item in items:
                         resourceId=None
-                        resource_item = resource + jio_delimiter + item
+                        resource_item = resource + item + jio_delimiter
                         if not isinstance(params.get('args'), list):
                             item = res_postfix
                         else:
@@ -216,7 +216,7 @@ def jio_policy_user_filterprotected(**params):
                         #else:
                          #   resourceId= user_id
                         if resourceId is not None:
-                            resources.append(resource_item + jio_delimiter + resourceId)
+                            resources.append(resource_item + resourceId)
                         else:
                             resources.append(resource_item) 
 
@@ -258,7 +258,7 @@ def jio_policy_filterprotected(**params):
                 user_id = auth_context.get('user_id')
                 project_id = auth_context.get('project_id')
                 resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
-                resource = resource_pre + project_id 
+                resource = resource_pre + project_id + jio_delimiter
                 resources = []
                 #TODO(roopali): simplify and optimise.
                 #if params and 'resource' in params:
@@ -271,7 +271,7 @@ def jio_policy_filterprotected(**params):
                         
                     for item in items:
                         resourceId=None
-                        resource_item = resource + jio_delimiter + item
+                        resource_item = resource + item + jio_delimiter
                         if not isinstance(params.get('args'), list):
                             item = res_postfix
                         else:
@@ -281,7 +281,7 @@ def jio_policy_filterprotected(**params):
                         #else:
                          #   resourceId= user_id
                         if resourceId is not None:
-                            resources.append(resource_item + jio_delimiter + resourceId)
+                            resources.append(resource_item + resourceId)
                         else:
                             resources.append(resource_item)
                 else:
