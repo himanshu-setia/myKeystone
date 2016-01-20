@@ -32,7 +32,7 @@ from keystone.models import token_model
 LOG = log.getLogger(__name__)
 CONF = cfg.CONF
 action_default_service = 'iam'
-resource_default_service = 'identity'
+resource_default_service = 'iam'
 jio_delimiter = ':'
 jio_namespace = 'jrn:jcs'
 jio_admin_domain_default = 'jcs_domain'
