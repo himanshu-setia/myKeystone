@@ -1478,4 +1478,3 @@ class JsonHomeTestMixin(object):
         for rel in self.JSON_HOME_DATA:
             self.assertThat(resp_data['resources'][rel],
                             matchers.Equals(self.JSON_HOME_DATA[rel]))
-
