@@ -352,7 +352,7 @@ class Policy(jio_policy.Driver):
         if len(resource.split(':')) > 3:
             resource_generic.append('jrn:jcs:'+resource.split(':')[2]+':*')
         if len(resource.split(':')) > 4:
-            resource_generic.append('jrn:jcs:*'+resource.split(':')[3]+':*')
+            resource_generic.append('jrn:jcs:*:'+resource.split(':')[3]+':*')
             resource_generic.append('jrn:jcs:'+resource.split(':')[2]+':'+
                                     resource.split(':')[3]+':*')
 
