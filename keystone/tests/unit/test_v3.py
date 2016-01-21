@@ -1339,35 +1339,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         auth_info = auth.controllers.AuthInfo.create(no_context, auth_data)
         auth_context = {'extras': {}, 'method_names': []}
         return context, auth_info, auth_context
-    
-    # Jio policy
-    def assertValidJioPolicyResponse(self, resp, *args, **kwargs):
-        return self.assertValidResponse(
-            resp,
-            'policy',
-            self.assertValidJioPolicy,
-            keys_to_check=['name', 'service', 'statement'],
-            *args,
-            **kwargs)
-    
-    def assertValidJioPolicyListResponse(self, resp, *args, **kwargs):
-        import pdb; pdb.set_trace()
-        return self.assertValidListResponse(
-             resp,
-             'policies',
-             self.assertValidJioPolicy,
-             keys_to_check=['name'],
-             *args,
-             **kwargs)
-
-    def assertValidJioPolicy(self, entity, ref=None):
-        self.assertIsNotNone(entity.get('id'))
-        self.assertIsNotNone(entity.get('name'))
-        self.assertIsNotNone(entity.get('created_at'))
-        self.assertIsNotNone(entity.get('attachment_count'))
-        if ref:
-            self.assertEqual(ref['name'], entity['name'])
-        return entity
 
     # Jio policy
     def assertValidJioPolicyResponse(self, resp, *args, **kwargs):
