@@ -1477,3 +1477,4 @@ class JsonHomeTestMixin(object):
         # Check that the example relationships are present.
         for rel in self.JSON_HOME_DATA:
             self.assertThat(resp_data['resources'][rel],
+                            matchers.Equals(self.JSON_HOME_DATA[rel]))
