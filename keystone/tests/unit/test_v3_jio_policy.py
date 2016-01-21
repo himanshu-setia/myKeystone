@@ -87,9 +87,9 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
         new_group = {'domain_id': self.domain_id, 'name': uuid.uuid4().hex}
         new_group = self.identity_api.create_group(new_group)
         r = self.put(
-                    '/jio_policies/%(policy_id)s/groups/%(group_id)s' % 
+                    '/jio_policies/%(policy_id)s/groups/%(group_id)s' %
                     {'policy_id': self.jio_policy_id, 'group_id':  new_group['id']})
-        
+
     def test_detach_policy_from_group(self):
         new_group = {'domain_id': self.domain_id, 'name': uuid.uuid4().hex}
         new_group = self.identity_api.create_group(new_group)
