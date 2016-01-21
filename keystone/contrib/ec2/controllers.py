@@ -1,4 +1,4 @@
-# Copyright 2013 OpenStack Foundation
+	# Copyright 2013 OpenStack Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -153,8 +153,6 @@ class Ec2ControllerCommon(object):
                         sys.exc_info()[2])
 
         roles = metadata_ref.get('roles', [])
-        if not roles:
-            raise exception.Unauthorized(message='User not valid for tenant.')
         roles_ref = [self.role_api.get_role(role_id) for role_id in roles]
 
         catalog_ref = self.catalog_api.get_catalog(
