@@ -34,7 +34,7 @@ CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
 root_action = 'jrn:jcs:*'
-root_resource = 'jrc:jcs:*:'
+root_resource = 'jrn:jcs:*:'
 
 @dependency.requires('resource_api')
 class Tenant(controller.V2Controller):

@@ -664,7 +664,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         """
         entities = resp.result.get(key)
         self.assertIsNotNone(entities)
-
+        
         if expected_length is not None:
             self.assertEqual(expected_length, len(entities))
         elif ref is not None:
@@ -1394,6 +1394,7 @@ class AuthContextMiddlewareTestCase(RestfulTestCase):
         return fake_req()
 
     def test_auth_context_build_by_middleware(self):
+        # test to make sure AuthContextMiddleware successful build the auth
         # context from the incoming auth token
         admin_token = self.get_scoped_token()
 
@@ -1447,3 +1448,4 @@ class JsonHomeTestMixin(object):
         # Check that the example relationships are present.
         for rel in self.JSON_HOME_DATA:
             self.assertThat(resp_data['resources'][rel],
+                            matchers.Equals(self.JSON_HOME_DATA[rel]))
