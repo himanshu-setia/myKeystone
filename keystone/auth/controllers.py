@@ -593,7 +593,7 @@ class Auth(controller.V3Controller):
         # get user id
         auth_context = self.get_auth_context(context)
         user_id = token_data["token"]["user"]["id"]
-        project_id = token_data["token"]["project"]["id"]
+        project_id = token_data["token"]["user"]["domain"]["id"]
         self._validate_token_with_action_resource(
                     [action], [resource], user_id, project_id, [is_implicit_allow], context)
         return self.render_response(token_data,context)
@@ -616,7 +616,7 @@ class Auth(controller.V3Controller):
                                               'perform this action')
         auth_context = self.get_auth_context(context)
         user_id = token_data["token"]["user"]["id"]
-        project_id = token_data["token"]["project"]["id"]
+        project_id = token_data["token"]["user"]["domain"]["id"]
         self._validate_token_with_action_resource(
                     action, resource, user_id, project_id, is_implicit_allow, context)
         return self.render_response(token_data,context)
