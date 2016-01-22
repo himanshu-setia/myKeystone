@@ -55,12 +55,11 @@ def token_to_auth_context(token):
         LOG.warning(_LW('RBAC: Invalid user data in token'))
         raise exception.Unauthorized()
 
-    if token.project_scoped:
-        auth_context['project_id'] = token.project_id
-    elif token.domain_scoped:
+    if token.domain_scoped:
+        auth_context['project_id'] = token.domain_id
         auth_context['domain_id'] = token.domain_id
     else:
-        LOG.debug('RBAC: Proceeding without project or domain scope')
+        LOG.debug('RBAC: Proceeding without domain scope')
 
     if token.trust_scoped:
         auth_context['is_delegated_auth'] = True
