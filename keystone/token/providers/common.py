@@ -270,6 +270,7 @@ class V3TokenDataHelper(object):
                                    user_id=None):
         def _check_roles(roles, user_id, project_id, domain_id):
             # User was granted roles so simply exit this function.
+            return
             if roles:
                 return
             if project_id:
@@ -375,22 +376,7 @@ class V3TokenDataHelper(object):
                     filtered_roles.append({'id': role['id'],
                                            'name': role['name']})
 
-            # user has no project or domain roles, therefore access denied
-            if not filtered_roles:
-                if token_project_id:
-                    msg = _('User %(user_id)s has no access '
-                            'to project %(project_id)s') % {
-                                'user_id': user_id,
-                                'project_id': token_project_id}
-                else:
-                    msg = _('User %(user_id)s has no access '
-                            'to domain %(domain_id)s') % {
-                                'user_id': user_id,
-                                'domain_id': token_domain_id}
-                LOG.debug(msg)
-                raise exception.Unauthorized(msg)
-
-            token_data['roles'] = filtered_roles
+          token_data['roles'] = filtered_roles
 
     def _populate_service_catalog(self, token_data, user_id,
                                   domain_id, project_id, trust):
@@ -468,14 +454,8 @@ class V3TokenDataHelper(object):
         self._populate_roles(token_data, user_id, domain_id, project_id, trust,
                              access_token)
         self._populate_audit_info(token_data, audit_info)
-
-        if include_catalog:
-            self._populate_service_catalog(token_data, user_id, domain_id,
-                                           project_id, trust)
-        self._populate_service_providers(token_data)
         self._populate_token_dates(token_data, expires=expires, trust=trust,
                                    issued_at=issued_at)
-        self._populate_oauth_section(token_data, access_token)
         return {'token': token_data}
 
 
