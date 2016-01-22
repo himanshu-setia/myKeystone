@@ -50,6 +50,10 @@ class Manager(manager.Manager):
         ref = self.driver.create_policy(project_id, policy_id, policy)
         return ref
 
+    def create_resource_based_policy(self, project_id, policy_id, policy):
+        ref = self.driver.create_resource_based_policy(project_id, policy_id, policy)
+        return ref
+
     def list_policies(self, project_id):
         # TODO(ajayaa) Check whether the user has permission to list policies
         # in the project.

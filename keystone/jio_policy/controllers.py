@@ -30,7 +30,7 @@ class JioPolicyV3(controller.V3Controller):
         ref = self.jio_policy_api.list_actions()
         return ref
 
-    @controller.jio_policy_filterprotected(args='Policy')
+    #@controller.jio_policy_filterprotected(args='Policy')
     @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
         policy_id = uuid.uuid4().hex
@@ -43,7 +43,21 @@ class JioPolicyV3(controller.V3Controller):
                                                    policy)
         return JioPolicyV3.wrap_member(context, policy)
 
-    @controller.jio_policy_filterprotected(args='Policy')
+    #@controller.jio_policy_filterprotected(args='Policy')
+    @validation.validated(schema.policy_create, 'policy')
+    def create_resource_based_policy(self, context, policy):
+        import pdb;pdb.set_trace()
+        policy_id = uuid.uuid4().hex
+        try:
+            project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'project_id']
+        except KeyError:
+            raise exceptions.Forbidden()
+        policy = self.jio_policy_api.create_resource_based_policy(project_id, policy_id,
+                                                   policy)
+        return JioPolicyV3.wrap_member(context, policy)
+
+    #@controller.jio_policy_filterprotected(args='Policy')
     def list_policies(self, context):
         try:
             project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][

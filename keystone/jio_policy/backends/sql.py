@@ -29,6 +29,7 @@ class JioPolicyModel(sql.ModelBase, sql.DictBase):
     attributes = ['id', 'project_id', 'created_at', 'deleted_at']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
+    type = sql.Column(sql.String(64), nullable=False)
     project_id = sql.Column(sql.String(64), nullable=False)
     created_at = sql.Column(sql.DateTime, nullable=False)
     updated_at = sql.Column(sql.DateTime)
@@ -90,6 +91,25 @@ class PolicyUserGroupModel(sql.ModelBase):
     policy_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
 
 
+class PolicyActionPrincipleModel(sql.ModelBase):
+    __tablename__ = 'policy_action_principle'
+    attributes = ['policy_id', 'action_id', 'principle_id', 'principle_type', 'effect']
+    policy_id = sql.Column(sql.String(64), sql.ForeignKey('jio_policy.id'), primary_key=True)
+    action_id = sql.Column(sql.String(64), sql.ForeignKey('action.id'), primary_key=True)
+    principle_id = sql.Column(sql.String(64), primary_key=True)
+    principle_type = sql.Column(sql.String(64), nullable=False)
+    effect = sql.Column(sql.Boolean)
+
+
+class PolicyResourcepModel(sql.ModelBase):
+    __tablename__ = 'policy_resource_mapping'
+    attributes = ['principle_id', 'policy_id']
+    principle_id = sql.Column(sql.String(64), nullable=False,
+                               primary_key=True)
+    policy_id = sql.Column(sql.String(64), sql.ForeignKey('jio_policy.id'), primary_key=True)
+
+
+
 class Policy(jio_policy.Driver):
 
     @classmethod
@@ -109,6 +129,7 @@ class Policy(jio_policy.Driver):
 
     @sql.handle_conflicts(conflict_type='policy')
     def create_policy(self, project_id, policy_id, policy):
+        import pdb;pdb.set_trace()
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.get('name', None)
@@ -182,6 +203,72 @@ class Policy(jio_policy.Driver):
         ref['updated_at'] = created_at
         return ref
 
+
+
+    @sql.handle_conflicts(conflict_type='policy')
+    def create_resource_based_policy(self, project_id, policy_id, policy):
+        import pdb;pdb.set_trace()
+        ref = copy.deepcopy(policy)
+        ref['id'] = policy_id
+        name = policy.get('name', None)
+        statement = policy.get('statement', None)
+        created_at = datetime.utcnow()
+
+        with sql.transaction() as session:
+            session.add(JioPolicyModel(id=policy_id, name=name,
+                        #type='Resource',
+                        project_id=project_id,
+                        created_at=created_at,
+                        updated_at=created_at,
+                        policy_blob=jsonutils.dumps(ref)))
+            for stmt in statement:
+                action = stmt.get('action', None)
+                effect = stmt.get('effect', None)
+                principle = stmt.get('principle', None)
+
+                if effect == 'allow':
+                    effect = True
+                elif effect == 'deny':
+                    effect = False
+                else:
+                    raise exception.ValidationError(attribute='allow or deny',
+                                                    target='effect')
+                principle_ids = [uuid.uuid4().hex for i in range(len(principle))]
+                try:
+                    zip_principle = zip(principle_ids, principle)
+
+                    for pair in itertools.product(action, zip_principle):
+                        #check if action is allowed in resource type
+                        action_id = session.query(ActionModel).filter_by(
+                                action_name=pair[0]).with_entities(
+                                        ActionModel.id).one()[0]
+                        principile_list = Policy._get_principle(pair[1][1])
+                        principle_id = '*' if len(principle_list) < 2 else principle_list[2]
+                        principle_type = None if len(principle_list) < 1 else prinicple_list[1]
+                        if principle_type is not None and principle_type not in ['*','User','Group']:
+                             raise exception.ValidationError(
+                                     attribute='valid principle type', target='principle')
+
+                        if principle_list[0] == project_id:
+                             raise exception.ValidationError(
+                                     attribute='valid account id', target='principle')
+
+                        session.add(
+                            PolicyActionPrincipleModel(
+                                policy_id=policy_id, action_id=action_id,
+                                principle_id=pair[1][0], principle_type=principle_type ,effect=effect))
+
+                except sql.NotFound:
+                    raise exception.ValidationError(
+                            attribute='valid action', target='policy')
+                except sql.DBReferenceError:
+                    raise exception.ValidationError(
+                            attribute='valid service name', target='resource')
+
+        ref['attachment_count'] = 0
+        ref['created_at'] = created_at
+        ref['updated_at'] = created_at
+        return ref
     def list_policies(self, project_id):
         session = sql.get_session()
 
@@ -535,6 +622,29 @@ class Policy(jio_policy.Driver):
                 new_ref[r] = ref.get(r)
                 ret.append(new_ref)
         return ret
+
+    def list_policy_summary(self,policy_id):
+        session = sql.get_session()
+        policy = self._get_policy(session,policy_id)
+        query = session.query(PolicyUserGroupModel).filter_by(policy_id = policy_id) \
+            .with_entities(
+                    PolicyUserGroupModel.user_group_id, PolicyUserGroupModel.type)
+
+        summary_list = {}
+        summary_list['Policy Document'] =policy.policy_blob
+        summary_list['Attached Entities'] = query.count()
+        summary_list['Policy JRN'] = 'jrn:jcs:iam:'  ':policy:' + policy.name	
+        summary_list['Creation Time'] = policy.created_at
+	
+        sum_list = []
+        for row in query:
+            dict = {}
+            dict['Entity Name'] = row.user_group_id
+            dict['Type'] = row.type
+            sum_list.append(dict)
+
+        summary_list['Attached Entities'] = sum_list
+        return summary_list 
 
     def is_action_resource_type_allowed(self, session, action_name, resource_type):
         query = session.query(ActionModel).join(ActionResourceMappingModel).join(ResourceTypeModel)

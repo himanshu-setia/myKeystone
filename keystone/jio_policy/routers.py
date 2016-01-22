@@ -32,6 +32,14 @@ class Routers(wsgi.RoutersBase):
 
         self._add_resource(
             mapper, policy_controller,
+            path='/jio_policies_rbd',
+            post_action='create_resource_based_policy',
+            get_action='list_policies',
+            rel=json_home.build_v3_resource_relation('jio_policies'),
+            )
+
+        self._add_resource(
+            mapper, policy_controller,
             path='/jio_policies/{jio_policy_id}',
             delete_action='delete_policy',
             get_action='get_policy',
