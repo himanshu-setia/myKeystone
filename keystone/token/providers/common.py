@@ -375,8 +375,7 @@ class V3TokenDataHelper(object):
                 for role in roles:
                     filtered_roles.append({'id': role['id'],
                                            'name': role['name']})
-
-          token_data['roles'] = filtered_roles
+            token_data['roles'] = filtered_roles
 
     def _populate_service_catalog(self, token_data, user_id,
                                   domain_id, project_id, trust):
