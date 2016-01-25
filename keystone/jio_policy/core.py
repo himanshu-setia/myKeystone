@@ -67,8 +67,14 @@ class Manager(manager.Manager):
     def delete_policy(self, policy_id):
         ref = self.driver.delete_policy(policy_id)
 
+    def delete_resource_based_policy(self, policy_id):
+        ref = self.driver.delete_resource_based_policy(policy_id)
+
     def update_policy(self, policy_id, policy):
         return self.driver.update_policy(policy_id, policy)
+
+    def update_resource_based_policy(self, policy_id, policy):
+        return self.driver.update_resource_based_policy(policy_id, policy)
 
     def attach_policy_to_user(self, policy_id, user_id):
         self.identity_api.get_user(user_id)
@@ -77,6 +83,12 @@ class Manager(manager.Manager):
     def detach_policy_from_user(self, policy_id, user_id):
         self.identity_api.get_user(user_id)
         self.driver.detach_policy_from_user(policy_id, user_id)
+
+    def attach_policy_to_resource(self, policy_id, resource):
+        self.driver.attach_policy_to_resource(policy_id, resource)
+
+    def detach_policy_from_resource(self, policy_id, resource_id):
+        self.driver.detach_policy_from_resource(policy_id, resource_id)
 
     def attach_policy_to_group(self, policy_id, group_id):
         self.identity_api.get_group(group_id)

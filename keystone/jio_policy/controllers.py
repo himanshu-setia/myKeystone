@@ -77,9 +77,19 @@ class JioPolicyV3(controller.V3Controller):
         return self.jio_policy_api.delete_policy(jio_policy_id)
 
     @controller.jio_policy_filterprotected(args='Policy')
+    def delete_resource_based_policy(self, context, jio_policy_id):
+        return self.jio_policy_api.delete_resource_based_policy(jio_policy_id)
+
+    @controller.jio_policy_filterprotected(args='Policy')
     @validation.validated(schema.policy_update, 'policy')
     def update_policy(self, context, jio_policy_id, policy):
         ref = self.jio_policy_api.update_policy(jio_policy_id, policy)
+        return JioPolicyV3.wrap_member(context, ref)
+
+    #@controller.jio_policy_filterprotected(args='Policy')
+    @validation.validated(schema.policy_update, 'policy')
+    def update_resource_based_policy(self, context, jio_policy_id, policy):
+        ref = self.jio_policy_api.update_resource_based_policy(jio_policy_id, policy)
         return JioPolicyV3.wrap_member(context, ref)
 
     @controller.jio_policy_filterprotected(args=['Policy','User'])
@@ -101,6 +111,18 @@ class JioPolicyV3(controller.V3Controller):
     def detach_policy_from_group(self, context, jio_policy_id, group_id):
         return self.jio_policy_api.detach_policy_from_group(jio_policy_id,
                                                             group_id)
+
+    #@controller.jio_policy_filterprotected(args=['Policy','User'])
+    def attach_policy_to_resource(self, context, jio_policy_id, resource):
+        import pdb;pdb.set_trace()
+        return self.jio_policy_api.attach_policy_to_resource(jio_policy_id,
+                                                         resource)
+
+    #@controller.jio_policy_filterprotected(args=['Policy','User'])
+    def detach_policy_from_resource(self, context, jio_policy_id, resource_id):
+        import pdb;pdb.set_trace()
+        return self.jio_policy_api.detach_policy_from_resource(jio_policy_id,
+                                                           resource_id)
 
     @controller.protected()
     def get_policy_summary(self, context, jio_policy_id):

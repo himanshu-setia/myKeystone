@@ -101,10 +101,10 @@ class PolicyActionPrincipleModel(sql.ModelBase):
     effect = sql.Column(sql.Boolean)
 
 
-class PolicyResourcepModel(sql.ModelBase):
+class PolicyResourceModel(sql.ModelBase):
     __tablename__ = 'policy_resource_mapping'
-    attributes = ['principle_id', 'policy_id']
-    principle_id = sql.Column(sql.String(64), nullable=False,
+    attributes = ['resource_id', 'policy_id']
+    resource_id = sql.Column(sql.String(64), sql.ForeignKey('resource.id'),
                                primary_key=True)
     policy_id = sql.Column(sql.String(64), sql.ForeignKey('jio_policy.id'), primary_key=True)
 
@@ -125,7 +125,17 @@ class Policy(jio_policy.Driver):
         ls = resource.split(':')
         if len(ls) < 5:
               return None
-        return ls[4]
+        return str(ls[4])
+
+    @classmethod
+    def _get_principle_list(cls, principle):
+        ls = principle.split(':')
+        return ls
+
+    @classmethod
+    def _get_resource_list(cls, resource):
+        ls = resource.split(':')
+        return ls
 
     @sql.handle_conflicts(conflict_type='policy')
     def create_policy(self, project_id, policy_id, policy):
@@ -138,7 +148,8 @@ class Policy(jio_policy.Driver):
 
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
-                        project_id=project_id, created_at=created_at,
+                        project_id=project_id, type='User',
+                        created_at=created_at,
                         updated_at=created_at,
                         policy_blob=jsonutils.dumps(ref)))
             for stmt in statement:
@@ -152,7 +163,6 @@ class Policy(jio_policy.Driver):
                         var=resource.split(':')
                         var[3]=project_id
                         resource=':'.join(var)
-
                 # Autofill account id in resource
                 # Assumption account_id == domain_id == project_id
                 for index, item in enumerate(resource):
@@ -172,6 +182,31 @@ class Policy(jio_policy.Driver):
                 try:
                     zip_resource = zip(resource_ids, resource)
                     for pair in zip_resource:
+
+                        #resource = Policy._get_resource_list(pair[1])
+                        #acc_id = resource[3]
+                        #res_id = resource[5]
+
+                        #if acc_id != project_id:
+                            #LOG.debug('Cross Account Policy')
+                         #   id = session.query(PolicyResourceModel).join(JioPolicyModel)\
+                          #                 .filter(PolicyResourceModel.resource_id == res_id)\
+                           #                .filter(JioPolicyModel.project_id == JioPolicyModel.project_id)\
+                            #               .with_entities(JioPolicyModel.id).one()[0]
+
+                            #result_tuple = session.query(PolicyActionPrincipleModel).one()
+                                               #.filter_by(policy_id= '5f778f3b6161d48f').all()
+
+                            #cross_account_access_ok = False
+                            #for res in result_tuple:
+                             #   if res['policy_id'] == id and res['principle_id'] == res_id and res['effect'] == 1:
+                              #      cross_account_access_ok = True
+                               #     break
+ 
+                            #if cross_account_access_ok is not True:
+                             #   raise exception.ValidationError(attribute='cross account access',
+                              #  target='resource')
+
                         session.add(ResourceModel(id=pair[0], name=pair[1],
                                     service_type=Policy._get_service_name(
                                         pair[1])))
@@ -182,7 +217,7 @@ class Policy(jio_policy.Driver):
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
                         resource_type = Policy._get_resource_type(pair[1][1])
-                        if resource_type is not None and resource_type is not '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
+                        if resource_type is not None and resource_type != '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
                              raise exception.ValidationError(
                                      attribute='valid resource type', target='resource')
 
@@ -216,7 +251,7 @@ class Policy(jio_policy.Driver):
 
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
-                        #type='Resource',
+                        type='Resource',
                         project_id=project_id,
                         created_at=created_at,
                         updated_at=created_at,
@@ -233,18 +268,22 @@ class Policy(jio_policy.Driver):
                 else:
                     raise exception.ValidationError(attribute='allow or deny',
                                                     target='effect')
-                principle_ids = [uuid.uuid4().hex for i in range(len(principle))]
                 try:
-                    zip_principle = zip(principle_ids, principle)
 
-                    for pair in itertools.product(action, zip_principle):
-                        #check if action is allowed in resource type
+                    for pair in itertools.product(action, principle):
+                        
                         action_id = session.query(ActionModel).filter_by(
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
-                        principile_list = Policy._get_principle(pair[1][1])
-                        principle_id = '*' if len(principle_list) < 2 else principle_list[2]
-                        principle_type = None if len(principle_list) < 1 else prinicple_list[1]
+                       
+                        principle_list = Policy._get_principle_list(pair[1])
+                        principle_id = '*' if len(principle_list) < 3 else principle_list[2]
+                        principle_type = None if len(principle_list) < 2 else principle_list[1]
+
+                        #For principle as AccId, both the type and id of principle will be NULL
+                        #as we need to only give permission to the account owner.
+                        if principle_type == None:
+                            principle_id = None
                         if principle_type is not None and principle_type not in ['*','User','Group']:
                              raise exception.ValidationError(
                                      attribute='valid principle type', target='principle')
@@ -256,7 +295,7 @@ class Policy(jio_policy.Driver):
                         session.add(
                             PolicyActionPrincipleModel(
                                 policy_id=policy_id, action_id=action_id,
-                                principle_id=pair[1][0], principle_type=principle_type ,effect=effect))
+                                principle_id=principle_id, principle_type=principle_type ,effect=effect))
 
                 except sql.NotFound:
                     raise exception.ValidationError(
@@ -269,6 +308,7 @@ class Policy(jio_policy.Driver):
         ref['created_at'] = created_at
         ref['updated_at'] = created_at
         return ref
+
     def list_policies(self, project_id):
         session = sql.get_session()
 
@@ -373,6 +413,72 @@ class Policy(jio_policy.Driver):
             ref.policy_blob = jsonutils.dumps(policy_blob)
         return dict(policy_blob)
 
+
+    @sql.handle_conflicts(conflict_type='policy')
+    def update_resource_based_policy(self, policy_id, policy):
+        session = sql.get_session()
+        import pdb;pdb.set_trace()
+        # TODO(ajayaa) sql optimizations.
+        with session.begin():
+            ref = self._get_policy(session, policy_id)
+            ref.name = policy.get('name')
+            ref.updated_at = datetime.utcnow()
+            policy_blob = jsonutils.loads(ref.policy_blob)
+            policy_blob['name'] = ref.name
+            if 'statement' in policy:
+                statement = policy.get('statement')
+                policy_blob['statement'] = statement
+
+                session.query(PolicyActionPrincipleModel).filter_by(
+                        policy_id=ref.id).delete()
+
+                for stmt in statement:
+                    action = stmt.get('action', None)
+                    effect = stmt.get('effect', None)
+                    principle = stmt.get('principle', None)
+                    if effect == 'allow':
+                        effect = True
+                    elif effect == 'deny':
+                        effect = False
+                    else:
+                        raise exception.ValidationError(attribute='allow or deny',
+                                                        target='effect')
+                    try:
+    
+                        for pair in itertools.product(action, principle):
+                            #check if action is allowed in resource type
+                            action_id = session.query(ActionModel).filter_by(
+                                    action_name=pair[0]).with_entities(
+                                            ActionModel.id).one()[0]
+                            principle_list = Policy._get_principle_list(pair[1])
+    
+                            principle_id = '*' if len(principle_list) < 3 else principle_list[2]
+                            principle_type = None if len(principle_list) < 2 else principle_list[1]
+                    
+                            #For principle as AccId, both the type and id of principle will be NULL
+                            #as we need to only give permission to the account owner.
+                            if principle_type == None:
+                                principle_id = None
+
+                            if principle_type is not None and principle_type not in ['*','User','Group']:
+                                 raise exception.ValidationError(
+                                         attribute='valid principle type', target='principle')
+    
+                            session.add(
+                                PolicyActionPrincipleModel(
+                                    policy_id=policy_id, action_id=action_id,
+                                    principle_id=principle_id, principle_type=principle_type ,effect=effect))
+    
+                    except sql.NotFound:
+                        raise exception.ValidationError(
+                                attribute='valid action', target='policy')
+                    except sql.DBReferenceError:
+                        raise exception.ValidationError(
+                                attribute='valid service name', target='resource')
+
+            ref.policy_blob = jsonutils.dumps(policy_blob)
+        return dict(policy_blob)
+
     def delete_policy(self, policy_id):
         session = sql.get_session()
 
@@ -390,6 +496,19 @@ class Policy(jio_policy.Driver):
             for row in policy_user_group:
                 session.query(PolicyUserGroupModel).filter_by(
                     policy_id=row.id).delete()
+            session.delete(policy_ref)
+
+    def delete_resource_based_policy(self, policy_id):
+        session = sql.get_session()
+
+        with session.begin():
+            policy_ref = self._get_policy(session, policy_id)
+
+            session.query(PolicyActionPrincipleModel).filter_by(
+                policy_id=policy_ref.id).delete()
+            session.query(PolicyResourceModel).filter_by(
+                policy_id=policy_ref.id).delete()
+
             session.delete(policy_ref)
 
     def is_user_authorized(self, user_id, group_id, project_id, action, resource, is_implicit_allow):
@@ -609,6 +728,47 @@ class Policy(jio_policy.Driver):
     def detach_policy_from_group(self, policy_id, group_id):
         self._detach_policy_from_user_group(policy_id, group_id,
                                             type='GroupPolicy')
+
+    def attach_policy_to_resource(self, policy_id, resource):
+        session = sql.get_session()
+        import pdb;pdb.set_trace()
+        with session.begin():
+            resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
+            action_tuple = session.query(ActionModel).join(PolicyActionPrincipleModel)\
+                          .filter(PolicyActionPrincipleModel.policy_id == policy_id)\
+                          .with_entities(ActionModel.action_name).distinct().all()
+
+            actions = [x[0] for x in action_tuple]
+            try:
+                zip_resource = zip(resource_ids, resource)
+                policy_ref = self._get_policy(session, policy_id)
+                
+                for pair in itertools.product(actions, zip_resource):
+                    #check if action is allowed in resource type
+                    action_id = pair[0]
+                    resource_type = Policy._get_resource_type(pair[1][1])
+                    if resource_type is not None and resource_type is not '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
+                        raise exception.ValidationError(
+                                     attribute='valid resource type', target='resource')
+
+                for pair in zip_resource:
+                    session.add(ResourceModel(id=pair[0], name=pair[1],
+                                    service_type=Policy._get_service_name(
+                                        pair[1])))
+
+                    session.add(PolicyResourceModel(policy_id=policy_id,
+                                             resource_id=pair[0]))
+
+            except sql.NotFound:
+                raise exception.ValidationError(
+                    attribute='valid action', target='policy')
+
+
+    def detach_policy_from_resource(self, policy_id, resource_id):
+        session = sql.get_session()
+        policy_ref = self._get_policy(session, policy_id)
+        session.query(PolicyResourceModel).filter_by(
+            resource_id=resource_id).filter_by(policy_id=policy_id).delete()
 
     def list_actions(self, hints):
         session = sql.get_session()
