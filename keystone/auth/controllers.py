@@ -596,7 +596,9 @@ class Auth(controller.V3Controller):
         project_id = token_data["token"]["user"]["domain"]["id"]
         self._validate_token_with_action_resource(
                     [action], [resource], user_id, project_id, [is_implicit_allow], context)
-        return self.render_response(token_data,context)
+        response = dict(domain_id=token_data["token"]["user"]["domain"]["id"],
+                        user_id=token_data["token"]["user"]["id"])
+        return self.render_response(response,context)
 
     def validate_token_with_action_resource_post(self, context, **kwargs):
         token_data = self.validate_token_data(context)
@@ -619,7 +621,9 @@ class Auth(controller.V3Controller):
         project_id = token_data["token"]["user"]["domain"]["id"]
         self._validate_token_with_action_resource(
                     action, resource, user_id, project_id, is_implicit_allow, context)
-        return self.render_response(token_data,context)
+        response = dict(domain_id=token_data["token"]["user"]["domain"]["id"],
+                        user_id=token_data["token"]["user"]["id"])
+        return self.render_response(response,context)
 
     @controller.protected()
     def revocation_list(self, context, auth=None):
