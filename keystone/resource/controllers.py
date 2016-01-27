@@ -16,6 +16,7 @@
 """Workflow Logic the Resource service."""
 
 import uuid
+import random
 
 from oslo_config import cfg
 from oslo_log import log
@@ -35,6 +36,10 @@ LOG = log.getLogger(__name__)
 
 root_action = 'jrn:jcs:*'
 root_resource = 'jrn:jcs:*:'
+
+def _unique_account_id():
+    x=12
+    return '{0:0{x}d}'.format(random.randint(0, 10**x-1), x=x)
 
 @dependency.requires('resource_api')
 class Tenant(controller.V2Controller):
@@ -136,6 +141,13 @@ class DomainV3(controller.V3Controller):
     def create_domain(self, context, domain):
         ref = self._assign_unique_id(self._normalize_dict(domain))
         initiator = notifications._get_request_audit_info(context)
+        user_ref = dict()
+        user_ref['id'] =  ref['id']
+        ref['id'] = _unique_account_id()
+        # Check if not duplicate
+        while self.resource_api.duplicate(ref['id']):
+            ref['id'] = _unique_account_id()
+
         ref = self.resource_api.create_domain(ref['id'], ref, initiator)
         project = dict()
         project['domain_id'] = ref['id']
@@ -143,9 +155,6 @@ class DomainV3(controller.V3Controller):
         project['id'] = ref['id']
         project = self.resource_api.create_project(ref['id'], project,
                                           initiator=initiator)
-
-        user_ref = dict()
-        user_ref['id'] =  ref['id']
         user_ref['domain_id'] = ref['id']
         user_ref['name'] = ref['name']
         if 'password' in domain and domain.get('password') is not None:

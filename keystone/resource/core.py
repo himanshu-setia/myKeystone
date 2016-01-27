@@ -385,6 +385,9 @@ class Manager(manager.Manager):
             self.get_domain_by_name.set(ret, self, ret['name'])
         return ret
 
+    def duplicate(self, id):
+        return self.driver.duplicate(id)
+
     @manager.response_truncated
     def list_domains(self, hints=None):
         return self.driver.list_domains(hints or driver_hints.Hints())

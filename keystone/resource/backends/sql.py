@@ -178,6 +178,17 @@ class Resource(keystone_resource.Driver):
         return ref.to_dict()
 
     @sql.truncated
+    def duplicate(self,id):
+        with sql.transaction as session:
+            query = session.query(Domain)
+            query.filter(Domain.id == id)
+            domain_refs = query.all()
+            if domain_refs == None || domain_refs == []:
+                return True
+            else:
+                return False
+
+    @sql.truncated
     def list_domains(self, hints):
         with sql.transaction() as session:
             query = session.query(Domain)
