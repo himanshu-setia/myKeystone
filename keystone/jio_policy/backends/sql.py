@@ -124,13 +124,6 @@ class Policy(jio_policy.Driver):
                 action = stmt.get('action', None)
                 effect = stmt.get('effect', None)
                 resource = stmt.get('resource', None)
-                # Autofill account id in resource
-                # Assumption account_id == domain_id == project_id
-                for index, item in enumerate(resource):
-                    if len(item.split(':')) > 4 and item.split(':')[3]=='':
-                        var=resource.split(':')
-                        var[3]=project_id
-                        resource=':'.join(var)
 
                 # Autofill account id in resource
                 # Assumption account_id == domain_id == project_id
@@ -161,7 +154,7 @@ class Policy(jio_policy.Driver):
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
                         resource_type = Policy._get_resource_type(pair[1][1])
-                        if resource_type is not None and resource_type is not '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
+                        if resource_type is not None and resource_type != '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
                              raise exception.ValidationError(
                                      attribute='valid resource type', target='resource')
 
