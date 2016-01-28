@@ -26,6 +26,34 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
                 '/jio_policies',
                 body={'policy': ref})
         return self.assertValidJioPolicyResponse(r, ref)
+    
+    def test_create_jio_policy_incorrect_resource_type_fail(self):
+        ref = self.new_jio_policy_ref()
+        statement = ref.get('statement')[0]
+        resource = statement.get('resource')[0]
+        resource_part = resource.split(':')
+        resource_part[4] = uuid.uuid4().hex
+        resource=':'.join(resource_part)
+        statement['resource']= [resource]
+        ref['statement']=statement
+        r = self.post(
+                '/jio_policies',
+                body={'policy': ref},
+                expected_status = 400)
+
+    def test_create_jio_policy_incorrect_service_type_fail(self):
+        ref = self.new_jio_policy_ref()
+        statement = ref.get('statement')[0]
+        resource = statement.get('resource')[0]
+        resource_part = resource.split(':')
+        resource_part[2] = uuid.uuid4().hex
+        resource=':'.join(resource_part)
+        statement['resource']= [resource]
+        ref['statement']=statement
+        r = self.post(
+                '/jio_policies',
+                body={'policy': ref},
+                expected_status = 400)
 
     def test_list_jio_policies(self):
         r = self.get('/jio_policies')

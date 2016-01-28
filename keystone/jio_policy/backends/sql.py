@@ -208,7 +208,7 @@ class Policy(jio_policy.Driver):
     def get_policy(self, policy_id):
         session = sql.get_session()
         count = self._find_attachment_count(session, policy_id)
-        # TODO(ajayaa) Query for only required columns.
+        # TODO(roopali) Query for only required columns.
         ref = session.query(JioPolicyModel).get(policy_id)
         if not ref:
             raise exception.PolicyNotFound(policy_id=policy_id)
@@ -224,7 +224,7 @@ class Policy(jio_policy.Driver):
         session = sql.get_session()
         service = 'image'
 
-        # TODO(ajayaa) sql optimizations.
+        # TODO(roopali) sql optimizations.
         with session.begin():
             ref = self._get_policy(session, policy_id)
             ref.name = policy.get('name')
@@ -246,6 +246,15 @@ class Policy(jio_policy.Driver):
                     action = stmt.get('action', None)
                     effect = stmt.get('effect', None)
                     resource = stmt.get('resource', None)
+
+                    # Autofill account id in resource
+                    # Assumption account_id == domain_id == project_id
+                    for index, item in enumerate(resource):
+                        if len(item.split(':')) > 4 and item.split(':')[3]=='':
+                            var=item.split(':')
+                            var[3]=project_id
+                            resource[index]=':'.join(var)
+
                     if effect == 'allow':
                         effect = True
                     elif effect == 'deny':
@@ -255,20 +264,25 @@ class Policy(jio_policy.Driver):
                                                         target='effect')
                     resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                     try:
-                        for pair in zip(resource_ids, resource):
+                        zip_resource = zip(resource_ids, resource)
+                        for pair in zip_resource:
                             session.add(ResourceModel(id=pair[0], name=pair[1],
                                         service_type=Policy._get_service_name(
                                             pair[1])))
 
-                        for pair in itertools.product(action, resource_ids):
+                        for pair in itertools.product(action, zip_resource):
                             action_id = session.query(ActionModel).filter_by(
                                     action_name=pair[0]).with_entities(
                                             ActionModel.id).one()[0]
+                            resource_type = Policy._get_resource_type(pair[1][1])
+                            if resource_type is not None and resource_type != '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
+                                raise exception.ValidationError(
+                                       attribute='valid resource type', target='resource')
 
                             session.add(
                                 PolicyActionResourceModel(
                                     policy_id=policy_id, action_id=action_id,
-                                    resource_id=pair[1], effect=effect))
+                                    resource_id=pair[1][0], effect=effect))
                     except sql.NotFound:
                         raise exception.ValidationError(
                                 attribute='valid action', target='policy')
