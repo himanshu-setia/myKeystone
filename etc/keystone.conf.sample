@@ -66,11 +66,11 @@
 #list_limit = <None>
 
 # Set this to false if you want to enable the ability for user, group and
-# project entities to be moved between domains by updating their domain_id.
-# Allowing such movement is not recommended if the scope of a domain admin is
+# project entities to be moved between accounts by updating their account_id.
+# Allowing such movement is not recommended if the scope of a account admin is
 # being restricted by use of an appropriate policy file (see
 # policy.v3cloudsample as an example). (boolean value)
-#domain_id_immutable = true
+#account_id_immutable = true
 
 # If set to true, strict password length checking is performed for password
 # manipulation. If a password exceeds the maximum length, the operation will
@@ -282,7 +282,7 @@
 #token = keystone.auth.plugins.token.Token
 
 # The external (REMOTE_USER) auth plugin module. (string value)
-#external = keystone.auth.plugins.external.DefaultDomain
+#external = keystone.auth.plugins.external.DefaultAccount
 
 # The oAuth1.0 auth plugin module. (string value)
 #oauth1 = keystone.auth.plugins.oauth1.OAuth
@@ -492,21 +492,21 @@
 #db_max_retries = 20
 
 
-[domain_config]
+[account_config]
 
 #
 # From keystone
 #
 
-# Domain config backend driver. (string value)
-#driver = keystone.resource.config_backends.sql.DomainConfig
+# Account config backend driver. (string value)
+#driver = keystone.resource.config_backends.sql.AccountConfig
 
-# Toggle for domain config caching. This has no effect unless global caching is
+# Toggle for account config caching. This has no effect unless global caching is
 # enabled. (boolean value)
 #caching = true
 
-# TTL (in seconds) to cache domain config data. This has no effect unless
-# domain config caching is enabled. (integer value)
+# TTL (in seconds) to cache account config data. This has no effect unless
+# account config caching is enabled. (integer value)
 #cache_time = 300
 
 
@@ -628,13 +628,13 @@
 # Provider`). (string value)
 #remote_id_attribute = <None>
 
-# A domain name that is reserved to allow federated ephemeral users to have a
-# domain concept. Note that an admin will not be able to create a domain with
-# this name or update an existing domain to this name. You are not advised to
+# A account name that is reserved to allow federated ephemeral users to have a
+# account concept. Note that an admin will not be able to create a account with
+# this name or update an existing account to this name. You are not advised to
 # change this value unless you really have to. Changing this option to empty
 # string or None will not have any impact and default name will be used.
 # (string value)
-#federated_domain_name = Federated
+#federated_account_name = Federated
 
 # A list of trusted dashboard hosts. Before accepting a Single Sign-On request
 # to return a token, the origin host must be a member of the trusted_dashboard
@@ -671,32 +671,32 @@
 # From keystone
 #
 
-# This references the domain to use for all Identity API v2 requests (which are
-# not aware of domains). A domain with this ID will be created for you by
-# keystone-manage db_sync in migration 008. The domain referenced by this ID
+# This references the account to use for all Identity API v2 requests (which are
+# not aware of accounts). A account with this ID will be created for you by
+# keystone-manage db_sync in migration 008. The account referenced by this ID
 # cannot be deleted on the v3 API, to prevent accidentally breaking the v2 API.
-# There is nothing special about this domain, other than the fact that it must
+# There is nothing special about this account, other than the fact that it must
 # exist to order to maintain support for your v2 clients. (string value)
-#default_domain_id = default
+#default_account_id = default
 
-# A subset (or all) of domains can have their own identity driver, each with
+# A subset (or all) of accounts can have their own identity driver, each with
 # their own partial configuration options, stored in either the resource
-# backend or in a file in a domain configuration directory (depending on the
-# setting of domain_configurations_from_database). Only values specific to the
-# domain need to be specified in this manner. This feature is disabled by
+# backend or in a file in a account configuration directory (depending on the
+# setting of account_configurations_from_database). Only values specific to the
+# account need to be specified in this manner. This feature is disabled by
 # default; set to true to enable. (boolean value)
-#domain_specific_drivers_enabled = false
+#account_specific_drivers_enabled = false
 
-# Extract the domain specific configuration options from the resource backend
-# where they have been stored with the domain data. This feature is disabled by
-# default (in which case the domain specific options will be loaded from files
-# in the domain configuration directory); set to true to enable. (boolean
+# Extract the account specific configuration options from the resource backend
+# where they have been stored with the account data. This feature is disabled by
+# default (in which case the account specific options will be loaded from files
+# in the account configuration directory); set to true to enable. (boolean
 # value)
-#domain_configurations_from_database = false
+#account_configurations_from_database = false
 
-# Path for Keystone to locate the domain specific identity configuration files
-# if domain_specific_drivers_enabled is set to true. (string value)
-#domain_config_dir = /etc/keystone/domains
+# Path for Keystone to locate the account specific identity configuration files
+# if account_specific_drivers_enabled is set to true. (string value)
+#account_config_dir = /etc/keystone/accounts
 
 # Identity backend driver. (string value)
 #driver = keystone.identity.backends.sql.Identity
@@ -736,12 +736,12 @@
 # generate UUIDs (e.g. LDAP), with keystone providing a hash mapping to the
 # underlying attribute in LDAP. By default this mapping is disabled, which
 # ensures that existing IDs will not change. Even when the mapping is enabled
-# by using domain specific drivers, any users and groups from the default
-# domain being handled by LDAP will still not be mapped to ensure their IDs
+# by using account specific drivers, any users and groups from the default
+# account being handled by LDAP will still not be mapped to ensure their IDs
 # remain backward compatible. Setting this value to False will enable the
 # mapping for even the default LDAP driver. It is only safe to do this if you
 # do not already have assignments for users and groups from the default LDAP
-# domain, and it is acceptable for Keystone to provide the different IDs to
+# account, and it is acceptable for Keystone to provide the different IDs to
 # clients than it did previously.  Typically this means that the only time you
 # can set this value to False is when configuring a fresh installation.
 # (boolean value)
@@ -933,9 +933,9 @@
 # Deprecated group/name - [ldap]/tenant_enabled_attribute
 #project_enabled_attribute = enabled
 
-# LDAP attribute mapped to project domain_id. (string value)
-# Deprecated group/name - [ldap]/tenant_domain_id_attribute
-#project_domain_id_attribute = businessCategory
+# LDAP attribute mapped to project account_id. (string value)
+# Deprecated group/name - [ldap]/tenant_account_id_attribute
+#project_account_id_attribute = businessCategory
 
 # List of attributes stripped off the project on update. (list value)
 # Deprecated group/name - [ldap]/tenant_attribute_ignore
@@ -1172,7 +1172,7 @@
 # From keystone
 #
 
-# role-assignment inheritance to projects from owning domain or from projects
+# role-assignment inheritance to projects from owning account or from projects
 # higher in the hierarchy can be optionally enabled. (boolean value)
 #enabled = false
 

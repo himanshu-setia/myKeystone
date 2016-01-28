@@ -43,7 +43,7 @@ Rackspace's public cloud, Nova, and Swift. Thus, Identity API v2.0 was
 introduced.
 
 Identity API v3 was established to introduce namespacing for users and projects
-by using "domains" as a higher-level container for more flexible identity
+by using "accounts" as a higher-level container for more flexible identity
 management and fixed a security issue in the v2.0 API (bearer tokens appearing
 in URLs).
 
@@ -182,7 +182,7 @@ In Identity API v3, an equivalent request would be to ``POST /v3/auth/tokens``:
                 ],
                 "password": {
                     "user": {
-                        "domain": {
+                        "account": {
                             "id": "default"
                         },
                         "name": "my-username",
@@ -192,7 +192,7 @@ In Identity API v3, an equivalent request would be to ``POST /v3/auth/tokens``:
             },
             "scope": {
                 "project": {
-                    "domain": {
+                    "account": {
                         "id": "default"
                     },
                     "name": "project-x"
@@ -206,10 +206,10 @@ Note a few key differences when compared to the v2.0 API:
 - A "tenant" in v2.0 became a "project" in v3.
 - The authentication method (``password``) is explicitly identified.
 - Both the user name (``my-username``) and project name (``project-x``) are
-  namespaced by an owning domain (where ``id`` = ``default``). The "default"
-  domain exists by default in Keystone, and automatically owns the namespace
+  namespaced by an owning account (where ``id`` = ``default``). The "default"
+  account exists by default in Keystone, and automatically owns the namespace
   exposed by Identity API v2.0. Alternatively, you may reference users and
-  projects that exist outside the namespace of the default domain, which are
+  projects that exist outside the namespace of the default account, which are
   thus inaccessible to the v2.0 API.
 - In v3, your token is returned to you in an ``X-Subject-Token`` header,
   instead of as part of the request body. You should still authenticate

@@ -41,7 +41,7 @@ Get an token with default scope (may be unscoped):
           "password": {
             "user": {
               "name": "admin",
-              "domain": { "id": "default" },
+              "account": { "id": "default" },
               "password": "adminpwd"
             }
           }
@@ -62,7 +62,7 @@ Example response::
   {"token": {"methods": ["password"], "roles": [{"id":
   "9fe2ff9ee4384b1894a90878d3e92bab", "name": "_member_"}, {"id":
   "c703057be878458588961ce9a0ce686b", "name": "admin"}], "expires_at":
-  "2014-06-10T2:55:16.806001Z", "project": {"domain": {"id": "default", "name":
+  "2014-06-10T2:55:16.806001Z", "project": {"account": {"id": "default", "name":
   "Default"}, "id": "8538a3f13f9541b28c2620eb19065e45", "name": "admin"},
   "catalog": [{"endpoints": [{"url": "http://localhost:3537/v2.0", "region":
   "RegionOne", "interface": "admin", "id": "29beb2f1567642eb810b042b6719ea88"},
@@ -71,7 +71,7 @@ Example response::
   "http://localhost:5000/v2.0", "region": "RegionOne", "interface": "public",
   "id": "ef303187fc8d41668f25199c298396a5"}], "type": "identity", "id":
   "bd73972c0e14fb69bae8ff76e112a90", "name": "keystone"}], "extras": {},
-  "user": {"domain": {"id": "default", "name": "Default"}, "id":
+  "user": {"account": {"id": "default", "name": "Default"}, "id":
   "3ec3164f750146be97f21559ee4d9c51", "name": "admin"}, "issued_at":
   "201406-10T20:55:16.806027Z"}}
 
@@ -92,7 +92,7 @@ Get a project-scoped token:
           "password": {
             "user": {
               "name": "admin",
-              "domain": { "id": "default" },
+              "account": { "id": "default" },
               "password": "adminpwd"
             }
           }
@@ -100,7 +100,7 @@ Get a project-scoped token:
         "scope": {
           "project": {
             "name": "demo",
-            "domain": { "id": "default" }
+            "account": { "id": "default" }
           }
         }
       }
@@ -118,7 +118,7 @@ Example response::
 
   {"token": {"methods": ["password"], "roles": [{"id":
    "c703057be878458588961ce9a0ce686b", "name": "admin"}], "expires_at":
-   "2014-06-10T21:40:14.360795Z", "project": {"domain": {"id": "default",
+   "2014-06-10T21:40:14.360795Z", "project": {"account": {"id": "default",
    "name": "Default"}, "id": "3d4c2c82bd5948f0bcab0cf3a7c9b48c", "name":
    "demo"}, "catalog": [{"endpoints": [{"url":
    "http://localhost:35357/v2.0", "region": "RegionOne", "interface": "admin",
@@ -128,16 +128,16 @@ Example response::
    "http://localhost:5000/v2.0", "region": "RegionOne", "interface": "public",
    "id": "ef303187fc8d41668f25199c298396a5"}], "type": "identity", "id":
    "bd7397d2c0e14fb69bae8ff76e112a90", "name": "keystone"}], "extras": {},
-   "user": {"domain": {"id": "default", "name": "Default"}, "id":
+   "user": {"account": {"id": "default", "name": "Default"}, "id":
    "3ec3164f750146be97f21559ee4d9c51", "name": "admin"}, "issued_at":
    "2014-06-10T20:40:14.360822Z"}}
 
 
-Domain-Scoped
+Account-Scoped
 -------------
 
-Get a domain-scoped token (Note that you're going to need a role-assignment on
-the domain first!):
+Get a account-scoped token (Note that you're going to need a role-assignment on
+the account first!):
 
 .. code-block:: bash
 
@@ -150,13 +150,13 @@ the domain first!):
           "password": {
             "user": {
               "name": "admin",
-              "domain": { "id": "default" },
+              "account": { "id": "default" },
               "password": "adminpwd"
             }
           }
         },
         "scope": {
-          "domain": {
+          "account": {
             "id": "default"
           }
         }
@@ -173,7 +173,7 @@ Example response::
   Content-Length: 889
   Date: Tue, 10 Jun 2014 20:52:59 GMT
 
-  {"token": {"domain": {"id": "default", "name": "Default"}, "methods":
+  {"token": {"account": {"id": "default", "name": "Default"}, "methods":
   ["password"], "roles": [{"id": "c703057be878458588961ce9a0ce686b", "name":
   "admin"}], "expires_at": "2014-06-10T21:52:58.852167Z", "catalog":
   [{"endpoints": [{"url": "http://localhost:35357/v2.0", "region": "RegionOne",
@@ -183,7 +183,7 @@ Example response::
   "http://localhost:5000/v2.0", "region": "RegionOne", "interface": "public",
   "id": "ef303187fc8d41668f25199c298396a5"}], "type": "identity", "id":
   "bd7397d2c0e14fb69bae8ff76e112a90", "name": "keystone"}], "extras": {},
-  "user": {"domain": {"id": "default", "name": "Default"}, "id":
+  "user": {"account": {"id": "default", "name": "Default"}, "id":
   "3ec3164f750146be97f21559ee4d9c51", "name": "admin"}, "issued_at":
   "2014-06-10T20:52:58.852194Z"}}
 
@@ -222,7 +222,7 @@ Example response::
   {"token": {"methods": ["token", "password"], "roles": [{"id":
   "9fe2ff9ee4384b1894a90878d3e92bab", "name": "_member_"}, {"id":
   "c703057be878458588961ce9a0ce686b", "name": "admin"}], "expires_at":
-  "2014-06-10T21:55:16.806001Z", "project": {"domain": {"id": "default",
+  "2014-06-10T21:55:16.806001Z", "project": {"account": {"id": "default",
   "name": "Default"}, "id": "8538a3f13f9541b28c2620eb19065e45", "name":
   "admin"}, "catalog": [{"endpoints": [{"url": "http://localhost:35357/v2.0",
   "region": "RegionOne", "interface": "admin", "id":
@@ -232,7 +232,7 @@ Example response::
   "region": "RegionOne", "interface": "public", "id":
   "ef303187fc8d41668f25199c298396a5"}], "type": "identity", "id":
   "bd7397d2c0e14fb69bae8ff76e112a90", "name": "keystone"}], "extras": {},
-  "user": {"domain": {"id": "default", "name": "Default"}, "id":
+  "user": {"account": {"id": "default", "name": "Default"}, "id":
   "3ec3164f750146be97f21559ee4d9c51", "name": "admin"}, "issued_at":
   "2014-06-10T21:00:05.548559Z"}}
 
@@ -258,32 +258,32 @@ Revoke a token:
 If there's no error then the response is empty.
 
 
-Domains
+Accounts
 =======
 
-GET /v3/domains
+GET /v3/accounts
 ---------------
 
-List domains:
+List accounts:
 
 .. code-block:: bash
 
     curl -s \
       -H "X-Auth-Token: $OS_TOKEN" \
-      http://localhost:5000/v3/domains | python -mjson.tool
+      http://localhost:5000/v3/accounts | python -mjson.tool
 
 Example response:
 
 .. code-block:: javascript
 
     {
-        "domains": [
+        "accounts": [
             {
                 "description": "Owns users and tenants (i.e. projects) available on Identity API v2.",
                 "enabled": true,
                 "id": "default",
                 "links": {
-                    "self": "http://identity-server:5000/v3/domains/default"
+                    "self": "http://identity-server:5000/v3/accounts/default"
                 },
                 "name": "Default"
             }
@@ -291,36 +291,36 @@ Example response:
         "links": {
             "next": null,
             "previous": null,
-            "self": "http://identity-server:5000/v3/domains"
+            "self": "http://identity-server:5000/v3/accounts"
         }
     }
 
 
-POST /v3/domains
+POST /v3/accounts
 ----------------
 
-Create a domain:
+Create a account:
 
 .. code-block:: bash
 
     curl -s \
       -H "X-Auth-Token: $OS_TOKEN" \
       -H "Content-Type: application/json" \
-      -d '{ "domain": { "name": "newdomain"}}' \
-      http://localhost:5000/v3/domains | python -mjson.tool
+      -d '{ "account": { "name": "newaccount"}}' \
+      http://localhost:5000/v3/accounts | python -mjson.tool
 
 Example response:
 
 .. code-block:: javascript
 
     {
-        "domain": {
+        "account": {
             "enabled": true,
             "id": "3a5140aecd974bf08041328b53a62458",
             "links": {
-                "self": "http://identity-server:5000/v3/domains/3a5140aecd974bf08041328b53a62458"
+                "self": "http://identity-server:5000/v3/accounts/3a5140aecd974bf08041328b53a62458"
             },
-            "name": "newdomain"
+            "name": "newaccount"
         }
     }
 
@@ -352,7 +352,7 @@ Example response:
         "projects": [
             {
                 "description": null,
-                "domain_id": "default",
+                "account_id": "default",
                 "enabled": true,
                 "id": "3d4c2c82bd5948f0bcab0cf3a7c9b48c",
                 "links": {
@@ -389,7 +389,7 @@ Example response:
     {
         "project": {
             "description": null,
-            "domain_id": "default",
+            "account_id": "default",
             "enabled": false,
             "extra": {},
             "id": "3d4c2c82bd5948f0bcab0cf3a7c9b48c",
@@ -508,7 +508,7 @@ Example response:
 
     {
         "user": {
-            "domain_id": "default",
+            "account_id": "default",
             "enabled": true,
             "id": "ec8fc20605354edd91873f2d66bf4fc4",
             "links": {
@@ -537,7 +537,7 @@ Example response:
 
     {
         "user": {
-            "domain_id": "default",
+            "account_id": "default",
             "enabled": true,
             "id": "ec8fc20605354edd91873f2d66bf4fc4",
             "links": {
@@ -591,7 +591,7 @@ Example response:
     {
         "user": {
             "default_project_id": "3d4c2c82bd5948f0bcab0cf3a7c9b48c",
-            "domain_id": "default",
+            "account_id": "default",
             "email": "demo@example.com",
             "enabled": true,
             "extra": {

@@ -48,7 +48,7 @@ be when backending on LDAP. See `LDAP Backend` below for more details.
 Resource
 --------
 
-The Resource service provides data about Projects and Domains.
+The Resource service provides data about Projects and Accounts.
 
 Like the Identity service, this data may either be managed directly by the
 service or be pulled from another authoritative backend service, such as LDAP.
@@ -136,7 +136,7 @@ on the Keystone configuration.
 
 * Resource
 
- * :mod:`keystone.resource.controllers.DomainV3`
+ * :mod:`keystone.resource.controllers.AccountV3`
  * :mod:`keystone.resource.controllers.ProjectV3`
 
 * Token
@@ -215,17 +215,17 @@ more data than they know what to do with and pass them on to a backend.
 
 There are a few main data types:
 
- * **User**: has account credentials, is associated with one or more projects or domains
- * **Group**: a collection of users, is associated with one or more projects or domains
+ * **User**: has account credentials, is associated with one or more projects or accounts
+ * **Group**: a collection of users, is associated with one or more projects or accounts
  * **Project**: unit of ownership in OpenStack, contains one or more users
- * **Domain**: unit of ownership in OpenStack, contains users, groups and projects
+ * **Account**: unit of ownership in OpenStack, contains users, groups and projects
  * **Role**: a first-class piece of metadata associated with many user-project pairs.
  * **Token**: identifying credential associated with a user or user and project
  * **Extras**: bucket of key-value metadata associated with a user-project pair.
  * **Rule**: describes a set of requirements for performing an action.
 
 While the general data model allows a many-to-many relationship between Users
-and Groups to Projects and Domains; the actual backend implementations take
+and Groups to Projects and Accounts; the actual backend implementations take
 varying levels of advantage of that functionality.
 
 
@@ -234,7 +234,7 @@ Approach to CRUD
 ----------------
 
 While it is expected that any "real" deployment at a large company will manage
-their users, groups, projects and domains in their existing user systems, a
+their users, groups, projects and accounts in their existing user systems, a
 variety of CRUD operations are provided for the sake of development and testing.
 
 CRUD is treated as an extension or additional feature to the core feature set

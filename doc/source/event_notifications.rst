@@ -86,7 +86,7 @@ resource type             supported operations
 group                     create, update, delete
 project                   create, update, delete
 role                      create, update, delete
-domain                    create, update, delete
+account                    create, update, delete
 user                      create, update, delete
 trust                     create, delete
 region                    create, update, delete
@@ -197,7 +197,7 @@ resource type           supported operations           typeURI
 group                   create, update, delete         data/security/group
 project                 create, update, delete         data/security/project
 role                    create, update, delete         data/security/role
-domain                  create, update, delete         data/security/domain
+account                  create, update, delete         data/security/account
 user                    create, update, delete         data/security/account/user
 trust                   create, delete                 data/security/trust
 region                  create, update, delete         data/security/region
@@ -354,11 +354,11 @@ Example Notification - Role Assignment
 --------------------------------------
 
 The following is an example of a notification that is sent when a role is
-granted or revoked to a project or domain, for a user or group.
+granted or revoked to a project or account, for a user or group.
 
 It is important to note that this type of notification has many new keys
 that convey the necessary information. Expect the following in the ``payload``:
-``role``, ``inherited_to_project``, ``project`` or ``domain``, ``user`` or
+``role``, ``inherited_to_project``, ``project`` or ``account``, ``user`` or
 ``group``. With the exception of ``inherited_to_project``, each will represent
 the unique identifier of the resource type.
 

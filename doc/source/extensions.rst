@@ -111,7 +111,7 @@ Inherit
 -------
 
 The Inherit extension provides the ability for projects to inherit role
-assignments from their owning domain, or from projects higher in the
+assignments from their owning account, or from projects higher in the
 hierarchy.
 
 .. NOTE:: Support status for Inherit

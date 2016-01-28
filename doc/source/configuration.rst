@@ -153,34 +153,34 @@ is not an absolute path, then Keystone looks for it in the same directories as
 above. If not specified, WSGI pipeline definitions are loaded from the primary
 configuration file.
 
-Domain-specific Drivers
+Account-specific Drivers
 -----------------------
 
 Keystone supports the option (disabled by default) to specify identity driver
-configurations on a domain by domain basis, allowing, for example, a specific
-domain to have its own LDAP or SQL server. This is configured by specifying the
+configurations on a account by account basis, allowing, for example, a specific
+account to have its own LDAP or SQL server. This is configured by specifying the
 following options:
 
 .. code-block:: ini
 
  [identity]
- domain_specific_drivers_enabled = True
- domain_config_dir = /etc/keystone/domains
+ account_specific_drivers_enabled = True
+ account_config_dir = /etc/keystone/accounts
 
-Setting ``domain_specific_drivers_enabled`` to ``True`` will enable this
-feature, causing Keystone to look in the ``domain_config_dir`` for config files
+Setting ``account_specific_drivers_enabled`` to ``True`` will enable this
+feature, causing Keystone to look in the ``account_config_dir`` for config files
 of the form::
 
- keystone.<domain_name>.conf
+ keystone.<account_name>.conf
 
-Options given in the domain specific configuration file will override those in
-the primary configuration file for the specified domain only. Domains without a
+Options given in the account specific configuration file will override those in
+the primary configuration file for the specified account only. Accounts without a
 specific configuration file will continue to use the options from the primary
 configuration file.
 
-Keystone also supports the ability to store the domain-specific configuration
+Keystone also supports the ability to store the account-specific configuration
 options in the keystone SQL database, managed via the Identity API, as opposed
-to using domain-specific configuration files.
+to using account-specific configuration files.
 
 .. NOTE::
 
@@ -193,88 +193,88 @@ following options in the main keystone configuration file:
 .. code-block:: ini
 
  [identity]
- domain_specific_drivers_enabled = true
- domain_configurations_from_database = true
+ account_specific_drivers_enabled = true
+ account_configurations_from_database = true
 
-Once enabled, any existing domain-specific configuration files in the
-configuration directory will be ignored and only those domain-specific
+Once enabled, any existing account-specific configuration files in the
+configuration directory will be ignored and only those account-specific
 configuration options specified via the Identity API will be used.
 
-Unlike the file-based method of specifying domain-specific configurations,
+Unlike the file-based method of specifying account-specific configurations,
 options specified via the Identity API will become active without needing to
 restart the keystone server. For performance reasons, the current state of
-configuration options for a domain are cached in the keystone server, and in
+configuration options for a account are cached in the keystone server, and in
 multi-process and multi-threaded keystone configurations, the new
 configuration options may not become active until the cache has timed out. The
-cache settings for domain config options can be adjusted in the general
-keystone configuration file (option ``cache_time`` in the ``domain-config``
+cache settings for account config options can be adjusted in the general
+keystone configuration file (option ``cache_time`` in the ``account-config``
 group).
 
 .. NOTE::
 
     It is important to notice that when using either of these methods of
-    specifying domain-specific configuration options, the main keystone
+    specifying account-specific configuration options, the main keystone
     configuration file is still maintained. Only those options that relate
     to the Identity driver for users and groups (i.e. specifying whether the
-    driver for this domain is SQL or LDAP, and, if LDAP, the options that
-    define that connection) are supported in a domain-specific manner. Further,
+    driver for this account is SQL or LDAP, and, if LDAP, the options that
+    define that connection) are supported in a account-specific manner. Further,
     when using the configuration options via the Identity API, the driver
     option must be set to an LDAP driver (attempting to set it to an SQL driver
     will generate an error when it is subsequently used).
 
-For existing installations that already use file-based domain-specific
+For existing installations that already use file-based account-specific
 configurations who wish to migrate to the SQL-based approach, the
 ``keystone-manage`` command can be used to upload all configuration files to
 the SQL database:
 
 .. code-block:: bash
 
-    $ keystone-manage domain_config_upload --all
+    $ keystone-manage account_config_upload --all
 
-Once uploaded, these domain-configuration options will be visible via the
-Identity API as well as applied to the domain-specific drivers. It is also
-possible to upload individual domain-specific configuration files by
-specifying the domain name:
+Once uploaded, these account-configuration options will be visible via the
+Identity API as well as applied to the account-specific drivers. It is also
+possible to upload individual account-specific configuration files by
+specifying the account name:
 
 .. code-block:: bash
 
-    $ keystone-manage domain_config_upload --domain-name DOMAINA
+    $ keystone-manage account_config_upload --account-name ACCOUNTA
 
 .. NOTE::
 
-    It is important to notice that by enabling either of the domain-specific
+    It is important to notice that by enabling either of the account-specific
     configuration methods, the operations of listing all users and listing all
-    groups are not supported, those calls will need either a domain filter to
-    be specified or usage of a domain scoped token.
+    groups are not supported, those calls will need either a account filter to
+    be specified or usage of a account scoped token.
 
 .. NOTE::
 
-    Keystone does not support moving the contents of a domain (i.e. "its" users
+    Keystone does not support moving the contents of a account (i.e. "its" users
     and groups) from one backend to another, nor group membership across
     backend boundaries.
 
 .. NOTE::
 
-    When using the file-based domain-specific configuration method, to delete a
-    domain that uses a domain specific backend, it's necessary to first disable
+    When using the file-based account-specific configuration method, to delete a
+    account that uses a account specific backend, it's necessary to first disable
     it, remove its specific configuration file (i.e. its corresponding
-    keystone.<domain_name>.conf) and then restart the Identity server. When
-    managing configuration options via the Identity API, the domain can simply
-    be disabled and deleted via the Identity API; since any domain-specific
+    keystone.<account_name>.conf) and then restart the Identity server. When
+    managing configuration options via the Identity API, the account can simply
+    be disabled and deleted via the Identity API; since any account-specific
     configuration options will automatically be removed.
 
 .. NOTE::
 
     Although Keystone supports multiple LDAP backends via the above
-    domain-specific configuration methods, it currently only supports one SQL
+    account-specific configuration methods, it currently only supports one SQL
     backend. This could be either the default driver or a single
-    domain-specific backend, perhaps for storing service users in a
+    account-specific backend, perhaps for storing service users in a
     predominantly LDAP installation.
 
 Due to the need for user and group IDs to be unique across an OpenStack
-installation and for Keystone to be able to deduce which domain and backend to
+installation and for Keystone to be able to deduce which account and backend to
 use from just a user or group ID, it dynamically builds a persistent identity
-mapping table from a public ID to the actual domain, local ID (within that
+mapping table from a public ID to the actual account, local ID (within that
 backend) and entity type. The public ID is automatically generated by Keystone
 when it first encounters the entity. If the local ID of the entity is from a
 backend that does not guarantee to generate UUIDs, a hash algorithm will
@@ -296,11 +296,11 @@ the keystone-manage command, for example:
 
 .. code-block:: bash
 
-    $ keystone-manage mapping_purge --domain-name DOMAINA --local-id abc@de.com
+    $ keystone-manage mapping_purge --account-name ACCOUNTA --local-id abc@de.com
 
 A typical usage would be for an operator to obtain a list of those entries in
 an external backend that had been deleted out-of-band to Keystone, and then
-call keystone-manage to purge those entries by specifying the domain and
+call keystone-manage to purge those entries by specifying the account and
 local-id. The type of the entity (i.e. user or group) may also be specified if
 this is needed to uniquely identify the mapping.
 
@@ -311,9 +311,9 @@ periodically, for example:
 
 .. code-block:: bash
 
-    $ keystone-manage mapping_purge --domain-name DOMAINA
+    $ keystone-manage mapping_purge --account-name ACCOUNTA
 
-will purge all the mappings for DOMAINA. The entire mapping table can be purged
+will purge all the mappings for ACCOUNTA. The entire mapping table can be purged
 with the following command:
 
 .. code-block:: bash
@@ -601,9 +601,9 @@ Current Keystone systems that have caching capabilities:
         from the other systems in ``Keystone``. This option is set in the
         ``[resource]`` section of the configuration file.
 
-        Currently ``resource`` has caching for ``project`` and ``domain``
+        Currently ``resource`` has caching for ``project`` and ``account``
         specific requests (primarily around the CRUD actions).  The
-        ``list_projects`` and ``list_domains`` methods are not subject to
+        ``list_projects`` and ``list_accounts`` methods are not subject to
         caching.
 
         .. WARNING::
@@ -1045,9 +1045,9 @@ Inherited Role Assignment Extension
 -----------------------------------
 
 Keystone provides an optional extension that adds the capability to assign
-roles on a project or domain that, rather than affect the project or domain
+roles on a project or account that, rather than affect the project or account
 itself, are instead inherited to the project subtree or to all projects owned
-by that domain. This extension is disabled by default, but can be enabled by
+by that account. This extension is disabled by default, but can be enabled by
 including the following in ``keystone.conf``:
 
 .. code-block:: ini
@@ -1152,14 +1152,14 @@ API call in question. For example:
 
 .. code-block:: javascript
 
-    "identity:create_user": "role:admin and domain_id:%(user.domain_id)s"
+    "identity:create_user": "role:admin and account_id:%(user.account_id)s"
 
 Indicates that to create a user you must have the admin role in your token and
-in addition the domain_id in your token (which implies this must be a domain
-scoped token) must match the domain_id in the user object you are trying to
-create. In other words, you must have the admin role on the domain in which you
+in addition the account_id in your token (which implies this must be a account
+scoped token) must match the account_id in the user object you are trying to
+create. In other words, you must have the admin role on the account in which you
 are creating the user, and the token you are using must be scoped to that
-domain.
+account.
 
 Each component of a match statement is of the form::
 
@@ -1167,21 +1167,21 @@ Each component of a match statement is of the form::
 
 The following attributes are available
 
-* Attributes from token: user_id, the domain_id or project_id depending on
+* Attributes from token: user_id, the account_id or project_id depending on
   the scope, and the list of roles you have within that scope
 
 * Attributes related to API call: Any parameters that are passed into the API
   call are available, along with any filters specified in the query string.
   Attributes of objects passed can be referenced using an object.attribute
-  syntax (e.g. user.domain_id). The target objects of an API are also available
+  syntax (e.g. user.account_id). The target objects of an API are also available
   using a target.object.attribute syntax. For instance:
 
   .. code-block:: javascript
 
-    "identity:delete_user": "role:admin and domain_id:%(target.user.domain_id)s"
+    "identity:delete_user": "role:admin and account_id:%(target.user.account_id)s"
 
   would ensure that the user object that is being deleted is in the same
-  domain as the token provided.
+  account as the token provided.
 
 Every target object has an `id` and a `name` available as `target.<object>.id`
 and `target.<object>.name`. Other attributes are retrieved from the database
@@ -1197,41 +1197,41 @@ List of object attributes:
 * user:
     * target.user.default_project_id
     * target.user.description
-    * target.user.domain_id
+    * target.user.account_id
     * target.user.enabled
     * target.user.id
     * target.user.name
 
 * group:
     * target.group.description
-    * target.group.domain_id
+    * target.group.account_id
     * target.group.id
     * target.group.name
 
-* domain:
-    * target.domain.enabled
-    * target.domain.id
-    * target.domain.name
+* account:
+    * target.account.enabled
+    * target.account.id
+    * target.account.name
 
 * project:
     * target.project.description
-    * target.project.domain_id
+    * target.project.account_id
     * target.project.enabled
     * target.project.id
     * target.project.name
 
 The default policy.json file supplied provides a somewhat basic example of API
-protection, and does not assume any particular use of domains. For multi-domain
+protection, and does not assume any particular use of accounts. For multi-account
 configuration installations where, for example, a cloud provider wishes to
-allow administration of the contents of a domain to be delegated, it is
+allow administration of the contents of a account to be delegated, it is
 recommended that the supplied policy.v3cloudsample.json is used as a basis for
 creating a suitable production policy file. This example policy file also shows
-the use of an admin_domain to allow a cloud provider to enable cloud
+the use of an admin_account to allow a cloud provider to enable cloud
 administrators to have wider access across the APIs.
 
 A clean installation would need to perhaps start with the standard policy file,
-to allow creation of the admin_domain with the first users within it. The
-domain_id of the admin domain would then be obtained and could be pasted into a
+to allow creation of the admin_account with the first users within it. The
+account_id of the admin account would then be obtained and could be pasted into a
 modified version of policy.v3cloudsample.json which could then be enabled as
 the main policy file.
 
@@ -1678,13 +1678,13 @@ Many environments typically have user and group information in directories that
 are accessible by LDAP. This information is for read-only use in a wide array
 of applications. Prior to the Havana release, we could not deploy Keystone with
 read-only directories as backends because Keystone also needed to store
-information such as projects, roles, domains and role assignments into the
+information such as projects, roles, accounts and role assignments into the
 directories in conjunction with reading user and group information.
 
 Keystone now provides an option whereby these read-only directories can be
 easily integrated as it now enables its identity entities (which comprises
 users, groups, and group memberships) to be served out of directories while
-resource (which comprises projects and domains), assignment and role
+resource (which comprises projects and accounts), assignment and role
 entities are to be served from different Keystone backends (i.e. SQL). To
 enable this option, you must have the following ``keystone.conf`` options set:
 
