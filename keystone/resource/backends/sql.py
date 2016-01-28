@@ -177,13 +177,12 @@ class Resource(keystone_resource.Driver):
             session.add(ref)
         return ref.to_dict()
 
-    @sql.truncated
-    def duplicate(self,id):
-        with sql.transaction as session:
+    def duplicate(self, domain_id):
+        with sql.transaction() as session:
             query = session.query(Domain)
-            query.filter(Domain.id == id)
+            query.filter(Domain.id == domain_id)
             domain_refs = query.all()
-            if domain_refs == None || domain_refs == []:
+            if domain_refs == None or domain_refs == []:
                 return True
             else:
                 return False

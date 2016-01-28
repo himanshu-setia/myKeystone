@@ -385,8 +385,8 @@ class Manager(manager.Manager):
             self.get_domain_by_name.set(ret, self, ret['name'])
         return ret
 
-    def duplicate(self, id):
-        return self.driver.duplicate(id)
+    def duplicate(self, domain_id):
+        return self.driver.duplicate(domain_id)
 
     @manager.response_truncated
     def list_domains(self, hints=None):
@@ -550,6 +550,10 @@ class Driver(object):
         :raises: keystone.exception.Conflict
 
         """
+        raise exception.NotImplemented()  # pragma: no cover
+
+    @abc.abstractmethod
+    def duplicate(self, domain_id):
         raise exception.NotImplemented()  # pragma: no cover
 
     @abc.abstractmethod
