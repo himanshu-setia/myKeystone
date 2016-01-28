@@ -21,7 +21,7 @@ See http://docs.openstack.org/developer/oslo.i18n/usage.html .
 import oslo_i18n
 
 
-_translators = oslo_i18n.TranslatorFactory(account='keystone')
+_translators = oslo_i18n.TranslatorFactory(domain='keystone')
 
 # The primary translation function using the well-known name "_"
 _ = _translators.primary

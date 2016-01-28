@@ -24,7 +24,7 @@ try:
     # repository. It is OK to have more than one translation function
     # using the same account, since there will still only be one message
     # catalog.
-    _translators = oslo_i18n.TranslatorFactory(account='keystone')
+    _translators = oslo_i18n.TranslatorFactory(domain='keystone')
 
     # The primary translation function using the well-known name "_"
     _ = _translators.primary
