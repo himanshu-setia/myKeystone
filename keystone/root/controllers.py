@@ -115,10 +115,6 @@ class RootV3(controller.V3Controller):
 
         elif Action == 'CreateCredential':
             credential = {}
-            if 'Blob' in query_string:
-                credential['blob'] = query_string['Blob']
-            if 'ProjectId' in query_string:
-                credential['project_id'] = query_string['ProjectId']
             if 'Type' in query_string:
                 credential['type'] = query_string['Type']
             if 'UserId' in query_string:
@@ -130,19 +126,6 @@ class RootV3(controller.V3Controller):
 
         elif Action == 'GetCredential':
             return credential_controller.get_credential(context,query_string['Id'])
-
-        elif Action == 'UpdateCredential':
-            credential = {}
-            if 'Blob' in query_string:
-                credential['blob'] = query_string['Blob']
-            if 'ProjectId' in query_string:
-                credential['project_id'] = query_string['ProjectId']
-            if 'Type' in query_string:
-                credential['type'] = query_string['Type']
-            if 'UserId' in query_string:
-                credential['user_id'] = query_string['UserId']
-
-            return credential_controller.update_credential(context,query_string['Id'],credential)
 
         elif Action == 'DeleteCredential':
             return credential_controller.delete_credential(context,query_string['Id'])
