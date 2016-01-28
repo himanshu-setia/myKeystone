@@ -330,15 +330,15 @@ class Auth(auth_controllers.Auth):
         subject = token_ref.user_name
         roles = token_ref.role_names
         project = token_ref.project_name
-        # NOTE(rodrigods): the domain name is necessary in order to distinguish
-        # between projects and users with the same name in different domains.
-        project_domain_name = token_ref.project_domain_name
-        subject_domain_name = token_ref.user_domain_name
+        # NOTE(rodrigods): the account name is necessary in order to distinguish
+        # between projects and users with the same name in different accounts.
+        project_account_name = token_ref.project_account_name
+        subject_account_name = token_ref.user_account_name
 
         generator = keystone_idp.SAMLGenerator()
         response = generator.samlize_token(
-            issuer, sp_url, subject, subject_domain_name,
-            roles, project, project_domain_name)
+            issuer, sp_url, subject, subject_account_name,
+            roles, project, project_account_name)
         return (response, service_provider)
 
     def _build_response_headers(self, service_provider):
@@ -385,26 +385,26 @@ class Auth(auth_controllers.Auth):
 
 
 @dependency.requires('assignment_api', 'resource_api')
-class DomainV3(controller.V3Controller):
-    collection_name = 'domains'
-    member_name = 'domain'
+class AccountV3(controller.V3Controller):
+    collection_name = 'accounts'
+    member_name = 'account'
 
     def __init__(self):
-        super(DomainV3, self).__init__()
-        self.get_member_from_driver = self.resource_api.get_domain
+        super(AccountV3, self).__init__()
+        self.get_member_from_driver = self.resource_api.get_account
 
     @controller.protected()
-    def list_domains_for_groups(self, context):
-        """List all domains available to an authenticated user's groups.
+    def list_accounts_for_groups(self, context):
+        """List all accounts available to an authenticated user's groups.
 
         :param context: request context
-        :returns: list of accessible domains
+        :returns: list of accessible accounts
 
         """
         auth_context = context['environment'][authorization.AUTH_CONTEXT_ENV]
-        domains = self.assignment_api.list_domains_for_groups(
+        accounts = self.assignment_api.list_accounts_for_groups(
             auth_context['group_ids'])
-        return DomainV3.wrap_collection(context, domains)
+        return AccountV3.wrap_collection(context, accounts)
 
 
 @dependency.requires('assignment_api', 'resource_api')

@@ -49,14 +49,14 @@ class User(controller.V2Controller):
 
         self.assert_admin(context)
         user_list = self.identity_api.list_users(
-            CONF.identity.default_domain_id)
+            CONF.identity.default_account_id)
         return {'users': self.v3_to_v2_user(user_list)}
 
     @controller.v2_deprecated
     def get_user_by_name(self, context, user_name):
         self.assert_admin(context)
         ref = self.identity_api.get_user_by_name(
-            user_name, CONF.identity.default_domain_id)
+            user_name, CONF.identity.default_account_id)
         return {'user': self.v3_to_v2_user(ref)}
 
     # CRUD extension
@@ -81,7 +81,7 @@ class User(controller.V2Controller):
             user['default_project_id'] = default_project_id
 
         # The manager layer will generate the unique ID for users
-        user_ref = self._normalize_domain_id(context, user.copy())
+        user_ref = self._normalize_account_id(context, user.copy())
         initiator = notifications._get_request_audit_info(context)
         new_user_ref = self.v3_to_v2_user(
             self.identity_api.create_user(user_ref, initiator))
@@ -239,7 +239,7 @@ class UserV3(controller.V3Controller):
         user['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
          #The manager layer will generate the unique ID for users
         ref = self._normalize_dict(user)
-        ref = self._normalize_domain_id(context, ref)
+        ref = self._normalize_account_id(context, ref)
         initiator = notifications._get_request_audit_info(context)
         password = user.get('password')
         if password is not None:
@@ -250,16 +250,16 @@ class UserV3(controller.V3Controller):
         ref = self.identity_api.create_user(ref, initiator)
         return UserV3.wrap_member(context, ref)
 
-    @controller.jio_policy_filterprotected(args='User', filters=['domain_id', 'enabled', 'name'])
+    @controller.jio_policy_filterprotected(args='User', filters=['account_id', 'enabled', 'name'])
     def list_users(self, context, filters):
         hints = UserV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_users(
-            domain_scope=self._get_domain_id_for_list_request(context),
+            account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
         return UserV3.wrap_collection(context, refs, hints=hints)
 
-    @controller.jio_policy_filterprotected(args=['Group'], filters=['domain_id', 'enabled', 'name'])
-    def list_users_in_group(self, context,group_id,filters={'domain_id', 'enabled', 'name'}):
+    @controller.jio_policy_filterprotected(args=['Group'], filters=['account_id', 'enabled', 'name'])
+    def list_users_in_group(self, context,group_id,filters={'account_id', 'enabled', 'name'}):
         hints = UserV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_users_in_group(group_id, hints=hints)
         return UserV3.wrap_collection(context, refs, hints=hints)
@@ -271,7 +271,7 @@ class UserV3(controller.V3Controller):
 
     def _update_user(self, context, user_id, user):
         self._require_matching_id(user_id, user)
-        self._require_matching_domain_id(
+        self._require_matching_account_id(
             user_id, user, self.identity_api.get_user)
         initiator = notifications._get_request_audit_info(context)
         ref = self.identity_api.update_user(user_id, user, initiator)
@@ -307,11 +307,11 @@ class UserV3(controller.V3Controller):
 
         return False
 
-    @controller.filterprotected('domain_id', 'name')
+    @controller.filterprotected('account_id', 'name')
     def get_group_summary(self, context,filters, group_id):
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_user_summary_for_group(group_id,
-            domain_scope=self._get_domain_id_for_list_request(context),
+            account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
         
         policy_refs = self.jio_policy_api.get_group_policies(group_id)
@@ -368,16 +368,16 @@ class GroupV3(controller.V3Controller):
 
         # The manager layer will generate the unique ID for groups
         ref = self._normalize_dict(group)
-        ref = self._normalize_domain_id(context, ref)
+        ref = self._normalize_account_id(context, ref)
         initiator = notifications._get_request_audit_info(context)
         ref = self.identity_api.create_group(ref, initiator)
         return GroupV3.wrap_member(context, ref)
 
-    @controller.jio_policy_filterprotected(args='Group',filters=['domain_id', 'name'])
+    @controller.jio_policy_filterprotected(args='Group',filters=['account_id', 'name'])
     def list_groups(self, context, filters):
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_groups(
-            domain_scope=self._get_domain_id_for_list_request(context),
+            account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
 
         for indx,ref in enumerate(refs):
@@ -404,7 +404,7 @@ class GroupV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='Group')
     def update_group(self, context, group_id, group):
         self._require_matching_id(group_id, group)
-        self._require_matching_domain_id(
+        self._require_matching_account_id(
             group_id, group, self.identity_api.get_group)
         initiator = notifications._get_request_audit_info(context)
         ref = self.identity_api.update_group(group_id, group, initiator)
@@ -415,11 +415,11 @@ class GroupV3(controller.V3Controller):
         initiator = notifications._get_request_audit_info(context)
         self.identity_api.delete_group(group_id, initiator)
 
-    @controller.filterprotected('domain_id', 'name')
+    @controller.filterprotected('account_id', 'name')
     def get_user_summary(self, context,filters, user_id):
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_group_summary_for_user(user_id,
-            domain_scope=self._get_domain_id_for_list_request(context),
+            account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
         
         policy_refs = self.jio_policy_api.get_user_policies(user_id)

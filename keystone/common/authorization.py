@@ -32,8 +32,8 @@ It is a dictionary with the following attributes:
 * ``user_id``: user ID of the principal
 * ``project_id`` (optional): project ID of the scoped project if auth is
                              project-scoped
-* ``domain_id`` (optional): domain ID of the scoped domain if auth is
-                            domain-scoped
+* ``account_id`` (optional): account ID of the scoped account if auth is
+                            account-scoped
 * ``roles`` (optional): list of role names for the given scope
 * ``group_ids``: list of group IDs for which the API user has membership
 
@@ -55,11 +55,11 @@ def token_to_auth_context(token):
         LOG.warning(_LW('RBAC: Invalid user data in token'))
         raise exception.Unauthorized()
 
-    if token.domain_scoped:
-        auth_context['project_id'] = token.domain_id
-        auth_context['domain_id'] = token.domain_id
+    if token.account_scoped:
+        auth_context['project_id'] = token.account_id
+        auth_context['account_id'] = token.account_id
     else:
-        LOG.debug('RBAC: Proceeding without domain scope')
+        LOG.debug('RBAC: Proceeding without account scope')
 
     if token.trust_scoped:
         auth_context['is_delegated_auth'] = True

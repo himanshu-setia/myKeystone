@@ -56,7 +56,7 @@ class CoreApiTests(object):
     def assertValidTenant(self, tenant):
         self.assertIsNotNone(tenant.get('id'))
         self.assertIsNotNone(tenant.get('name'))
-        self.assertNotIn('domain_id', tenant)
+        self.assertNotIn('account_id', tenant)
         self.assertNotIn('parent_id', tenant)
 
     def assertValidUser(self, user):
@@ -1407,7 +1407,7 @@ class TestFernetTokenProviderV2(RestfulTestCase):
         return {'id': uuid.uuid4().hex,
                 'name': uuid.uuid4().hex,
                 'description': uuid.uuid4().hex,
-                'domain_id': 'default',
+                'account_id': 'default',
                 'enabled': True}
 
     def config_overrides(self):

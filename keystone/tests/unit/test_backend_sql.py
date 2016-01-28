@@ -37,7 +37,7 @@ from keystone.token.persistence.backends import sql as token_sql
 
 
 CONF = cfg.CONF
-DEFAULT_DOMAIN_ID = CONF.identity.default_domain_id
+DEFAULT_ACCOUNT_ID = CONF.identity.default_account_id
 
 
 class SqlTests(tests.SQLDriverOverrides, tests.TestCase):
@@ -78,7 +78,7 @@ class SqlModels(SqlTests):
         cols = (('id', sql.String, 64),
                 ('name', sql.String, 255),
                 ('password', sql.String, 128),
-                ('domain_id', sql.String, 64),
+                ('account_id', sql.String, 64),
                 ('enabled', sql.Boolean, None),
                 ('extra', sql.JsonBlob, None),
                 ('expiry', sql.DateTime, None))
@@ -95,21 +95,21 @@ class SqlModels(SqlTests):
         cols = (('id', sql.String, 64),
                 ('name', sql.String, 64),
                 ('description', sql.Text, None),
-                ('domain_id', sql.String, 64),
+                ('account_id', sql.String, 64),
                 ('extra', sql.JsonBlob, None))
         self.assertExpectedSchema('group', cols)
 
-    def test_domain_model(self):
+    def test_account_model(self):
         cols = (('id', sql.String, 64),
                 ('name', sql.String, 64),
                 ('enabled', sql.Boolean, None))
-        self.assertExpectedSchema('domain', cols)
+        self.assertExpectedSchema('account', cols)
 
     def test_project_model(self):
         cols = (('id', sql.String, 64),
                 ('name', sql.String, 64),
                 ('description', sql.Text, None),
-                ('domain_id', sql.String, 64),
+                ('account_id', sql.String, 64),
                 ('enabled', sql.Boolean, None),
                 ('extra', sql.JsonBlob, None),
                 ('parent_id', sql.String, 64))
@@ -182,7 +182,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
 
     def test_delete_user_with_project_association(self):
         user = {'name': uuid.uuid4().hex,
-                'domain_id': DEFAULT_DOMAIN_ID,
+                'account_id': DEFAULT_ACCOUNT_ID,
                 'password': uuid.uuid4().hex}
         user = self.identity_api.create_user(user)
         self.assignment_api.add_user_to_project(self.tenant_bar['id'],
@@ -194,7 +194,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
 
     def test_create_null_user_name(self):
         user = {'name': None,
-                'domain_id': DEFAULT_DOMAIN_ID,
+                'account_id': DEFAULT_ACCOUNT_ID,
                 'password': uuid.uuid4().hex}
         self.assertRaises(exception.ValidationError,
                           self.identity_api.create_user,
@@ -202,7 +202,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         self.assertRaises(exception.UserNotFound,
                           self.identity_api.get_user_by_name,
                           user['name'],
-                          DEFAULT_DOMAIN_ID)
+                          DEFAULT_ACCOUNT_ID)
 
     def test_create_user_case_sensitivity(self):
         # user name case sensitivity is down to the fact that it is marked as
@@ -212,7 +212,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         # create a ref with a lowercase name
         ref = {
             'name': uuid.uuid4().hex.lower(),
-            'domain_id': DEFAULT_DOMAIN_ID}
+            'account_id': DEFAULT_ACCOUNT_ID}
         ref = self.identity_api.create_user(ref)
 
         # assign a new ID with the same name, but this time in uppercase
@@ -229,7 +229,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         ref = {
             'id': uuid.uuid4().hex,
             'name': uuid.uuid4().hex.lower(),
-            'domain_id': DEFAULT_DOMAIN_ID}
+            'account_id': DEFAULT_ACCOUNT_ID}
         self.resource_api.create_project(ref['id'], ref)
 
         # assign a new ID with the same name, but this time in uppercase
@@ -240,7 +240,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
     def test_create_null_project_name(self):
         tenant = {'id': uuid.uuid4().hex,
                   'name': None,
-                  'domain_id': DEFAULT_DOMAIN_ID}
+                  'account_id': DEFAULT_ACCOUNT_ID}
         self.assertRaises(exception.ValidationError,
                           self.resource_api.create_project,
                           tenant['id'],
@@ -251,11 +251,11 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         self.assertRaises(exception.ProjectNotFound,
                           self.resource_api.get_project_by_name,
                           tenant['name'],
-                          DEFAULT_DOMAIN_ID)
+                          DEFAULT_ACCOUNT_ID)
 
     def test_delete_project_with_user_association(self):
         user = {'name': 'fakeuser',
-                'domain_id': DEFAULT_DOMAIN_ID,
+                'account_id': DEFAULT_ACCOUNT_ID,
                 'password': 'passwd'}
         user = self.identity_api.create_user(user)
         self.assignment_api.add_user_to_project(self.tenant_bar['id'],
@@ -268,7 +268,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         # A test to check that the internal representation
         # or roles is correctly updated when a user is deleted
         user = {'name': uuid.uuid4().hex,
-                'domain_id': DEFAULT_DOMAIN_ID,
+                'account_id': DEFAULT_ACCOUNT_ID,
                 'password': 'passwd'}
         user = self.identity_api.create_user(user)
         role = {'id': uuid.uuid4().hex,
@@ -291,7 +291,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         # A test to check that the internal representation
         # or roles is correctly updated when a project is deleted
         user = {'name': uuid.uuid4().hex,
-                'domain_id': DEFAULT_DOMAIN_ID,
+                'account_id': DEFAULT_ACCOUNT_ID,
                 'password': 'passwd'}
         user = self.identity_api.create_user(user)
         role = {'id': uuid.uuid4().hex,
@@ -326,7 +326,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         tenant = {
             'id': tenant_id,
             'name': uuid.uuid4().hex,
-            'domain_id': DEFAULT_DOMAIN_ID,
+            'account_id': DEFAULT_ACCOUNT_ID,
             arbitrary_key: arbitrary_value}
         ref = self.resource_api.create_project(tenant_id, tenant)
         self.assertEqual(arbitrary_value, ref[arbitrary_key])
@@ -351,7 +351,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         arbitrary_value = uuid.uuid4().hex
         user = {
             'name': uuid.uuid4().hex,
-            'domain_id': DEFAULT_DOMAIN_ID,
+            'account_id': DEFAULT_ACCOUNT_ID,
             'password': uuid.uuid4().hex,
             arbitrary_key: arbitrary_value}
         ref = self.identity_api.create_user(user)
@@ -370,7 +370,7 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
     def test_sql_user_to_dict_null_default_project_id(self):
         user = {
             'name': uuid.uuid4().hex,
-            'domain_id': DEFAULT_DOMAIN_ID,
+            'account_id': DEFAULT_ACCOUNT_ID,
             'password': uuid.uuid4().hex}
 
         user = self.identity_api.create_user(user)
@@ -383,105 +383,105 @@ class SqlIdentity(SqlTests, test_backend.IdentityTests):
         self.assertNotIn('default_project_id', user_ref)
         session.close()
 
-    def test_list_domains_for_user(self):
-        domain = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(domain['id'], domain)
+    def test_list_accounts_for_user(self):
+        account = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(account['id'], account)
         user = {'name': uuid.uuid4().hex, 'password': uuid.uuid4().hex,
-                'domain_id': domain['id'], 'enabled': True}
+                'account_id': account['id'], 'enabled': True}
 
-        test_domain1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(test_domain1['id'], test_domain1)
-        test_domain2 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(test_domain2['id'], test_domain2)
+        test_account1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(test_account1['id'], test_account1)
+        test_account2 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(test_account2['id'], test_account2)
 
         user = self.identity_api.create_user(user)
-        user_domains = self.assignment_api.list_domains_for_user(user['id'])
-        self.assertEqual(0, len(user_domains))
+        user_accounts = self.assignment_api.list_accounts_for_user(user['id'])
+        self.assertEqual(0, len(user_accounts))
         self.assignment_api.create_grant(user_id=user['id'],
-                                         domain_id=test_domain1['id'],
+                                         account_id=test_account1['id'],
                                          role_id=self.role_member['id'])
         self.assignment_api.create_grant(user_id=user['id'],
-                                         domain_id=test_domain2['id'],
+                                         account_id=test_account2['id'],
                                          role_id=self.role_member['id'])
-        user_domains = self.assignment_api.list_domains_for_user(user['id'])
-        self.assertThat(user_domains, matchers.HasLength(2))
+        user_accounts = self.assignment_api.list_accounts_for_user(user['id'])
+        self.assertThat(user_accounts, matchers.HasLength(2))
 
-    def test_list_domains_for_user_with_grants(self):
-        # Create two groups each with a role on a different domain, and
-        # make user1 a member of both groups.  Both these new domains
+    def test_list_accounts_for_user_with_grants(self):
+        # Create two groups each with a role on a different account, and
+        # make user1 a member of both groups.  Both these new accounts
         # should now be included, along with any direct user grants.
-        domain = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(domain['id'], domain)
+        account = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(account['id'], account)
         user = {'name': uuid.uuid4().hex, 'password': uuid.uuid4().hex,
-                'domain_id': domain['id'], 'enabled': True}
+                'account_id': account['id'], 'enabled': True}
         user = self.identity_api.create_user(user)
-        group1 = {'name': uuid.uuid4().hex, 'domain_id': domain['id']}
+        group1 = {'name': uuid.uuid4().hex, 'account_id': account['id']}
         group1 = self.identity_api.create_group(group1)
-        group2 = {'name': uuid.uuid4().hex, 'domain_id': domain['id']}
+        group2 = {'name': uuid.uuid4().hex, 'account_id': account['id']}
         group2 = self.identity_api.create_group(group2)
 
-        test_domain1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(test_domain1['id'], test_domain1)
-        test_domain2 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(test_domain2['id'], test_domain2)
-        test_domain3 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(test_domain3['id'], test_domain3)
+        test_account1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(test_account1['id'], test_account1)
+        test_account2 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(test_account2['id'], test_account2)
+        test_account3 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(test_account3['id'], test_account3)
 
         self.identity_api.add_user_to_group(user['id'], group1['id'])
         self.identity_api.add_user_to_group(user['id'], group2['id'])
 
         # Create 3 grants, one user grant, the other two as group grants
         self.assignment_api.create_grant(user_id=user['id'],
-                                         domain_id=test_domain1['id'],
+                                         account_id=test_account1['id'],
                                          role_id=self.role_member['id'])
         self.assignment_api.create_grant(group_id=group1['id'],
-                                         domain_id=test_domain2['id'],
+                                         account_id=test_account2['id'],
                                          role_id=self.role_admin['id'])
         self.assignment_api.create_grant(group_id=group2['id'],
-                                         domain_id=test_domain3['id'],
+                                         account_id=test_account3['id'],
                                          role_id=self.role_admin['id'])
-        user_domains = self.assignment_api.list_domains_for_user(user['id'])
-        self.assertThat(user_domains, matchers.HasLength(3))
+        user_accounts = self.assignment_api.list_accounts_for_user(user['id'])
+        self.assertThat(user_accounts, matchers.HasLength(3))
 
-    def test_list_domains_for_user_with_inherited_grants(self):
-        """Test that inherited roles on the domain are excluded.
+    def test_list_accounts_for_user_with_inherited_grants(self):
+        """Test that inherited roles on the account are excluded.
 
         Test Plan:
 
-        - Create two domains, one user, group and role
-        - Domain1 is given an inherited user role, Domain2 an inherited
+        - Create two accounts, one user, group and role
+        - Account1 is given an inherited user role, Account2 an inherited
           group role (for a group of which the user is a member)
-        - When listing domains for user, neither domain should be returned
+        - When listing accounts for user, neither account should be returned
 
         """
-        domain1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        domain1 = self.resource_api.create_domain(domain1['id'], domain1)
-        domain2 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        domain2 = self.resource_api.create_domain(domain2['id'], domain2)
+        account1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        account1 = self.resource_api.create_account(account1['id'], account1)
+        account2 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        account2 = self.resource_api.create_account(account2['id'], account2)
         user = {'name': uuid.uuid4().hex, 'password': uuid.uuid4().hex,
-                'domain_id': domain1['id'], 'enabled': True}
+                'account_id': account1['id'], 'enabled': True}
         user = self.identity_api.create_user(user)
-        group = {'name': uuid.uuid4().hex, 'domain_id': domain1['id']}
+        group = {'name': uuid.uuid4().hex, 'account_id': account1['id']}
         group = self.identity_api.create_group(group)
         self.identity_api.add_user_to_group(user['id'], group['id'])
         role = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
         self.role_api.create_role(role['id'], role)
 
-        # Create a grant on each domain, one user grant, one group grant,
+        # Create a grant on each account, one user grant, one group grant,
         # both inherited.
         self.assignment_api.create_grant(user_id=user['id'],
-                                         domain_id=domain1['id'],
+                                         account_id=account1['id'],
                                          role_id=role['id'],
                                          inherited_to_projects=True)
         self.assignment_api.create_grant(group_id=group['id'],
-                                         domain_id=domain2['id'],
+                                         account_id=account2['id'],
                                          role_id=role['id'],
                                          inherited_to_projects=True)
 
-        user_domains = self.assignment_api.list_domains_for_user(user['id'])
-        # No domains should be returned since both domains have only inherited
+        user_accounts = self.assignment_api.list_accounts_for_user(user['id'])
+        # No accounts should be returned since both accounts have only inherited
         # roles assignments.
-        self.assertThat(user_domains, matchers.HasLength(0))
+        self.assertThat(user_accounts, matchers.HasLength(0))
 
 
 class SqlTrust(SqlTests, test_backend.TrustTests):
@@ -751,39 +751,39 @@ class SqlFilterTests(SqlTests, test_backend.FilterTests):
 
         for entity in ['user', 'group', 'project']:
             self._delete_test_data(entity, self.entity_list[entity])
-            self._delete_test_data(entity, self.domain1_entity_list[entity])
+            self._delete_test_data(entity, self.account1_entity_list[entity])
         del self.entity_list
-        del self.domain1_entity_list
-        self.domain1['enabled'] = False
-        self.resource_api.update_domain(self.domain1['id'], self.domain1)
-        self.resource_api.delete_domain(self.domain1['id'])
-        del self.domain1
+        del self.account1_entity_list
+        self.account1['enabled'] = False
+        self.resource_api.update_account(self.account1['id'], self.account1)
+        self.resource_api.delete_account(self.account1['id'])
+        del self.account1
 
-    def test_list_entities_filtered_by_domain(self):
+    def test_list_entities_filtered_by_account(self):
         # NOTE(henry-nash): This method is here rather than in test_backend
-        # since any domain filtering with LDAP is handled by the manager
+        # since any account filtering with LDAP is handled by the manager
         # layer (and is already tested elsewhere) not at the driver level.
         self.addCleanup(self.clean_up_entities)
-        self.domain1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(self.domain1['id'], self.domain1)
+        self.account1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(self.account1['id'], self.account1)
 
         self.entity_list = {}
-        self.domain1_entity_list = {}
+        self.account1_entity_list = {}
         for entity in ['user', 'group', 'project']:
-            # Create 5 entities, 3 of which are in domain1
-            DOMAIN1_ENTITIES = 3
+            # Create 5 entities, 3 of which are in account1
+            ACCOUNT1_ENTITIES = 3
             self.entity_list[entity] = self._create_test_data(entity, 2)
-            self.domain1_entity_list[entity] = self._create_test_data(
-                entity, DOMAIN1_ENTITIES, self.domain1['id'])
+            self.account1_entity_list[entity] = self._create_test_data(
+                entity, ACCOUNT1_ENTITIES, self.account1['id'])
 
-            # Should get back the DOMAIN1_ENTITIES in domain1
+            # Should get back the ACCOUNT1_ENTITIES in account1
             hints = driver_hints.Hints()
-            hints.add_filter('domain_id', self.domain1['id'])
+            hints.add_filter('account_id', self.account1['id'])
             entities = self._list_entities(entity)(hints=hints)
-            self.assertEqual(DOMAIN1_ENTITIES, len(entities))
-            self._match_with_list(entities, self.domain1_entity_list[entity])
+            self.assertEqual(ACCOUNT1_ENTITIES, len(entities))
+            self._match_with_list(entities, self.account1_entity_list[entity])
             # Check the driver has removed the filter from the list hints
-            self.assertFalse(hints.get_exact_filter_by_name('domain_id'))
+            self.assertFalse(hints.get_exact_filter_by_name('account_id'))
 
     def test_filter_sql_injection_attack(self):
         """Test against sql injection attack on filters
@@ -804,7 +804,7 @@ class SqlFilterTests(SqlTests, test_backend.FilterTests):
 
         # See if we can add a SQL command...use the group table instead of the
         # user table since 'user' is reserved word for SQLAlchemy.
-        group = {'name': uuid.uuid4().hex, 'domain_id': DEFAULT_DOMAIN_ID}
+        group = {'name': uuid.uuid4().hex, 'account_id': DEFAULT_ACCOUNT_ID}
         group = self.identity_api.create_group(group)
 
         hints = driver_hints.Hints()
@@ -986,7 +986,7 @@ class DeprecatedDecorators(SqlTests):
         project_ref = {
             'id': uuid.uuid4().hex,
             'name': uuid.uuid4().hex,
-            'domain_id': DEFAULT_DOMAIN_ID}
+            'account_id': DEFAULT_ACCOUNT_ID}
         self.resource_api.create_project(project_ref['id'], project_ref)
         self.resource_api.get_project(project_ref['id'])
 
@@ -996,7 +996,7 @@ class DeprecatedDecorators(SqlTests):
         project_ref = {
             'id': uuid.uuid4().hex,
             'name': uuid.uuid4().hex,
-            'domain_id': DEFAULT_DOMAIN_ID}
+            'account_id': DEFAULT_ACCOUNT_ID}
         self.assertRaises(versionutils.DeprecatedConfig,
                           self.assignment_api.create_project,
                           project_ref['id'], project_ref)

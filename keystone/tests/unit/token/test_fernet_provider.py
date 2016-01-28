@@ -126,43 +126,43 @@ class TestPayloads(tests.TestCase):
         self.assertEqual(exp_expires_at, expires_at)
         self.assertEqual(exp_audit_ids, audit_ids)
 
-    def test_domain_scoped_payload(self):
+    def test_account_scoped_payload(self):
         exp_user_id = uuid.uuid4().hex
         exp_methods = ['password']
-        exp_domain_id = uuid.uuid4().hex
+        exp_account_id = uuid.uuid4().hex
         exp_expires_at = timeutils.isotime(timeutils.utcnow(), subsecond=True)
         exp_audit_ids = [provider.random_urlsafe_str()]
 
-        payload = token_formatters.DomainScopedPayload.assemble(
-            exp_user_id, exp_methods, exp_domain_id, exp_expires_at,
+        payload = token_formatters.AccountScopedPayload.assemble(
+            exp_user_id, exp_methods, exp_account_id, exp_expires_at,
             exp_audit_ids)
 
-        (user_id, methods, domain_id, expires_at, audit_ids) = (
-            token_formatters.DomainScopedPayload.disassemble(payload))
+        (user_id, methods, account_id, expires_at, audit_ids) = (
+            token_formatters.AccountScopedPayload.disassemble(payload))
 
         self.assertEqual(exp_user_id, user_id)
         self.assertEqual(exp_methods, methods)
-        self.assertEqual(exp_domain_id, domain_id)
+        self.assertEqual(exp_account_id, account_id)
         self.assertEqual(exp_expires_at, expires_at)
         self.assertEqual(exp_audit_ids, audit_ids)
 
-    def test_domain_scoped_payload_with_default_domain(self):
+    def test_account_scoped_payload_with_default_account(self):
         exp_user_id = uuid.uuid4().hex
         exp_methods = ['password']
-        exp_domain_id = CONF.identity.default_domain_id
+        exp_account_id = CONF.identity.default_account_id
         exp_expires_at = timeutils.isotime(timeutils.utcnow(), subsecond=True)
         exp_audit_ids = [provider.random_urlsafe_str()]
 
-        payload = token_formatters.DomainScopedPayload.assemble(
-            exp_user_id, exp_methods, exp_domain_id, exp_expires_at,
+        payload = token_formatters.AccountScopedPayload.assemble(
+            exp_user_id, exp_methods, exp_account_id, exp_expires_at,
             exp_audit_ids)
 
-        (user_id, methods, domain_id, expires_at, audit_ids) = (
-            token_formatters.DomainScopedPayload.disassemble(payload))
+        (user_id, methods, account_id, expires_at, audit_ids) = (
+            token_formatters.AccountScopedPayload.disassemble(payload))
 
         self.assertEqual(exp_user_id, user_id)
         self.assertEqual(exp_methods, methods)
-        self.assertEqual(exp_domain_id, domain_id)
+        self.assertEqual(exp_account_id, account_id)
         self.assertEqual(exp_expires_at, expires_at)
         self.assertEqual(exp_audit_ids, audit_ids)
 
@@ -245,23 +245,23 @@ class TestPayloads(tests.TestCase):
         self.assertEqual(exp_expires_at, expires_at)
         self.assertEqual(exp_audit_ids, audit_ids)
 
-    def test_domain_scoped_payload_with_non_uuid_user_id(self):
+    def test_account_scoped_payload_with_non_uuid_user_id(self):
         exp_user_id = 'someNonUuidUserId'
         exp_methods = ['password']
-        exp_domain_id = uuid.uuid4().hex
+        exp_account_id = uuid.uuid4().hex
         exp_expires_at = timeutils.isotime(timeutils.utcnow(), subsecond=True)
         exp_audit_ids = [provider.random_urlsafe_str()]
 
-        payload = token_formatters.DomainScopedPayload.assemble(
-            exp_user_id, exp_methods, exp_domain_id, exp_expires_at,
+        payload = token_formatters.AccountScopedPayload.assemble(
+            exp_user_id, exp_methods, exp_account_id, exp_expires_at,
             exp_audit_ids)
 
-        (user_id, methods, domain_id, expires_at, audit_ids) = (
-            token_formatters.DomainScopedPayload.disassemble(payload))
+        (user_id, methods, account_id, expires_at, audit_ids) = (
+            token_formatters.AccountScopedPayload.disassemble(payload))
 
         self.assertEqual(exp_user_id, user_id)
         self.assertEqual(exp_methods, methods)
-        self.assertEqual(exp_domain_id, domain_id)
+        self.assertEqual(exp_account_id, account_id)
         self.assertEqual(exp_expires_at, expires_at)
         self.assertEqual(exp_audit_ids, audit_ids)
 

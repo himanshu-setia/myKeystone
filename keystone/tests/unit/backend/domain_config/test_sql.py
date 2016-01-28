@@ -13,29 +13,29 @@
 
 from keystone.common import sql
 from keystone.tests.unit.backend import core_sql
-from keystone.tests.unit.backend.domain_config import core
+from keystone.tests.unit.backend.account_config import core
 
 
-class SqlDomainConfigModels(core_sql.BaseBackendSqlModels):
+class SqlAccountConfigModels(core_sql.BaseBackendSqlModels):
 
     def test_whitelisted_model(self):
-        cols = (('domain_id', sql.String, 64),
+        cols = (('account_id', sql.String, 64),
                 ('group', sql.String, 255),
                 ('option', sql.String, 255),
                 ('value', sql.JsonBlob, None))
         self.assertExpectedSchema('whitelisted_config', cols)
 
     def test_sensitive_model(self):
-        cols = (('domain_id', sql.String, 64),
+        cols = (('account_id', sql.String, 64),
                 ('group', sql.String, 255),
                 ('option', sql.String, 255),
                 ('value', sql.JsonBlob, None))
         self.assertExpectedSchema('sensitive_config', cols)
 
 
-class SqlDomainConfig(core_sql.BaseBackendSqlTests, core.DomainConfigTests):
+class SqlAccountConfig(core_sql.BaseBackendSqlTests, core.AccountConfigTests):
     def setUp(self):
-        super(SqlDomainConfig, self).setUp()
-        # core.DomainConfigTests is effectively a mixin class, so make sure we
+        super(SqlAccountConfig, self).setUp()
+        # core.AccountConfigTests is effectively a mixin class, so make sure we
         # call its setup
-        core.DomainConfigTests.setUp(self)
+        core.AccountConfigTests.setUp(self)

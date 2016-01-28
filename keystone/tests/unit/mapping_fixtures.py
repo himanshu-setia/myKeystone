@@ -19,10 +19,10 @@ TESTER_GROUP_NAME = "tester"
 DEVELOPER_GROUP_ID = "xyz"
 DEVELOPER_GROUP_NAME = "Developer"
 CONTRACTOR_GROUP_NAME = "Contractor"
-DEVELOPER_GROUP_DOMAIN_NAME = "outsourcing"
-DEVELOPER_GROUP_DOMAIN_ID = "5abc43"
-FEDERATED_DOMAIN = "Federated"
-LOCAL_DOMAIN = "Local"
+DEVELOPER_GROUP_ACCOUNT_NAME = "outsourcing"
+DEVELOPER_GROUP_ACCOUNT_ID = "5abc43"
+FEDERATED_ACCOUNT = "Federated"
+LOCAL_ACCOUNT = "Local"
 
 # Mapping summary:
 # LastName Smith & Not Contractor or SubContractor -> group 0cd5e9
@@ -517,8 +517,8 @@ MAPPING_GROUP_NAMES = {
                 {
                     "group": {
                         "name": DEVELOPER_GROUP_NAME,
-                        "domain": {
-                            "name": DEVELOPER_GROUP_DOMAIN_NAME
+                        "account": {
+                            "name": DEVELOPER_GROUP_ACCOUNT_NAME
                         }
                     }
                 }
@@ -537,8 +537,8 @@ MAPPING_GROUP_NAMES = {
                 {
                     "group": {
                         "name": TESTER_GROUP_NAME,
-                        "domain": {
-                            "id": DEVELOPER_GROUP_DOMAIN_ID
+                        "account": {
+                            "id": DEVELOPER_GROUP_ACCOUNT_ID
                         }
                     }
                 }
@@ -562,8 +562,8 @@ MAPPING_EPHEMERAL_USER = {
                 {
                     "user": {
                         "name": "{0}",
-                        "domain": {
-                            "id": FEDERATED_DOMAIN
+                        "account": {
+                            "id": FEDERATED_ACCOUNT
                         },
                         "type": "ephemeral"
                     }
@@ -601,8 +601,8 @@ MAPPING_GROUPS_WHITELIST = {
             "local": [
                 {
                     "groups": "{0}",
-                    "domain": {
-                        "id": DEVELOPER_GROUP_DOMAIN_ID
+                    "account": {
+                        "id": DEVELOPER_GROUP_ACCOUNT_ID
                     }
                 },
                 {
@@ -615,15 +615,15 @@ MAPPING_GROUPS_WHITELIST = {
     ]
 }
 
-MAPPING_EPHEMERAL_USER_LOCAL_DOMAIN = {
+MAPPING_EPHEMERAL_USER_LOCAL_ACCOUNT = {
     "rules": [
         {
             "local": [
                 {
                     "user": {
                         "name": "{0}",
-                        "domain": {
-                            "id": LOCAL_DOMAIN
+                        "account": {
+                            "id": LOCAL_ACCOUNT
                         },
                         "type": "ephemeral"
                     }
@@ -644,7 +644,7 @@ MAPPING_EPHEMERAL_USER_LOCAL_DOMAIN = {
     ]
 }
 
-MAPPING_GROUPS_WHITELIST_MISSING_DOMAIN = {
+MAPPING_GROUPS_WHITELIST_MISSING_ACCOUNT = {
     "rules": [
         {
             "remote": [
@@ -664,15 +664,15 @@ MAPPING_GROUPS_WHITELIST_MISSING_DOMAIN = {
     ]
 }
 
-MAPPING_LOCAL_USER_LOCAL_DOMAIN = {
+MAPPING_LOCAL_USER_LOCAL_ACCOUNT = {
     "rules": [
         {
             "local": [
                 {
                     "user": {
                         "name": "{0}",
-                        "domain": {
-                            "id": LOCAL_DOMAIN
+                        "account": {
+                            "id": LOCAL_ACCOUNT
                         },
                         "type": "local"
                     }
@@ -713,8 +713,8 @@ MAPPING_GROUPS_BLACKLIST_MULTIPLES = {
             "local": [
                 {
                     "groups": "{0}",
-                    "domain": {
-                        "id": DEVELOPER_GROUP_DOMAIN_ID
+                    "account": {
+                        "id": DEVELOPER_GROUP_ACCOUNT_ID
                     }
                 },
                 {
@@ -743,8 +743,8 @@ MAPPING_GROUPS_BLACKLIST = {
             "local": [
                 {
                     "groups": "{0}",
-                    "domain": {
-                        "id": DEVELOPER_GROUP_DOMAIN_ID
+                    "account": {
+                        "id": DEVELOPER_GROUP_ACCOUNT_ID
                     }
                 },
                 {
@@ -786,7 +786,7 @@ MAPPING_USER_IDS = {
                 {
                     "user": {
                         "name": "{0}",
-                        "domain": {
+                        "account": {
                             "id": "federated"
                         }
                     }
@@ -830,7 +830,7 @@ MAPPING_USER_IDS = {
                     "user": {
                         "id": "abc123",
                         "name": "{0}",
-                        "domain": {
+                        "account": {
                             "id": "federated"
                         }
                     }
@@ -851,7 +851,7 @@ MAPPING_USER_IDS = {
     ]
 }
 
-MAPPING_GROUPS_BLACKLIST_MISSING_DOMAIN = {
+MAPPING_GROUPS_BLACKLIST_MISSING_ACCOUNT = {
     "rules": [
         {
             "remote": [
@@ -888,8 +888,8 @@ MAPPING_GROUPS_WHITELIST_AND_BLACKLIST = {
             "local": [
                 {
                     "groups": "{0}",
-                    "domain": {
-                        "id": DEVELOPER_GROUP_DOMAIN_ID
+                    "account": {
+                        "id": DEVELOPER_GROUP_ACCOUNT_ID
                     }
                 },
             ]
@@ -909,8 +909,8 @@ MAPPING_GROUPS_WHITELIST_PASS_THROUGH = {
                 {
                     "user": {
                         "name": "{0}",
-                        "domain": {
-                            "id": DEVELOPER_GROUP_DOMAIN_ID
+                        "account": {
+                            "id": DEVELOPER_GROUP_ACCOUNT_ID
                         }
                     }
                 }
@@ -926,8 +926,8 @@ MAPPING_GROUPS_WHITELIST_PASS_THROUGH = {
             "local": [
                 {
                     "groups": "{0}",
-                    "domain": {
-                        "id": DEVELOPER_GROUP_DOMAIN_ID
+                    "account": {
+                        "id": DEVELOPER_GROUP_ACCOUNT_ID
                     }
                 }
             ]

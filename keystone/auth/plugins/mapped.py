@@ -193,8 +193,8 @@ def apply_mapping_filter(identity_provider, protocol, assertion,
     mapped_properties = rule_processor.process(assertion)
 
     # NOTE(marek-denis): We update group_ids only here to avoid fetching
-    # groups identified by name/domain twice.
-    # NOTE(marek-denis): Groups are translated from name/domain to their
+    # groups identified by name/account twice.
+    # NOTE(marek-denis): Groups are translated from name/account to their
     # corresponding ids in the auth plugin, as we need information what
     # ``mapping_id`` was used as well as idenity_api and assignment_api
     # objects.
@@ -217,7 +217,7 @@ def setup_username(context, mapped_properties):
     identifier for identity objects. Initial version of the mapping engine
     assumed user is identified by ``name`` and his ``id`` is built from the
     name. We, however need to be able to accept local rules that identify user
-    by either id or name/domain.
+    by either id or name/account.
 
     The following use-cases are covered:
 

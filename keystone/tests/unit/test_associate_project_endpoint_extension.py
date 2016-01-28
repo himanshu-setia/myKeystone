@@ -37,7 +37,7 @@ class TestExtensionCase(test_v3.RestfulTestCase):
         self.default_request_url = (
             '/OS-EP-FILTER/projects/%(project_id)s'
             '/endpoints/%(endpoint_id)s' % {
-                'project_id': self.default_domain_project_id,
+                'project_id': self.default_account_project_id,
                 'endpoint_id': self.endpoint_id})
 
 
@@ -72,7 +72,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
         """
         self.put('/OS-EP-FILTER/projects/%(project_id)s'
                  '/endpoints/%(endpoint_id)s' % {
-                     'project_id': self.default_domain_project_id,
+                     'project_id': self.default_account_project_id,
                      'endpoint_id': uuid.uuid4().hex},
                  expected_status=404)
 
@@ -83,7 +83,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
 
         """
         self.put(self.default_request_url,
-                 body={'project_id': self.default_domain_project_id},
+                 body={'project_id': self.default_account_project_id},
                  expected_status=204)
 
     def test_check_endpoint_project_association(self):
@@ -96,7 +96,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
                  expected_status=204)
         self.head('/OS-EP-FILTER/projects/%(project_id)s'
                   '/endpoints/%(endpoint_id)s' % {
-                      'project_id': self.default_domain_project_id,
+                      'project_id': self.default_account_project_id,
                       'endpoint_id': self.endpoint_id},
                   expected_status=204)
 
@@ -122,7 +122,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
         self.put(self.default_request_url)
         self.head('/OS-EP-FILTER/projects/%(project_id)s'
                   '/endpoints/%(endpoint_id)s' % {
-                      'project_id': self.default_domain_project_id,
+                      'project_id': self.default_account_project_id,
                       'endpoint_id': uuid.uuid4().hex},
                   expected_status=404)
 
@@ -134,7 +134,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
         """
         self.put(self.default_request_url)
         resource_url = '/OS-EP-FILTER/projects/%(project_id)s/endpoints' % {
-                       'project_id': self.default_domain_project_id}
+                       'project_id': self.default_account_project_id}
         r = self.get(resource_url)
         self.assertValidEndpointListResponse(r, self.endpoint,
                                              resource_url=resource_url)
@@ -160,7 +160,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
         resource_url = '/OS-EP-FILTER/endpoints/%(endpoint_id)s/projects' % {
                        'endpoint_id': self.endpoint_id}
         r = self.get(resource_url)
-        self.assertValidProjectListResponse(r, self.default_domain_project,
+        self.assertValidProjectListResponse(r, self.default_account_project,
                                             resource_url=resource_url)
 
     def test_list_projects_with_no_endpoint_project_association(self):
@@ -193,7 +193,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
         self.put(self.default_request_url)
         self.delete('/OS-EP-FILTER/projects/%(project_id)s'
                     '/endpoints/%(endpoint_id)s' % {
-                        'project_id': self.default_domain_project_id,
+                        'project_id': self.default_account_project_id,
                         'endpoint_id': self.endpoint_id},
                     expected_status=204)
 
@@ -219,7 +219,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
         self.put(self.default_request_url)
         self.delete('/OS-EP-FILTER/projects/%(project_id)s'
                     '/endpoints/%(endpoint_id)s' % {
-                        'project_id': self.default_domain_project_id,
+                        'project_id': self.default_account_project_id,
                         'endpoint_id': uuid.uuid4().hex},
                     expected_status=404)
 
@@ -231,7 +231,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
         self.assertValidProjectListResponse(r, expected_length=1)
 
         self.delete('/projects/%(project_id)s' % {
-            'project_id': self.default_domain_project_id})
+            'project_id': self.default_account_project_id})
 
         r = self.get(association_url, expected_status=200)
         self.assertValidProjectListResponse(r, expected_length=0)
@@ -239,7 +239,7 @@ class EndpointFilterCRUDTestCase(TestExtensionCase):
     def test_endpoint_project_association_cleanup_when_endpoint_deleted(self):
         self.put(self.default_request_url)
         association_url = '/OS-EP-FILTER/projects/%(project_id)s/endpoints' % {
-            'project_id': self.default_domain_project_id}
+            'project_id': self.default_account_project_id}
         r = self.get(association_url, expected_status=200)
         self.assertValidEndpointListResponse(r, expected_length=1)
 
@@ -255,7 +255,7 @@ class EndpointFilterTokenRequestTestCase(TestExtensionCase):
     def test_project_scoped_token_using_endpoint_filter(self):
         """Verify endpoints from project scoped token filtered."""
         # create a project to work with
-        ref = self.new_project_ref(domain_id=self.domain_id)
+        ref = self.new_project_ref(account_id=self.account_id)
         r = self.post('/projects', body={'project': ref})
         project = self.assertValidProjectResponse(r, ref)
 
@@ -322,7 +322,7 @@ class EndpointFilterTokenRequestTestCase(TestExtensionCase):
 
         """
         # create a project to work with
-        ref = self.new_project_ref(domain_id=self.domain_id)
+        ref = self.new_project_ref(account_id=self.account_id)
         r = self.post('/projects', body={'project': ref})
         project = self.assertValidProjectResponse(r, ref)
 
@@ -394,7 +394,7 @@ class EndpointFilterTokenRequestTestCase(TestExtensionCase):
 
         """
         # create a project to work with
-        ref = self.new_project_ref(domain_id=self.domain_id)
+        ref = self.new_project_ref(account_id=self.account_id)
         r = self.post('/projects', body={'project': ref})
         project = self.assertValidProjectResponse(r, ref)
 
@@ -1001,9 +1001,9 @@ class EndpointGroupCRUDTestCase(TestExtensionCase):
 
         # create additional endpoints
         self._create_endpoint_and_associations(
-            self.default_domain_project_id, service_id2)
+            self.default_account_project_id, service_id2)
         self._create_endpoint_and_associations(
-            self.default_domain_project_id)
+            self.default_account_project_id)
 
         # create project and endpoint association with default endpoint:
         self.put(self.default_request_url)
@@ -1016,18 +1016,18 @@ class EndpointGroupCRUDTestCase(TestExtensionCase):
 
         # associate endpoint group with project
         self._create_endpoint_group_project_association(
-            endpoint_group_id, self.default_domain_project_id)
+            endpoint_group_id, self.default_account_project_id)
 
         # Now get a list of the filtered endpoints
         endpoints_url = '/OS-EP-FILTER/projects/%(project_id)s/endpoints' % {
-            'project_id': self.default_domain_project_id}
+            'project_id': self.default_account_project_id}
         r = self.get(endpoints_url)
         endpoints = self.assertValidEndpointListResponse(r)
         self.assertEqual(len(endpoints), 2)
 
         # Now remove project endpoint group association
         url = self._get_project_endpoint_group_url(
-            endpoint_group_id, self.default_domain_project_id)
+            endpoint_group_id, self.default_account_project_id)
         self.delete(url)
 
         # Now remove endpoint group
@@ -1045,7 +1045,7 @@ class EndpointGroupCRUDTestCase(TestExtensionCase):
             self.DEFAULT_ENDPOINT_GROUP_URL, self.DEFAULT_ENDPOINT_GROUP_BODY)
 
         # create new project and associate with endpoint_group
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         r = self.post('/projects', body={'project': project_ref})
         project = self.assertValidProjectResponse(r, project_ref)
         url = self._get_project_endpoint_group_url(endpoint_group_id,
@@ -1067,7 +1067,7 @@ class EndpointGroupCRUDTestCase(TestExtensionCase):
             self.DEFAULT_ENDPOINT_GROUP_URL, self.DEFAULT_ENDPOINT_GROUP_BODY)
 
         # create new project and associate with endpoint_group
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         r = self.post('/projects', body={'project': project_ref})
         project = self.assertValidProjectResponse(r, project_ref)
         url = self._get_project_endpoint_group_url(endpoint_group_id,
@@ -1088,7 +1088,7 @@ class EndpointGroupCRUDTestCase(TestExtensionCase):
 
         # create an endpoint_group project
         url = self._get_project_endpoint_group_url(
-            endpoint_group_id, self.default_domain_project_id)
+            endpoint_group_id, self.default_account_project_id)
         self.put(url)
 
         # remove the endpoint group project
@@ -1102,7 +1102,7 @@ class EndpointGroupCRUDTestCase(TestExtensionCase):
 
         # create an endpoint_group project
         project_endpoint_group_url = self._get_project_endpoint_group_url(
-            endpoint_group_id, self.default_domain_project_id)
+            endpoint_group_id, self.default_account_project_id)
         self.put(project_endpoint_group_url)
 
         # remove endpoint group, the associated endpoint_group project will

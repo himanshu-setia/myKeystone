@@ -43,8 +43,8 @@ LOG = log.getLogger(__name__)
 
 MEMOIZE = cache.get_memoization_decorator(section='identity')
 
-DOMAIN_CONF_FHEAD = 'keystone.'
-DOMAIN_CONF_FTAIL = '.conf'
+ACCOUNT_CONF_FHEAD = 'keystone.'
+ACCOUNT_CONF_FTAIL = '.conf'
 
 
 def filter_user(user_ref):
@@ -60,7 +60,7 @@ def filter_user(user_ref):
         user_ref.pop('password', None)
         user_ref.pop('tenants', None)
         user_ref.pop('groups', None)
-        user_ref.pop('domains', None)
+        user_ref.pop('accounts', None)
         try:
             user_ref['extra'].pop('password', None)
             user_ref['extra'].pop('tenants', None)
@@ -69,19 +69,19 @@ def filter_user(user_ref):
     return user_ref
 
 
-@dependency.requires('domain_config_api')
-class DomainConfigs(dict):
-    """Discover, store and provide access to domain specific configs.
+@dependency.requires('account_config_api')
+class AccountConfigs(dict):
+    """Discover, store and provide access to account specific configs.
 
-    The setup_domain_drivers() call will be made via the wrapper from
+    The setup_account_drivers() call will be made via the wrapper from
     the first call to any driver function handled by this manager.
 
-    Domain specific configurations are only supported for the identity backend
+    Account specific configurations are only supported for the identity backend
     and the individual configurations are either specified in the resource
-    database or in individual domain configuration files, depending on the
-    setting of the 'domain_configurations_from_database' config option.
+    database or in individual account configuration files, depending on the
+    setting of the 'account_configurations_from_database' config option.
 
-    The result will be that for each domain with a specific configuration,
+    The result will be that for each account with a specific configuration,
     this class will hold a reference to a ConfigOpts and driver object that
     the identity manager and driver can use.
 
@@ -90,11 +90,11 @@ class DomainConfigs(dict):
     driver = None
     _any_sql = False
 
-    def _load_driver(self, domain_config):
+    def _load_driver(self, account_config):
         return importutils.import_object(
-            domain_config['cfg'].identity.driver, domain_config['cfg'])
+            account_config['cfg'].identity.driver, account_config['cfg'])
 
-    def _assert_no_more_than_one_sql_driver(self, domain_id, new_config,
+    def _assert_no_more_than_one_sql_driver(self, account_id, new_config,
                                             config_file=None):
         """Ensure there is more than one sql driver.
 
@@ -110,75 +110,75 @@ class DomainConfigs(dict):
             # The addition of this driver would cause us to have more than
             # one sql driver, so raise an exception.
             if not config_file:
-                config_file = _('Database at /domains/%s/config') % domain_id
+                config_file = _('Database at /accounts/%s/config') % account_id
             raise exception.MultipleSQLDriversInConfig(source=config_file)
         self._any_sql = self._any_sql or new_config['driver'].is_sql
 
-    def _load_config_from_file(self, resource_api, file_list, domain_name):
+    def _load_config_from_file(self, resource_api, file_list, account_name):
 
         try:
-            domain_ref = resource_api.get_domain_by_name(domain_name)
-        except exception.DomainNotFound:
+            account_ref = resource_api.get_account_by_name(account_name)
+        except exception.AccountNotFound:
             LOG.warning(
-                _LW('Invalid domain name (%s) found in config file name'),
-                domain_name)
+                _LW('Invalid account name (%s) found in config file name'),
+                account_name)
             return
 
-        # Create a new entry in the domain config dict, which contains
+        # Create a new entry in the account config dict, which contains
         # a new instance of both the conf environment and driver using
         # options defined in this set of config files.  Later, when we
-        # service calls via this Manager, we'll index via this domain
+        # service calls via this Manager, we'll index via this account
         # config dict to make sure we call the right driver
-        domain_config = {}
-        domain_config['cfg'] = cfg.ConfigOpts()
-        config.configure(conf=domain_config['cfg'])
-        domain_config['cfg'](args=[], project='keystone',
+        account_config = {}
+        account_config['cfg'] = cfg.ConfigOpts()
+        config.configure(conf=account_config['cfg'])
+        account_config['cfg'](args=[], project='keystone',
                              default_config_files=file_list)
-        domain_config['driver'] = self._load_driver(domain_config)
-        self._assert_no_more_than_one_sql_driver(domain_ref['id'],
-                                                 domain_config,
+        account_config['driver'] = self._load_driver(account_config)
+        self._assert_no_more_than_one_sql_driver(account_ref['id'],
+                                                 account_config,
                                                  config_file=file_list)
-        self[domain_ref['id']] = domain_config
+        self[account_ref['id']] = account_config
 
-    def _setup_domain_drivers_from_files(self, standard_driver, resource_api):
-        """Read the domain specific configuration files and load the drivers.
+    def _setup_account_drivers_from_files(self, standard_driver, resource_api):
+        """Read the account specific configuration files and load the drivers.
 
-        Domain configuration files are stored in the domain config directory,
+        Account configuration files are stored in the account config directory,
         and must be named of the form:
 
-        keystone.<domain_name>.conf
+        keystone.<account_name>.conf
 
-        For each file, call the load config method where the domain_name
-        will be turned into a domain_id and then:
+        For each file, call the load config method where the account_name
+        will be turned into a account_id and then:
 
         - Create a new config structure, adding in the specific additional
           options defined in this config file
         - Initialise a new instance of the required driver with this new config
 
         """
-        conf_dir = CONF.identity.domain_config_dir
+        conf_dir = CONF.identity.account_config_dir
         if not os.path.exists(conf_dir):
-            LOG.warning(_LW('Unable to locate domain config directory: %s'),
+            LOG.warning(_LW('Unable to locate account config directory: %s'),
                         conf_dir)
             return
 
         for r, d, f in os.walk(conf_dir):
             for fname in f:
-                if (fname.startswith(DOMAIN_CONF_FHEAD) and
-                        fname.endswith(DOMAIN_CONF_FTAIL)):
+                if (fname.startswith(ACCOUNT_CONF_FHEAD) and
+                        fname.endswith(ACCOUNT_CONF_FTAIL)):
                     if fname.count('.') >= 2:
                         self._load_config_from_file(
                             resource_api, [os.path.join(r, fname)],
-                            fname[len(DOMAIN_CONF_FHEAD):
-                                  -len(DOMAIN_CONF_FTAIL)])
+                            fname[len(ACCOUNT_CONF_FHEAD):
+                                  -len(ACCOUNT_CONF_FTAIL)])
                     else:
-                        LOG.debug(('Ignoring file (%s) while scanning domain '
+                        LOG.debug(('Ignoring file (%s) while scanning account '
                                    'config directory'),
                                   fname)
 
-    def _load_config_from_database(self, domain_id, specific_config):
+    def _load_config_from_database(self, account_id, specific_config):
 
-        def _assert_not_sql_driver(domain_id, new_config):
+        def _assert_not_sql_driver(account_id, new_config):
             """Ensure this is not an sql driver.
 
             Due to multi-threading safety concerns, we do not currently support
@@ -187,34 +187,34 @@ class DomainConfigs(dict):
 
             """
             if new_config['driver'].is_sql:
-                reason = _('Domain specific sql drivers are not supported via '
+                reason = _('Account specific sql drivers are not supported via '
                            'the Identity API. One is specified in '
-                           '/domains/%s/config') % domain_id
-                raise exception.InvalidDomainConfig(reason=reason)
+                           '/accounts/%s/config') % account_id
+                raise exception.InvalidAccountConfig(reason=reason)
 
-        domain_config = {}
-        domain_config['cfg'] = cfg.ConfigOpts()
-        config.configure(conf=domain_config['cfg'])
-        domain_config['cfg'](args=[], project='keystone')
+        account_config = {}
+        account_config['cfg'] = cfg.ConfigOpts()
+        config.configure(conf=account_config['cfg'])
+        account_config['cfg'](args=[], project='keystone')
 
         # Override any options that have been passed in as specified in the
         # database.
         for group in specific_config:
             for option in specific_config[group]:
-                domain_config['cfg'].set_override(
+                account_config['cfg'].set_override(
                     option, specific_config[group][option], group)
 
-        domain_config['cfg_overrides'] = specific_config
-        domain_config['driver'] = self._load_driver(domain_config)
-        _assert_not_sql_driver(domain_id, domain_config)
-        self[domain_id] = domain_config
+        account_config['cfg_overrides'] = specific_config
+        account_config['driver'] = self._load_driver(account_config)
+        _assert_not_sql_driver(account_id, account_config)
+        self[account_id] = account_config
 
-    def _setup_domain_drivers_from_database(self, standard_driver,
+    def _setup_account_drivers_from_database(self, standard_driver,
                                             resource_api):
-        """Read domain specific configuration from database and load drivers.
+        """Read account specific configuration from database and load drivers.
 
-        Domain configurations are stored in the domain-config backend,
-        so we go through each domain to find those that have a specific config
+        Account configurations are stored in the account-config backend,
+        so we go through each account to find those that have a specific config
         defined, and for those that do we:
 
         - Create a new config structure, overriding any specific options
@@ -222,60 +222,60 @@ class DomainConfigs(dict):
         - Initialise a new instance of the required driver with this new config
 
         """
-        for domain in resource_api.list_domains():
-            domain_config_options = (
-                self.domain_config_api.
-                get_config_with_sensitive_info(domain['id']))
-            if domain_config_options:
-                self._load_config_from_database(domain['id'],
-                                                domain_config_options)
+        for account in resource_api.list_accounts():
+            account_config_options = (
+                self.account_config_api.
+                get_config_with_sensitive_info(account['id']))
+            if account_config_options:
+                self._load_config_from_database(account['id'],
+                                                account_config_options)
 
-    def setup_domain_drivers(self, standard_driver, resource_api):
+    def setup_account_drivers(self, standard_driver, resource_api):
         # This is called by the api call wrapper
         self.configured = True
         self.driver = standard_driver
 
-        if CONF.identity.domain_configurations_from_database:
-            self._setup_domain_drivers_from_database(standard_driver,
+        if CONF.identity.account_configurations_from_database:
+            self._setup_account_drivers_from_database(standard_driver,
                                                      resource_api)
         else:
-            self._setup_domain_drivers_from_files(standard_driver,
+            self._setup_account_drivers_from_files(standard_driver,
                                                   resource_api)
 
-    def get_domain_driver(self, domain_id):
-        self.check_config_and_reload_domain_driver_if_required(domain_id)
-        if domain_id in self:
-            return self[domain_id]['driver']
+    def get_account_driver(self, account_id):
+        self.check_config_and_reload_account_driver_if_required(account_id)
+        if account_id in self:
+            return self[account_id]['driver']
 
-    def get_domain_conf(self, domain_id):
-        self.check_config_and_reload_domain_driver_if_required(domain_id)
-        if domain_id in self:
-            return self[domain_id]['cfg']
+    def get_account_conf(self, account_id):
+        self.check_config_and_reload_account_driver_if_required(account_id)
+        if account_id in self:
+            return self[account_id]['cfg']
         else:
             return CONF
 
-    def reload_domain_driver(self, domain_id):
+    def reload_account_driver(self, account_id):
         # Only used to support unit tests that want to set
         # new config values.  This should only be called once
-        # the domains have been configured, since it relies on
+        # the accounts have been configured, since it relies on
         # the fact that the configuration files/database have already been
         # read.
         if self.configured:
-            if domain_id in self:
-                self[domain_id]['driver'] = (
-                    self._load_driver(self[domain_id]))
+            if account_id in self:
+                self[account_id]['driver'] = (
+                    self._load_driver(self[account_id]))
             else:
                 # The standard driver
                 self.driver = self.driver()
 
-    def check_config_and_reload_domain_driver_if_required(self, domain_id):
-        """Check for, and load, any new domain specific config for this domain.
+    def check_config_and_reload_account_driver_if_required(self, account_id):
+        """Check for, and load, any new account specific config for this account.
 
-        This is only supported for the database-stored domain specific
+        This is only supported for the database-stored account specific
         configuration.
 
-        When the domain specific drivers were set up, we stored away the
-        specific config for this domain that was available at that time. So we
+        When the account specific drivers were set up, we stored away the
+        specific config for this account that was available at that time. So we
         now read the current version and compare. While this might seem
         somewhat inefficient, the sensitive config call is cached, so should be
         light weight. More importantly, when the cache timeout is reached, we
@@ -291,54 +291,54 @@ class DomainConfigs(dict):
         process, next time it accesses the driver it will pickup the new one.
 
         """
-        if (not CONF.identity.domain_specific_drivers_enabled or
-                not CONF.identity.domain_configurations_from_database):
+        if (not CONF.identity.account_specific_drivers_enabled or
+                not CONF.identity.account_configurations_from_database):
             # If specific drivers are not enabled, then there is nothing to do.
             # If we are not storing the configurations in the database, then
-            # we'll only re-read the domain specific config files on startup
+            # we'll only re-read the account specific config files on startup
             # of keystone.
             return
 
-        latest_domain_config = (
-            self.domain_config_api.
-            get_config_with_sensitive_info(domain_id))
-        domain_config_in_use = domain_id in self
+        latest_account_config = (
+            self.account_config_api.
+            get_config_with_sensitive_info(account_id))
+        account_config_in_use = account_id in self
 
-        if latest_domain_config:
-            if (not domain_config_in_use or
-                    latest_domain_config != self[domain_id]['cfg_overrides']):
-                self._load_config_from_database(domain_id,
-                                                latest_domain_config)
-        elif domain_config_in_use:
-            # The domain specific config has been deleted, so should remove the
-            # specific driver for this domain.
+        if latest_account_config:
+            if (not account_config_in_use or
+                    latest_account_config != self[account_id]['cfg_overrides']):
+                self._load_config_from_database(account_id,
+                                                latest_account_config)
+        elif account_config_in_use:
+            # The account specific config has been deleted, so should remove the
+            # specific driver for this account.
             try:
-                del self[domain_id]
+                del self[account_id]
             except KeyError:
                 # Allow this error in case we are unlucky and in a
                 # multi-threaded situation, two threads happen to be running
                 # in lock step.
                 pass
-        # If we fall into the else condition, this means there is no domain
+        # If we fall into the else condition, this means there is no account
         # config set, and there is none in use either, so we have nothing
         # to do.
 
 
-def domains_configured(f):
-    """Wraps API calls to lazy load domain configs after init.
+def accounts_configured(f):
+    """Wraps API calls to lazy load account configs after init.
 
     This is required since the assignment manager needs to be initialized
     before this manager, and yet this manager's init wants to be
-    able to make assignment calls (to build the domain configs).  So
-    instead, we check if the domains have been initialized on entry
+    able to make assignment calls (to build the account configs).  So
+    instead, we check if the accounts have been initialized on entry
     to each call, and if requires load them,
 
     """
     @functools.wraps(f)
     def wrapper(self, *args, **kwargs):
-        if (not self.domain_configs.configured and
-                CONF.identity.domain_specific_drivers_enabled):
-            self.domain_configs.setup_domain_drivers(
+        if (not self.account_configs.configured and
+                CONF.identity.account_specific_drivers_enabled):
+            self.account_configs.setup_account_drivers(
                 self.driver, self.resource_api)
         return f(self, *args, **kwargs)
     return wrapper
@@ -374,20 +374,20 @@ class Manager(manager.Manager):
     See :mod:`keystone.common.manager.Manager` for more details on how this
     dynamically calls the backend.
 
-    This class also handles the support of domain specific backends, by using
-    the DomainConfigs class. The setup call for DomainConfigs is called
-    from with the @domains_configured wrapper in a lazy loading fashion
+    This class also handles the support of account specific backends, by using
+    the AccountConfigs class. The setup call for AccountConfigs is called
+    from with the @accounts_configured wrapper in a lazy loading fashion
     to get around the fact that we can't satisfy the assignment api it needs
     from within our __init__() function since the assignment driver is not
     itself yet initialized.
 
     Each of the identity calls are pre-processed here to choose, based on
-    domain, which of the drivers should be called. The non-domain-specific
+    account, which of the drivers should be called. The non-account-specific
     driver is still in place, and is used if there is no specific driver for
-    the domain in question (or we are not using multiple domain drivers).
+    the account in question (or we are not using multiple account drivers).
 
-    Starting with Juno, in order to be able to obtain the domain from
-    just an ID being presented as part of an API call, a public ID to domain
+    Starting with Juno, in order to be able to obtain the account from
+    just an ID being presented as part of an API call, a public ID to account
     and local ID mapping is maintained.  This mapping also allows for the local
     ID of drivers that do not provide simple UUIDs (such as LDAP) to be
     referenced via a public facing ID.  The mapping itself is automatically
@@ -411,49 +411,49 @@ class Manager(manager.Manager):
 
     def __init__(self):
         super(Manager, self).__init__(CONF.identity.driver)
-        self.domain_configs = DomainConfigs()
+        self.account_configs = AccountConfigs()
 
         self.event_callbacks = {
             notifications.ACTIONS.deleted: {
-                'domain': [self._domain_deleted],
+                'account': [self._account_deleted],
             },
         }
 
-    def _domain_deleted(self, service, resource_type, operation,
+    def _account_deleted(self, service, resource_type, operation,
                         payload):
-        domain_id = payload['resource_info']
+        account_id = payload['resource_info']
 
-        user_refs = self.list_users(domain_scope=domain_id)
-        group_refs = self.list_groups(domain_scope=domain_id)
+        user_refs = self.list_users(account_scope=account_id)
+        group_refs = self.list_groups(account_scope=account_id)
 
         for group in group_refs:
             # Cleanup any existing groups.
             try:
                 self.delete_group(group['id'])
             except exception.GroupNotFound:
-                LOG.debug(('Group %(groupid)s not found when deleting domain '
-                           'contents for %(domainid)s, continuing with '
+                LOG.debug(('Group %(groupid)s not found when deleting account '
+                           'contents for %(accountid)s, continuing with '
                            'cleanup.'),
-                          {'groupid': group['id'], 'domainid': domain_id})
+                          {'groupid': group['id'], 'accountid': account_id})
 
         # And finally, delete the users themselves
         for user in user_refs:
             try:
                 self.delete_user(user['id'])
             except exception.UserNotFound:
-                LOG.debug(('User %(userid)s not found when deleting domain '
-                           'contents for %(domainid)s, continuing with '
+                LOG.debug(('User %(userid)s not found when deleting account '
+                           'contents for %(accountid)s, continuing with '
                            'cleanup.'),
-                          {'userid': user['id'], 'domainid': domain_id})
+                          {'userid': user['id'], 'accountid': account_id})
 
-    # Domain ID normalization methods
+    # Account ID normalization methods
 
-    def _set_domain_id_and_mapping(self, ref, domain_id, driver,
+    def _set_account_id_and_mapping(self, ref, account_id, driver,
                                    entity_type):
-        """Patch the domain_id/public_id into the resulting entity(ies).
+        """Patch the account_id/public_id into the resulting entity(ies).
 
         :param ref: the entity or list of entities to post process
-        :param domain_id: the domain scope used for the call
+        :param account_id: the account scope used for the call
         :param driver: the driver used to execute the call
         :param entity_type: whether this is a user or group
 
@@ -463,17 +463,17 @@ class Manager(manager.Manager):
         to substitute a public facing ID as necessary. This method must
         take into account:
 
-        - If the driver is not domain aware, then we must set the domain
+        - If the driver is not account aware, then we must set the account
           attribute of all entities irrespective of mapping.
         - If the driver does not support UUIDs, then we always want to provide
           a mapping, except for the special case of this being the default
           driver and backward_compatible_ids is set to True. This is to ensure
           that entity IDs do not change for an existing LDAP installation (only
-          single domain/driver LDAP configurations were previously supported).
+          single account/driver LDAP configurations were previously supported).
         - If the driver does support UUIDs, then we always create a mapping
           entry, but use the local UUID as the public ID.  The exception to
         - this is that if we just have single driver (i.e. not using specific
-          multi-domain configs), then we don't both with the mapping at all.
+          multi-account configs), then we don't both with the mapping at all.
 
         """
         conf = CONF.identity
@@ -482,39 +482,39 @@ class Manager(manager.Manager):
             # a classic case would be when running with a single SQL driver
             return ref
 
-        LOG.debug('ID Mapping - Domain ID: %(domain)s, '
+        LOG.debug('ID Mapping - Account ID: %(account)s, '
                   'Default Driver: %(driver)s, '
-                  'Domains: %(aware)s, UUIDs: %(generate)s, '
+                  'Accounts: %(aware)s, UUIDs: %(generate)s, '
                   'Compatible IDs: %(compat)s',
-                  {'domain': domain_id,
+                  {'account': account_id,
                    'driver': (driver == self.driver),
-                   'aware': driver.is_domain_aware(),
+                   'aware': driver.is_account_aware(),
                    'generate': driver.generates_uuids(),
                    'compat': CONF.identity_mapping.backward_compatible_ids})
 
         if isinstance(ref, dict):
-            return self._set_domain_id_and_mapping_for_single_ref(
-                ref, domain_id, driver, entity_type, conf)
+            return self._set_account_id_and_mapping_for_single_ref(
+                ref, account_id, driver, entity_type, conf)
         elif isinstance(ref, list):
-            return [self._set_domain_id_and_mapping(
-                    x, domain_id, driver, entity_type) for x in ref]
+            return [self._set_account_id_and_mapping(
+                    x, account_id, driver, entity_type) for x in ref]
         else:
             raise ValueError(_('Expected dict or list: %s') % type(ref))
 
     def _needs_post_processing(self, driver):
-        """Returns whether entity from driver needs domain added or mapping."""
+        """Returns whether entity from driver needs account added or mapping."""
         return (driver is not self.driver or not driver.generates_uuids() or
-                not driver.is_domain_aware())
+                not driver.is_account_aware())
 
-    def _set_domain_id_and_mapping_for_single_ref(self, ref, domain_id,
+    def _set_account_id_and_mapping_for_single_ref(self, ref, account_id,
                                                   driver, entity_type, conf):
         LOG.debug('Local ID: %s', ref['id'])
         ref = ref.copy()
 
-        self._insert_domain_id_if_needed(ref, driver, domain_id, conf)
+        self._insert_account_id_if_needed(ref, driver, account_id, conf)
 
         if self._is_mapping_needed(driver):
-            local_entity = {'domain_id': ref['domain_id'],
+            local_entity = {'account_id': ref['account_id'],
                             'local_id': ref['id'],
                             'entity_type': entity_type}
             public_id = self.id_mapping_api.get_public_id(local_entity)
@@ -533,18 +533,18 @@ class Manager(manager.Manager):
                           ref['id'])
         return ref
 
-    def _insert_domain_id_if_needed(self, ref, driver, domain_id, conf):
-        """Inserts the domain ID into the ref, if required.
+    def _insert_account_id_if_needed(self, ref, driver, account_id, conf):
+        """Inserts the account ID into the ref, if required.
 
-        If the driver can't handle domains, then we need to insert the
-        domain_id into the entity being returned.  If the domain_id is
+        If the driver can't handle accounts, then we need to insert the
+        account_id into the entity being returned.  If the account_id is
         None that means we are running in a single backend mode, so to
-        remain backwardly compatible, we put in the default domain ID.
+        remain backwardly compatible, we put in the default account ID.
         """
-        if not driver.is_domain_aware():
-            if domain_id is None:
-                domain_id = conf.default_domain_id
-            ref['domain_id'] = domain_id
+        if not driver.is_account_aware():
+            if account_id is None:
+                account_id = conf.default_account_id
+            ref['account_id'] = account_id
 
     def _is_mapping_needed(self, driver):
         """Returns whether mapping is needed.
@@ -561,60 +561,60 @@ class Manager(manager.Manager):
             not driver.generates_uuids() and
             not CONF.identity_mapping.backward_compatible_ids))
 
-    def _clear_domain_id_if_domain_unaware(self, driver, ref):
-        """Clear domain_id details if driver is not domain aware."""
-        if not driver.is_domain_aware() and 'domain_id' in ref:
+    def _clear_account_id_if_account_unaware(self, driver, ref):
+        """Clear account_id details if driver is not account aware."""
+        if not driver.is_account_aware() and 'account_id' in ref:
             ref = ref.copy()
-            ref.pop('domain_id')
+            ref.pop('account_id')
         return ref
 
-    def _select_identity_driver(self, domain_id):
-        """Choose a backend driver for the given domain_id.
+    def _select_identity_driver(self, account_id):
+        """Choose a backend driver for the given account_id.
 
-        :param domain_id: The domain_id for which we want to find a driver.  If
-                          the domain_id is specified as None, then this means
-                          we need a driver that handles multiple domains.
+        :param account_id: The account_id for which we want to find a driver.  If
+                          the account_id is specified as None, then this means
+                          we need a driver that handles multiple accounts.
 
         :returns: chosen backend driver
 
-        If there is a specific driver defined for this domain then choose it.
-        If the domain is None, or there no specific backend for the given
-        domain is found, then we chose the default driver.
+        If there is a specific driver defined for this account then choose it.
+        If the account is None, or there no specific backend for the given
+        account is found, then we chose the default driver.
 
         """
-        if domain_id is None:
+        if account_id is None:
             driver = self.driver
         else:
-            driver = (self.domain_configs.get_domain_driver(domain_id) or
+            driver = (self.account_configs.get_account_driver(account_id) or
                       self.driver)
 
-        # If the driver is not domain aware (e.g. LDAP) then check to
-        # ensure we are not mapping multiple domains onto it - the only way
+        # If the driver is not account aware (e.g. LDAP) then check to
+        # ensure we are not mapping multiple accounts onto it - the only way
         # that would happen is that the default driver is LDAP and the
-        # domain is anything other than None or the default domain.
-        if (not driver.is_domain_aware() and driver == self.driver and
-            domain_id != CONF.identity.default_domain_id and
-                domain_id is not None):
-                    LOG.warning('Found multiple domains being mapped to a '
+        # account is anything other than None or the default account.
+        if (not driver.is_account_aware() and driver == self.driver and
+            account_id != CONF.identity.default_account_id and
+                account_id is not None):
+                    LOG.warning('Found multiple accounts being mapped to a '
                                 'driver that does not support that (e.g. '
-                                'LDAP) - Domain ID: %(domain)s, '
+                                'LDAP) - Account ID: %(account)s, '
                                 'Default Driver: %(driver)s',
-                                {'domain': domain_id,
+                                {'account': account_id,
                                  'driver': (driver == self.driver)})
-                    raise exception.DomainNotFound(domain_id=domain_id)
+                    raise exception.AccountNotFound(account_id=account_id)
         return driver
 
-    def _get_domain_driver_and_entity_id(self, public_id):
+    def _get_account_driver_and_entity_id(self, public_id):
         """Look up details using the public ID.
 
         :param public_id: the ID provided in the call
 
-        :returns: domain_id, which can be None to indicate that the driver
-                  in question supports multiple domains
-                  driver selected based on this domain
+        :returns: account_id, which can be None to indicate that the driver
+                  in question supports multiple accounts
+                  driver selected based on this account
                   entity_id which will is understood by the driver.
 
-        Use the mapping table to look up the domain, driver and local entity
+        Use the mapping table to look up the account, driver and local entity
         that is represented by the provided public ID.  Handle the situations
         were we do not use the mapping (e.g. single driver that understands
         UUIDs etc.)
@@ -622,14 +622,14 @@ class Manager(manager.Manager):
         """
         conf = CONF.identity
         # First, since we don't know anything about the entity yet, we must
-        # assume it needs mapping, so long as we are using domain specific
+        # assume it needs mapping, so long as we are using account specific
         # drivers.
-        if conf.domain_specific_drivers_enabled:
+        if conf.account_specific_drivers_enabled:
             local_id_ref = self.id_mapping_api.get_id_mapping(public_id)
             if local_id_ref:
                 return (
-                    local_id_ref['domain_id'],
-                    self._select_identity_driver(local_id_ref['domain_id']),
+                    local_id_ref['account_id'],
+                    self._select_identity_driver(local_id_ref['account_id']),
                     local_id_ref['local_id'])
 
         # So either we are using multiple drivers but the public ID is invalid
@@ -640,15 +640,15 @@ class Manager(manager.Manager):
         # compatibility mode).
         driver = self.driver
         if driver.generates_uuids():
-            if driver.is_domain_aware:
-                # No mapping required, and the driver can handle the domain
+            if driver.is_account_aware:
+                # No mapping required, and the driver can handle the account
                 # information itself.  The classic case of this is the
                 # current SQL driver.
                 return (None, driver, public_id)
             else:
                 # Although we don't have any drivers of this type, i.e. that
-                # understand UUIDs but not domains, conceptually you could.
-                return (conf.default_domain_id, driver, public_id)
+                # understand UUIDs but not accounts, conceptually you could.
+                return (conf.default_account_id, driver, public_id)
 
         # So the only place left to find the ID is in the default driver which
         # we now know doesn't generate UUIDs
@@ -658,21 +658,21 @@ class Manager(manager.Manager):
             local_id_ref = self.id_mapping_api.get_id_mapping(public_id)
             if local_id_ref:
                 return (
-                    local_id_ref['domain_id'],
+                    local_id_ref['account_id'],
                     driver,
                     local_id_ref['local_id'])
             else:
                 raise exception.PublicIDNotFound(id=public_id)
 
         # If we reach here, this means that the default driver
-        # requires no mapping - but also doesn't understand domains
+        # requires no mapping - but also doesn't understand accounts
         # (e.g. the classic single LDAP driver situation). Hence we pass
-        # back the public_ID unmodified and use the default domain (to
+        # back the public_ID unmodified and use the default account (to
         # keep backwards compatibility with existing installations).
         #
         # It is still possible that the public ID is just invalid in
         # which case we leave this to the caller to check.
-        return (conf.default_domain_id, driver, public_id)
+        return (conf.default_account_id, driver, public_id)
 
     def _assert_user_and_group_in_same_backend(
             self, user_entity_id, user_driver, group_entity_id, group_driver):
@@ -693,143 +693,143 @@ class Manager(manager.Manager):
             raise exception.CrossBackendNotAllowed(group_id=group_entity_id,
                                                    user_id=user_entity_id)
 
-    def _mark_domain_id_filter_satisfied(self, hints):
+    def _mark_account_id_filter_satisfied(self, hints):
         if hints:
             for filter in hints.filters:
-                if (filter['name'] == 'domain_id' and
+                if (filter['name'] == 'account_id' and
                         filter['comparator'] == 'equals'):
                     hints.filters.remove(filter)
 
-    def _ensure_domain_id_in_hints(self, hints, domain_id):
-        if (domain_id is not None and
-                not hints.get_exact_filter_by_name('domain_id')):
-            hints.add_filter('domain_id', domain_id)
+    def _ensure_account_id_in_hints(self, hints, account_id):
+        if (account_id is not None and
+                not hints.get_exact_filter_by_name('account_id')):
+            hints.add_filter('account_id', account_id)
 
     # The actual driver calls - these are pre/post processed here as
     # part of the Manager layer to make sure we:
     #
-    # - select the right driver for this domain
-    # - clear/set domain_ids for drivers that do not support domains
+    # - select the right driver for this account
+    # - clear/set account_ids for drivers that do not support accounts
     # - create any ID mapping that might be required
 
     @notifications.emit_event('authenticate')
-    @domains_configured
+    @accounts_configured
     @exception_translated('assertion')
     def authenticate(self, context, user_id, password):
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(user_id))
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(user_id))
         ref = driver.authenticate(entity_id, password)
-        return self._set_domain_id_and_mapping(
-            ref, domain_id, driver, mapping.EntityType.USER)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.USER)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('user')
     def create_user(self, user_ref, initiator=None):
         user = user_ref.copy()
         user['name'] = clean.user_name(user['name'])
         user.setdefault('enabled', True)
         user['enabled'] = clean.user_enabled(user['enabled'])
-        domain_id = user['domain_id']
-        self.resource_api.get_domain(domain_id)
+        account_id = user['account_id']
+        self.resource_api.get_account(account_id)
 
-        # For creating a user, the domain is in the object itself
-        domain_id = user_ref['domain_id']
-        driver = self._select_identity_driver(domain_id)
-        user = self._clear_domain_id_if_domain_unaware(driver, user)
+        # For creating a user, the account is in the object itself
+        account_id = user_ref['account_id']
+        driver = self._select_identity_driver(account_id)
+        user = self._clear_account_id_if_account_unaware(driver, user)
         # Generate a local ID - in the future this might become a function of
         # the underlying driver so that it could conform to rules set down by
         # that particular driver type.
         user['id'] = user_ref.get('id', uuid.uuid4().hex)
         ref = driver.create_user(user['id'], user)
         notifications.Audit.created(self._USER, user['id'], initiator)
-        return self._set_domain_id_and_mapping(
-            ref, domain_id, driver, mapping.EntityType.USER)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.USER)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('user')
     @MEMOIZE
     def get_user(self, user_id):
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(user_id))
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(user_id))
         ref = driver.get_user(entity_id)
-        return self._set_domain_id_and_mapping(
-            ref, domain_id, driver, mapping.EntityType.USER)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.USER)
 
     def assert_user_enabled(self, user_id, user=None):
-        """Assert the user and the user's domain are enabled.
+        """Assert the user and the user's account are enabled.
 
-        :raise AssertionError if the user or the user's domain is disabled.
+        :raise AssertionError if the user or the user's account is disabled.
         """
         if user is None:
             user = self.get_user(user_id)
-        self.resource_api.assert_domain_enabled(user['domain_id'])
+        self.resource_api.assert_account_enabled(user['account_id'])
         if not user.get('enabled', True):
             raise AssertionError(_('User is disabled: %s') % user_id)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('user')
     @MEMOIZE
-    def get_user_by_name(self, user_name, domain_id):
-        driver = self._select_identity_driver(domain_id)
-        ref = driver.get_user_by_name(user_name, domain_id)
-        return self._set_domain_id_and_mapping(
-            ref, domain_id, driver, mapping.EntityType.USER)
+    def get_user_by_name(self, user_name, account_id):
+        driver = self._select_identity_driver(account_id)
+        ref = driver.get_user_by_name(user_name, account_id)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.USER)
 
     @manager.response_truncated
-    @domains_configured
+    @accounts_configured
     @exception_translated('user')
-    def list_users(self, domain_scope=None, hints=None):
-        driver = self._select_identity_driver(domain_scope)
+    def list_users(self, account_scope=None, hints=None):
+        driver = self._select_identity_driver(account_scope)
         hints = hints or driver_hints.Hints()
-        if driver.is_domain_aware():
-            # Force the domain_scope into the hint to ensure that we only get
-            # back domains for that scope.
-            self._ensure_domain_id_in_hints(hints, domain_scope)
+        if driver.is_account_aware():
+            # Force the account_scope into the hint to ensure that we only get
+            # back accounts for that scope.
+            self._ensure_account_id_in_hints(hints, account_scope)
         else:
-            # We are effectively satisfying any domain_id filter by the above
+            # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter.
-            self._mark_domain_id_filter_satisfied(hints)
+            self._mark_account_id_filter_satisfied(hints)
         ref_list = driver.list_users(hints)
-        return self._set_domain_id_and_mapping(
-            ref_list, domain_scope, driver, mapping.EntityType.USER)
+        return self._set_account_id_and_mapping(
+            ref_list, account_scope, driver, mapping.EntityType.USER)
 
     @manager.response_truncated
-    @domains_configured
+    @accounts_configured
     @exception_translated('user')
-    def list_user_summary_for_group(self, group_id, domain_scope=None, hints=None):
-        driver = self._select_identity_driver(domain_scope)
+    def list_user_summary_for_group(self, group_id, account_scope=None, hints=None):
+        driver = self._select_identity_driver(account_scope)
         hints = hints or driver_hints.Hints()
-        if driver.is_domain_aware():
-            # Force the domain_scope into the hint to ensure that we only get
-            # back domains for that scope.
-            self._ensure_domain_id_in_hints(hints, domain_scope)
+        if driver.is_account_aware():
+            # Force the account_scope into the hint to ensure that we only get
+            # back accounts for that scope.
+            self._ensure_account_id_in_hints(hints, account_scope)
         else:
-            # We are effectively satisfying any domain_id filter by the above
+            # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter.
-            self._mark_domain_id_filter_satisfied(hints)
+            self._mark_account_id_filter_satisfied(hints)
 	ref_list = driver.list_user_summary_for_group(hints,group_id)
-        return self._set_domain_id_and_mapping(
-            ref_list, domain_scope, driver, mapping.EntityType.USER)
+        return self._set_account_id_and_mapping(
+            ref_list, account_scope, driver, mapping.EntityType.USER)
 
     @manager.response_truncated
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
-    def list_group_summary_for_user(self, user_id, domain_scope=None, hints=None):
-        driver = self._select_identity_driver(domain_scope)
+    def list_group_summary_for_user(self, user_id, account_scope=None, hints=None):
+        driver = self._select_identity_driver(account_scope)
         hints = hints or driver_hints.Hints()
-        if driver.is_domain_aware():
-            # Force the domain_scope into the hint to ensure that we only get
-            # back domains for that scope.
-            self._ensure_domain_id_in_hints(hints, domain_scope)
+        if driver.is_account_aware():
+            # Force the account_scope into the hint to ensure that we only get
+            # back accounts for that scope.
+            self._ensure_account_id_in_hints(hints, account_scope)
         else:
-            # We are effectively satisfying any domain_id filter by the above
+            # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter.
-            self._mark_domain_id_filter_satisfied(hints)
+            self._mark_account_id_filter_satisfied(hints)
         ref_list = driver.list_group_summary_for_user(hints,user_id)
-        return self._set_domain_id_and_mapping(
-            ref_list, domain_scope, driver, mapping.EntityType.GROUP)
+        return self._set_account_id_and_mapping(
+            ref_list, account_scope, driver, mapping.EntityType.GROUP)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('user')
     def update_user(self, user_id, user_ref, initiator=None):
         old_user_ref = self.get_user(user_id)
@@ -838,8 +838,8 @@ class Manager(manager.Manager):
             user['name'] = clean.user_name(user['name'])
         if 'enabled' in user:
             user['enabled'] = clean.user_enabled(user['enabled'])
-        if 'domain_id' in user:
-            self.resource_api.get_domain(user['domain_id'])
+        if 'account_id' in user:
+            self.resource_api.get_account(user['account_id'])
         if 'id' in user:
             if user_id != user['id']:
                 raise exception.ValidationError(_('Cannot change user ID'))
@@ -848,12 +848,12 @@ class Manager(manager.Manager):
             # public ID not the local ID
             user.pop('id')
 
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(user_id))
-        user = self._clear_domain_id_if_domain_unaware(driver, user)
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(user_id))
+        user = self._clear_account_id_if_account_unaware(driver, user)
         self.get_user.invalidate(self, old_user_ref['id'])
         self.get_user_by_name.invalidate(self, old_user_ref['name'],
-                                         old_user_ref['domain_id'])
+                                         old_user_ref['account_id'])
 
         ref = driver.update_user(entity_id, user)
 
@@ -864,37 +864,37 @@ class Manager(manager.Manager):
         if enabled_change or user.get('password') is not None:
             self.emit_invalidate_user_token_persistence(user_id)
 
-        return self._set_domain_id_and_mapping(
-            ref, domain_id, driver, mapping.EntityType.USER)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.USER)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('user')
     def delete_user(self, user_id, initiator=None):
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(user_id))
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(user_id))
         # Get user details to invalidate the cache.
         user_old = self.get_user(user_id)
         driver.delete_user(entity_id)
         self.assignment_api.delete_user(user_id)
         self.get_user.invalidate(self, user_id)
         self.get_user_by_name.invalidate(self, user_old['name'],
-                                         user_old['domain_id'])
+                                         user_old['account_id'])
         self.credential_api.delete_credentials_for_user(user_id)
         self.id_mapping_api.delete_id_mapping(user_id)
         notifications.Audit.deleted(self._USER, user_id, initiator)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
     def create_group(self, group_ref, initiator=None):
         group = group_ref.copy()
         group.setdefault('description', '')
-        domain_id = group['domain_id']
-        self.resource_api.get_domain(domain_id)
+        account_id = group['account_id']
+        self.resource_api.get_account(account_id)
 
-        # For creating a group, the domain is in the object itself
-        domain_id = group_ref['domain_id']
-        driver = self._select_identity_driver(domain_id)
-        group = self._clear_domain_id_if_domain_unaware(driver, group)
+        # For creating a group, the account is in the object itself
+        account_id = group_ref['account_id']
+        driver = self._select_identity_driver(account_id)
+        group = self._clear_account_id_if_account_unaware(driver, group)
         # Generate a local ID - in the future this might become a function of
         # the underlying driver so that it could conform to rules set down by
         # that particular driver type.
@@ -903,46 +903,46 @@ class Manager(manager.Manager):
 
         notifications.Audit.created(self._GROUP, group['id'], initiator)
 
-        return self._set_domain_id_and_mapping(
-            ref, domain_id, driver, mapping.EntityType.GROUP)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.GROUP)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
     @MEMOIZE
     def get_group(self, group_id):
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(group_id))
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(group_id))
         ref = driver.get_group(entity_id)
-        return self._set_domain_id_and_mapping(
-            ref, domain_id, driver, mapping.EntityType.GROUP)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.GROUP)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
-    def get_group_by_name(self, group_name, domain_id):
-        driver = self._select_identity_driver(domain_id)
-        ref = driver.get_group_by_name(group_name, domain_id)
-        return self._set_domain_id_and_mapping(
-            ref, domain_id, driver, mapping.EntityType.GROUP)
+    def get_group_by_name(self, group_name, account_id):
+        driver = self._select_identity_driver(account_id)
+        ref = driver.get_group_by_name(group_name, account_id)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.GROUP)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
     def update_group(self, group_id, group, initiator=None):
-        if 'domain_id' in group:
-            self.resource_api.get_domain(group['domain_id'])
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(group_id))
-        group = self._clear_domain_id_if_domain_unaware(driver, group)
+        if 'account_id' in group:
+            self.resource_api.get_account(group['account_id'])
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(group_id))
+        group = self._clear_account_id_if_account_unaware(driver, group)
         ref = driver.update_group(entity_id, group)
         self.get_group.invalidate(self, group_id)
         notifications.Audit.updated(self._GROUP, group_id, initiator)
-        return self._set_domain_id_and_mapping(
-            ref, domain_id, driver, mapping.EntityType.GROUP)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.GROUP)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
     def delete_group(self, group_id, initiator=None):
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(group_id))
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(group_id))
         user_ids = (u['id'] for u in self.list_users_in_group(group_id))
         driver.delete_group(entity_id)
         self.get_group.invalidate(self, group_id)
@@ -954,18 +954,18 @@ class Manager(manager.Manager):
         for uid in user_ids:
             self.emit_invalidate_user_token_persistence(uid)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
     def add_user_to_group(self, user_id, group_id):
         @exception_translated('user')
         def get_entity_info_for_user(public_id):
-            return self._get_domain_driver_and_entity_id(public_id)
+            return self._get_account_driver_and_entity_id(public_id)
 
-        _domain_id, group_driver, group_entity_id = (
-            self._get_domain_driver_and_entity_id(group_id))
+        _account_id, group_driver, group_entity_id = (
+            self._get_account_driver_and_entity_id(group_id))
         # Get the same info for the user_id, taking care to map any
         # exceptions correctly
-        _domain_id, user_driver, user_entity_id = (
+        _account_id, user_driver, user_entity_id = (
             get_entity_info_for_user(user_id))
 
         self._assert_user_and_group_in_same_backend(
@@ -973,18 +973,18 @@ class Manager(manager.Manager):
 
         group_driver.add_user_to_group(user_entity_id, group_entity_id)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
     def remove_user_from_group(self, user_id, group_id):
         @exception_translated('user')
         def get_entity_info_for_user(public_id):
-            return self._get_domain_driver_and_entity_id(public_id)
+            return self._get_account_driver_and_entity_id(public_id)
 
-        _domain_id, group_driver, group_entity_id = (
-            self._get_domain_driver_and_entity_id(group_id))
+        _account_id, group_driver, group_entity_id = (
+            self._get_account_driver_and_entity_id(group_id))
         # Get the same info for the user_id, taking care to map any
         # exceptions correctly
-        _domain_id, user_driver, user_entity_id = (
+        _account_id, user_driver, user_entity_id = (
             get_entity_info_for_user(user_id))
 
         self._assert_user_and_group_in_same_backend(
@@ -1019,66 +1019,66 @@ class Manager(manager.Manager):
         pass
 
     @manager.response_truncated
-    @domains_configured
+    @accounts_configured
     @exception_translated('user')
     def list_groups_for_user(self, user_id, hints=None):
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(user_id))
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(user_id))
         hints = hints or driver_hints.Hints()
-        if not driver.is_domain_aware():
-            # We are effectively satisfying any domain_id filter by the above
+        if not driver.is_account_aware():
+            # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter
-            self._mark_domain_id_filter_satisfied(hints)
+            self._mark_account_id_filter_satisfied(hints)
         ref_list = driver.list_groups_for_user(entity_id, hints)
-        return self._set_domain_id_and_mapping(
-            ref_list, domain_id, driver, mapping.EntityType.GROUP)
+        return self._set_account_id_and_mapping(
+            ref_list, account_id, driver, mapping.EntityType.GROUP)
 
     @manager.response_truncated
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
-    def list_groups(self, domain_scope=None, hints=None):
-        driver = self._select_identity_driver(domain_scope)
+    def list_groups(self, account_scope=None, hints=None):
+        driver = self._select_identity_driver(account_scope)
         hints = hints or driver_hints.Hints()
-        if driver.is_domain_aware():
-            # Force the domain_scope into the hint to ensure that we only get
-            # back domains for that scope.
-            self._ensure_domain_id_in_hints(hints, domain_scope)
+        if driver.is_account_aware():
+            # Force the account_scope into the hint to ensure that we only get
+            # back accounts for that scope.
+            self._ensure_account_id_in_hints(hints, account_scope)
         else:
-            # We are effectively satisfying any domain_id filter by the above
+            # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter.
-            self._mark_domain_id_filter_satisfied(hints)
+            self._mark_account_id_filter_satisfied(hints)
         ref_list = driver.list_groups(hints)
-        return self._set_domain_id_and_mapping(
-            ref_list, domain_scope, driver, mapping.EntityType.GROUP)
+        return self._set_account_id_and_mapping(
+            ref_list, account_scope, driver, mapping.EntityType.GROUP)
 
 
     @manager.response_truncated
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
     def list_users_in_group(self, group_id, hints=None):
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(group_id))
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(group_id))
         hints = hints or driver_hints.Hints()
-        if not driver.is_domain_aware():
-            # We are effectively satisfying any domain_id filter by the above
+        if not driver.is_account_aware():
+            # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter
-            self._mark_domain_id_filter_satisfied(hints)
+            self._mark_account_id_filter_satisfied(hints)
         ref_list = driver.list_users_in_group(entity_id, hints)
-        return self._set_domain_id_and_mapping(
-            ref_list, domain_id, driver, mapping.EntityType.USER)
+        return self._set_account_id_and_mapping(
+            ref_list, account_id, driver, mapping.EntityType.USER)
 
-    @domains_configured
+    @accounts_configured
     @exception_translated('group')
     def check_user_in_group(self, user_id, group_id):
         @exception_translated('user')
         def get_entity_info_for_user(public_id):
-            return self._get_domain_driver_and_entity_id(public_id)
+            return self._get_account_driver_and_entity_id(public_id)
 
-        _domain_id, group_driver, group_entity_id = (
-            self._get_domain_driver_and_entity_id(group_id))
+        _account_id, group_driver, group_entity_id = (
+            self._get_account_driver_and_entity_id(group_id))
         # Get the same info for the user_id, taking care to map any
         # exceptions correctly
-        _domain_id, user_driver, user_entity_id = (
+        _account_id, user_driver, user_entity_id = (
             get_entity_info_for_user(user_id))
 
         self._assert_user_and_group_in_same_backend(
@@ -1087,18 +1087,18 @@ class Manager(manager.Manager):
         return group_driver.check_user_in_group(user_entity_id,
                                                 group_entity_id)
 
-    @domains_configured
+    @accounts_configured
     def get_user_history(self, user_id):
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(user_id))
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(user_id))
         return driver.get_user_history(user_id, CONF.password_policy.num_password_saved)
 
     def update_user_history(self, user_id, original_password, count):
-        domain_id, driver, entity_id = (
-            self._get_domain_driver_and_entity_id(user_id))
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(user_id))
         driver.update_user_history(user_id, original_password, count)
 
-    @domains_configured
+    @accounts_configured
     def change_password(self, context, user_id, original_password,
                         new_password):
 
@@ -1121,8 +1121,8 @@ class Driver(object):
     def _get_list_limit(self):
         return CONF.identity.list_limit or CONF.list_limit
 
-    def is_domain_aware(self):
-        """Indicates if Driver supports domains."""
+    def is_account_aware(self):
+        """Indicates if Driver supports accounts."""
         return True
 
     @property
@@ -1131,9 +1131,9 @@ class Driver(object):
         return False
 
     @property
-    def multiple_domains_supported(self):
-        return (self.is_domain_aware() or
-                CONF.identity.domain_specific_drivers_enabled)
+    def multiple_accounts_supported(self):
+        return (self.is_account_aware() or
+                CONF.identity.account_specific_drivers_enabled)
 
     def generates_uuids(self):
         """Indicates if Driver generates UUIDs as the local entity ID."""
@@ -1242,7 +1242,7 @@ class Driver(object):
         raise exception.NotImplemented()  # pragma: no cover
 
     @abc.abstractmethod
-    def get_user_by_name(self, user_name, domain_id):
+    def get_user_by_name(self, user_name, account_id):
         """Get a user by name.
 
         :returns: user_ref
@@ -1298,7 +1298,7 @@ class Driver(object):
         raise exception.NotImplemented()  # pragma: no cover
 
     @abc.abstractmethod
-    def get_group_by_name(self, group_name, domain_id):
+    def get_group_by_name(self, group_name, account_id):
         """Get a group by name.
 
         :returns: group_ref
@@ -1345,7 +1345,7 @@ class MappingDriver(object):
     def get_public_id(self, local_entity):
         """Returns the public ID for the given local entity.
 
-        :param dict local_entity: Containing the entity domain, local ID and
+        :param dict local_entity: Containing the entity account, local ID and
                                   type ('user' or 'group').
         :returns: public ID, or None if no mapping is found.
 
@@ -1357,7 +1357,7 @@ class MappingDriver(object):
         """Returns the local mapping.
 
         :param public_id: The public ID for the mapping required.
-        :returns dict: Containing the entity domain, local ID and type. If no
+        :returns dict: Containing the entity account, local ID and type. If no
                        mapping is found, it returns None.
 
         """
@@ -1367,7 +1367,7 @@ class MappingDriver(object):
     def create_id_mapping(self, local_entity, public_id=None):
         """Create and store a mapping to a public_id.
 
-        :param dict local_entity: Containing the entity domain, local ID and
+        :param dict local_entity: Containing the entity account, local ID and
                                   type ('user' or 'group').
         :param public_id: If specified, this will be the public ID.  If this
                           is not specified, a public ID will be generated.

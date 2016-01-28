@@ -16,10 +16,10 @@ from keystone.common.validation import parameter_types
 
 _project_properties = {
     'description': validation.nullable(parameter_types.description),
-    # NOTE(lbragstad): domain_id isn't nullable according to some backends.
+    # NOTE(lbragstad): account_id isn't nullable according to some backends.
     # The identity-api should be updated to be consistent with the
     # implementation.
-    'domain_id': parameter_types.id_string,
+    'account_id': parameter_types.id_string,
     'enabled': parameter_types.boolean,
     'parent_id': validation.nullable(parameter_types.id_string),
     'name': {
@@ -47,7 +47,7 @@ project_update = {
     'additionalProperties': True
 }
 
-_domain_properties = {
+_account_properties = {
     'description': validation.nullable(parameter_types.description),
     'enabled': parameter_types.boolean,
     'name': {
@@ -57,19 +57,19 @@ _domain_properties = {
     }
 }
 
-domain_create = {
+account_create = {
     'type': 'object',
-    'properties': _domain_properties,
+    'properties': _account_properties,
     # TODO(lbragstad): According to the V3 API spec, name isn't required but
-    # the current implementation in assignment.controller:DomainV3 requires a
-    # name for the domain.
+    # the current implementation in assignment.controller:AccountV3 requires a
+    # name for the account.
     'required': ['name'],
     'additionalProperties': True
 }
 
-domain_update = {
+account_update = {
     'type': 'object',
-    'properties': _domain_properties,
+    'properties': _account_properties,
     'minProperties': 1,
     'additionalProperties': True
 }

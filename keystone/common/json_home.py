@@ -46,7 +46,7 @@ def build_v3_extension_parameter_relation(extension_name, extension_version,
 class Parameters(object):
     """Relationships for Common parameters."""
 
-    DOMAIN_ID = build_v3_parameter_relation('domain_id')
+    ACCOUNT_ID = build_v3_parameter_relation('account_id')
     ENDPOINT_ID = build_v3_parameter_relation('endpoint_id')
     GROUP_ID = build_v3_parameter_relation('group_id')
     POLICY_ID = build_v3_parameter_relation('policy_id')

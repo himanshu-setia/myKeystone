@@ -30,7 +30,7 @@ from keystone.tests.unit.ksfixtures import database
 
 
 CONF = cfg.CONF
-DEFAULT_DOMAIN_ID = CONF.identity.default_domain_id
+DEFAULT_ACCOUNT_ID = CONF.identity.default_account_id
 
 
 class ClientDrivenTestCase(tests.TestCase):
@@ -925,7 +925,7 @@ class ClientDrivenTestCase(tests.TestCase):
         for i in range(2):
             tenant_id = uuid.uuid4().hex
             tenant = {'name': 'tenant-%s' % tenant_id, 'id': tenant_id,
-                      'domain_id': DEFAULT_DOMAIN_ID}
+                      'account_id': DEFAULT_ACCOUNT_ID}
             self.resource_api.create_project(tenant_id, tenant)
             self.assignment_api.add_user_to_project(tenant_id,
                                                     self.user_foo['id'])
@@ -950,7 +950,7 @@ class ClientDrivenTestCase(tests.TestCase):
         for i in range(2):
             tenant_id = uuid.uuid4().hex
             tenant = {'name': 'tenant-%s' % tenant_id, 'id': tenant_id,
-                      'domain_id': DEFAULT_DOMAIN_ID}
+                      'account_id': DEFAULT_ACCOUNT_ID}
             self.resource_api.create_project(tenant_id, tenant)
             self.assignment_api.add_user_to_project(tenant_id,
                                                     self.user_foo['id'])

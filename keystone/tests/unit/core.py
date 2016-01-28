@@ -179,15 +179,15 @@ def skip_if_cache_disabled(*sections):
     return wrapper
 
 
-def skip_if_no_multiple_domains_support(f):
+def skip_if_no_multiple_accounts_support(f):
     """This decorator is used to skip a test if an identity driver
-    does not support multiple domains.
+    does not support multiple accounts.
     """
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         test_obj = args[0]
-        if not test_obj.identity_api.multiple_domains_supported:
-            raise testcase.TestSkipped('No multiple domains support')
+        if not test_obj.identity_api.multiple_accounts_supported:
+            raise testcase.TestSkipped('No multiple accounts support')
         return f(*args, **kwargs)
     return wrapper
 
@@ -331,7 +331,7 @@ class TestCase(BaseTestCase):
             methods = ['external', 'password', 'token', ]
             if not method_classes:
                 method_classes = dict(
-                    external='keystone.auth.plugins.external.DefaultDomain',
+                    external='keystone.auth.plugins.external.DefaultAccount',
                     password='keystone.auth.plugins.password.Password',
                     token='keystone.auth.plugins.token.Token',
                 )
@@ -447,14 +447,14 @@ class TestCase(BaseTestCase):
         if (hasattr(self, 'identity_api') and
             hasattr(self, 'assignment_api') and
                 hasattr(self, 'resource_api')):
-            for domain in fixtures.DOMAINS:
+            for account in fixtures.ACCOUNTS:
                 try:
-                    rv = self.resource_api.create_domain(domain['id'], domain)
+                    rv = self.resource_api.create_account(account['id'], account)
                 except exception.Conflict:
-                    rv = self.resource_api.get_domain(domain['id'])
+                    rv = self.resource_api.get_account(account['id'])
                 except exception.NotImplemented:
-                    rv = domain
-                attrname = 'domain_%s' % domain['id']
+                    rv = account
+                attrname = 'account_%s' % account['id']
                 setattr(self, attrname, rv)
                 fixtures_to_cleanup.append(attrname)
 

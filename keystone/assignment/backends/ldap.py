@@ -60,19 +60,19 @@ class Assignment(assignment.Driver):
         return 'keystone.resource.backends.ldap.Resource'
 
     def list_role_ids_for_groups_on_project(
-            self, groups, project_id, project_domain_id, project_parents):
+            self, groups, project_id, project_account_id, project_parents):
         group_dns = [self.group._id_to_dn(group_id) for group_id in groups]
         role_list = [self.role._dn_to_id(role_assignment.role_dn)
                      for role_assignment in self.role.get_role_assignments
                      (self.project._id_to_dn(project_id))
                      if role_assignment.user_dn.upper() in group_dns]
-        # NOTE(morganfainberg): Does not support OS-INHERIT as domain
+        # NOTE(morganfainberg): Does not support OS-INHERIT as account
         # metadata/roles are not supported by LDAP backend. Skip OS-INHERIT
         # logic.
         return role_list
 
     def _get_metadata(self, user_id=None, tenant_id=None,
-                      domain_id=None, group_id=None):
+                      account_id=None, group_id=None):
 
         def _get_roles_for_just_user_and_project(user_id, tenant_id):
             user_dn = self.user._id_to_dn(user_id)
@@ -88,8 +88,8 @@ class Assignment(assignment.Driver):
                     (self.project._id_to_dn(project_id))
                     if common_ldap.is_dn_equal(a.user_dn, group_dn)]
 
-        if domain_id is not None:
-            msg = _('Domain metadata not supported by LDAP')
+        if account_id is not None:
+            msg = _('Account metadata not supported by LDAP')
             raise exception.NotImplemented(message=msg)
         if group_id is None and user_id is None:
             return {}
@@ -124,17 +124,17 @@ class Assignment(assignment.Driver):
         return list(set(
             [self.project._dn_to_id(x.project_dn) for x in associations]))
 
-    def list_role_ids_for_groups_on_domain(self, group_ids, domain_id):
+    def list_role_ids_for_groups_on_account(self, group_ids, account_id):
         raise exception.NotImplemented()
 
     def list_project_ids_for_groups(self, group_ids, hints,
                                     inherited=False):
         raise exception.NotImplemented()
 
-    def list_domain_ids_for_user(self, user_id, group_ids, hints):
+    def list_account_ids_for_user(self, user_id, group_ids, hints):
         raise exception.NotImplemented()
 
-    def list_domain_ids_for_groups(self, group_ids, inherited=False):
+    def list_account_ids_for_groups(self, group_ids, inherited=False):
         raise exception.NotImplemented()
 
     def list_user_ids_for_project(self, tenant_id):
@@ -205,12 +205,12 @@ class Assignment(assignment.Driver):
                                   self.role._dn_to_id(ref.role_dn))
 
     def create_grant(self, role_id, user_id=None, group_id=None,
-                     domain_id=None, project_id=None,
+                     account_id=None, project_id=None,
                      inherited_to_projects=False):
 
         try:
             metadata_ref = self._get_metadata(user_id, project_id,
-                                              domain_id, group_id)
+                                              account_id, group_id)
         except exception.MetadataNotFound:
             metadata_ref = {}
 
@@ -222,30 +222,30 @@ class Assignment(assignment.Driver):
                 user_id, project_id, role_id)
 
     def check_grant_role_id(self, role_id, user_id=None, group_id=None,
-                            domain_id=None, project_id=None,
+                            account_id=None, project_id=None,
                             inherited_to_projects=False):
 
         try:
             metadata_ref = self._get_metadata(user_id, project_id,
-                                              domain_id, group_id)
+                                              account_id, group_id)
         except exception.MetadataNotFound:
             metadata_ref = {}
         role_ids = set(self._roles_from_role_dicts(
             metadata_ref.get('roles', []), inherited_to_projects))
         if role_id not in role_ids:
             actor_id = user_id or group_id
-            target_id = domain_id or project_id
+            target_id = account_id or project_id
             raise exception.RoleAssignmentNotFound(role_id=role_id,
                                                    actor_id=actor_id,
                                                    target_id=target_id)
 
     def delete_grant(self, role_id, user_id=None, group_id=None,
-                     domain_id=None, project_id=None,
+                     account_id=None, project_id=None,
                      inherited_to_projects=False):
 
         try:
             metadata_ref = self._get_metadata(user_id, project_id,
-                                              domain_id, group_id)
+                                              account_id, group_id)
         except exception.MetadataNotFound:
             metadata_ref = {}
 
@@ -259,18 +259,18 @@ class Assignment(assignment.Driver):
                     user_id, project_id, role_id)
         except (exception.RoleNotFound, KeyError):
             actor_id = user_id or group_id
-            target_id = domain_id or project_id
+            target_id = account_id or project_id
             raise exception.RoleAssignmentNotFound(role_id=role_id,
                                                    actor_id=actor_id,
                                                    target_id=target_id)
 
     def list_grant_role_ids(self, user_id=None, group_id=None,
-                            domain_id=None, project_id=None,
+                            account_id=None, project_id=None,
                             inherited_to_projects=False):
 
         try:
             metadata_ref = self._get_metadata(user_id, project_id,
-                                              domain_id, group_id)
+                                              account_id, group_id)
         except exception.MetadataNotFound:
             metadata_ref = {}
 

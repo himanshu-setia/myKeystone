@@ -27,7 +27,7 @@ msgstr ""
 
 #: keystone/cli.py:494
 #, python-format
-msgid "Ignoring file (%s) while scanning domain config directory"
+msgid "Ignoring file (%s) while scanning account config directory"
 msgstr ""
 
 #: keystone/exception.py:49
@@ -81,11 +81,11 @@ msgid "RBAC: Bypassing authorization"
 msgstr ""
 
 #: keystone/common/controller.py:703 keystone/common/controller.py:738
-msgid "Invalid token found while getting domain ID for list request"
+msgid "Invalid token found while getting account ID for list request"
 msgstr ""
 
 #: keystone/common/controller.py:711
-msgid "No domain information specified as part of list request"
+msgid "No account information specified as part of list request"
 msgstr ""
 
 #: keystone/common/utils.py:103
@@ -184,12 +184,12 @@ msgstr ""
 
 #: keystone/identity/core.py:122
 #, python-format
-msgid "Invalid domain name (%s) found in config file name"
+msgid "Invalid account name (%s) found in config file name"
 msgstr ""
 
 #: keystone/identity/core.py:160
 #, python-format
-msgid "Unable to locate domain config directory: %s"
+msgid "Unable to locate account config directory: %s"
 msgstr ""
 
 #: keystone/middleware/core.py:149
@@ -218,7 +218,7 @@ msgstr ""
 #, python-format
 msgid ""
 "Found what looks like an unmatched config option substitution reference -"
-" domain: %(domain)s, group: %(group)s, option: %(option)s, value: "
+" account: %(account)s, group: %(group)s, option: %(option)s, value: "
 "%(value)s. Perhaps the config option to which it refers has yet to be "
 "added?"
 msgstr ""
@@ -227,7 +227,7 @@ msgstr ""
 #, python-format
 msgid ""
 "Found what looks like an incorrectly constructed config option "
-"substitution reference - domain: %(domain)s, group: %(group)s, option: "
+"substitution reference - account: %(account)s, group: %(group)s, option: "
 "%(option)s, value: %(value)s."
 msgstr ""
 

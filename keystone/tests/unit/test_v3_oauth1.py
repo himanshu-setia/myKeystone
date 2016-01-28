@@ -397,7 +397,7 @@ class AuthTokenTests(OAuthFlowTests):
         self.assertEqual(self.role_id, roles_list[0]['id'])
 
         # verify that the token can perform delegated tasks
-        ref = self.new_user_ref(domain_id=self.domain_id)
+        ref = self.new_user_ref(account_id=self.account_id)
         r = self.admin_request(path='/v3/users', headers=headers,
                                method='POST', body={'user': ref})
         self.assertValidUserResponse(r, ref)

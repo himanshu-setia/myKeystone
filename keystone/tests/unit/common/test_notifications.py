@@ -326,14 +326,14 @@ class BaseNotificationTest(test_v3.RestfulTestCase):
 class NotificationsForEntities(BaseNotificationTest):
 
     def test_create_group(self):
-        group_ref = self.new_group_ref(domain_id=self.domain_id)
+        group_ref = self.new_group_ref(account_id=self.account_id)
         group_ref = self.identity_api.create_group(group_ref)
         self._assert_last_note(group_ref['id'], CREATED_OPERATION, 'group')
         self._assert_last_audit(group_ref['id'], CREATED_OPERATION, 'group',
                                 cadftaxonomy.SECURITY_GROUP)
 
     def test_create_project(self):
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         self.assignment_api.create_project(project_ref['id'], project_ref)
         self._assert_last_note(
             project_ref['id'], CREATED_OPERATION, 'project')
@@ -348,16 +348,16 @@ class NotificationsForEntities(BaseNotificationTest):
                                 cadftaxonomy.SECURITY_ROLE)
 
     def test_create_user(self):
-        user_ref = self.new_user_ref(domain_id=self.domain_id)
+        user_ref = self.new_user_ref(account_id=self.account_id)
         user_ref = self.identity_api.create_user(user_ref)
         self._assert_last_note(user_ref['id'], CREATED_OPERATION, 'user')
         self._assert_last_audit(user_ref['id'], CREATED_OPERATION, 'user',
                                 cadftaxonomy.SECURITY_ACCOUNT_USER)
 
     def test_create_trust(self):
-        trustor = self.new_user_ref(domain_id=self.domain_id)
+        trustor = self.new_user_ref(account_id=self.account_id)
         trustor = self.identity_api.create_user(trustor)
-        trustee = self.new_user_ref(domain_id=self.domain_id)
+        trustee = self.new_user_ref(account_id=self.account_id)
         trustee = self.identity_api.create_user(trustee)
         role_ref = self.new_role_ref()
         self.role_api.create_role(role_ref['id'], role_ref)
@@ -372,7 +372,7 @@ class NotificationsForEntities(BaseNotificationTest):
                                 'OS-TRUST:trust', cadftaxonomy.SECURITY_TRUST)
 
     def test_delete_group(self):
-        group_ref = self.new_group_ref(domain_id=self.domain_id)
+        group_ref = self.new_group_ref(account_id=self.account_id)
         group_ref = self.identity_api.create_group(group_ref)
         self.identity_api.delete_group(group_ref['id'])
         self._assert_last_note(group_ref['id'], DELETED_OPERATION, 'group')
@@ -380,7 +380,7 @@ class NotificationsForEntities(BaseNotificationTest):
                                 cadftaxonomy.SECURITY_GROUP)
 
     def test_delete_project(self):
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         self.assignment_api.create_project(project_ref['id'], project_ref)
         self.assignment_api.delete_project(project_ref['id'])
         self._assert_last_note(
@@ -397,43 +397,43 @@ class NotificationsForEntities(BaseNotificationTest):
                                 cadftaxonomy.SECURITY_ROLE)
 
     def test_delete_user(self):
-        user_ref = self.new_user_ref(domain_id=self.domain_id)
+        user_ref = self.new_user_ref(account_id=self.account_id)
         user_ref = self.identity_api.create_user(user_ref)
         self.identity_api.delete_user(user_ref['id'])
         self._assert_last_note(user_ref['id'], DELETED_OPERATION, 'user')
         self._assert_last_audit(user_ref['id'], DELETED_OPERATION, 'user',
                                 cadftaxonomy.SECURITY_ACCOUNT_USER)
 
-    def test_create_domain(self):
-        domain_ref = self.new_domain_ref()
-        self.resource_api.create_domain(domain_ref['id'], domain_ref)
-        self._assert_last_note(domain_ref['id'], CREATED_OPERATION, 'domain')
-        self._assert_last_audit(domain_ref['id'], CREATED_OPERATION, 'domain',
-                                cadftaxonomy.SECURITY_DOMAIN)
+    def test_create_account(self):
+        account_ref = self.new_account_ref()
+        self.resource_api.create_account(account_ref['id'], account_ref)
+        self._assert_last_note(account_ref['id'], CREATED_OPERATION, 'account')
+        self._assert_last_audit(account_ref['id'], CREATED_OPERATION, 'account',
+                                cadftaxonomy.SECURITY_ACCOUNT)
 
-    def test_update_domain(self):
-        domain_ref = self.new_domain_ref()
-        self.assignment_api.create_domain(domain_ref['id'], domain_ref)
-        domain_ref['description'] = uuid.uuid4().hex
-        self.assignment_api.update_domain(domain_ref['id'], domain_ref)
-        self._assert_last_note(domain_ref['id'], UPDATED_OPERATION, 'domain')
-        self._assert_last_audit(domain_ref['id'], UPDATED_OPERATION, 'domain',
-                                cadftaxonomy.SECURITY_DOMAIN)
+    def test_update_account(self):
+        account_ref = self.new_account_ref()
+        self.assignment_api.create_account(account_ref['id'], account_ref)
+        account_ref['description'] = uuid.uuid4().hex
+        self.assignment_api.update_account(account_ref['id'], account_ref)
+        self._assert_last_note(account_ref['id'], UPDATED_OPERATION, 'account')
+        self._assert_last_audit(account_ref['id'], UPDATED_OPERATION, 'account',
+                                cadftaxonomy.SECURITY_ACCOUNT)
 
-    def test_delete_domain(self):
-        domain_ref = self.new_domain_ref()
-        self.assignment_api.create_domain(domain_ref['id'], domain_ref)
-        domain_ref['enabled'] = False
-        self.assignment_api.update_domain(domain_ref['id'], domain_ref)
-        self.assignment_api.delete_domain(domain_ref['id'])
-        self._assert_last_note(domain_ref['id'], DELETED_OPERATION, 'domain')
-        self._assert_last_audit(domain_ref['id'], DELETED_OPERATION, 'domain',
-                                cadftaxonomy.SECURITY_DOMAIN)
+    def test_delete_account(self):
+        account_ref = self.new_account_ref()
+        self.assignment_api.create_account(account_ref['id'], account_ref)
+        account_ref['enabled'] = False
+        self.assignment_api.update_account(account_ref['id'], account_ref)
+        self.assignment_api.delete_account(account_ref['id'])
+        self._assert_last_note(account_ref['id'], DELETED_OPERATION, 'account')
+        self._assert_last_audit(account_ref['id'], DELETED_OPERATION, 'account',
+                                cadftaxonomy.SECURITY_ACCOUNT)
 
     def test_delete_trust(self):
-        trustor = self.new_user_ref(domain_id=self.domain_id)
+        trustor = self.new_user_ref(account_id=self.account_id)
         trustor = self.identity_api.create_user(trustor)
-        trustee = self.new_user_ref(domain_id=self.domain_id)
+        trustee = self.new_user_ref(account_id=self.account_id)
         trustee = self.identity_api.create_user(trustee)
         role_ref = self.new_role_ref()
         trust_ref = self.new_trust_ref(trustor['id'], trustee['id'])
@@ -550,26 +550,26 @@ class NotificationsForEntities(BaseNotificationTest):
         self._assert_last_audit(policy_ref['id'], DELETED_OPERATION,
                                 'policy', cadftaxonomy.SECURITY_POLICY)
 
-    def test_disable_domain(self):
-        domain_ref = self.new_domain_ref()
-        self.assignment_api.create_domain(domain_ref['id'], domain_ref)
-        domain_ref['enabled'] = False
-        self.assignment_api.update_domain(domain_ref['id'], domain_ref)
-        self._assert_notify_sent(domain_ref['id'], 'disabled', 'domain',
+    def test_disable_account(self):
+        account_ref = self.new_account_ref()
+        self.assignment_api.create_account(account_ref['id'], account_ref)
+        account_ref['enabled'] = False
+        self.assignment_api.update_account(account_ref['id'], account_ref)
+        self._assert_notify_sent(account_ref['id'], 'disabled', 'account',
                                  public=False)
 
-    def test_disable_of_disabled_domain_does_not_notify(self):
-        domain_ref = self.new_domain_ref()
-        domain_ref['enabled'] = False
-        self.assignment_api.create_domain(domain_ref['id'], domain_ref)
-        # The domain_ref above is not changed during the create process. We
+    def test_disable_of_disabled_account_does_not_notify(self):
+        account_ref = self.new_account_ref()
+        account_ref['enabled'] = False
+        self.assignment_api.create_account(account_ref['id'], account_ref)
+        # The account_ref above is not changed during the create process. We
         # can use the same ref to perform the update.
-        self.assignment_api.update_domain(domain_ref['id'], domain_ref)
-        self._assert_notify_not_sent(domain_ref['id'], 'disabled', 'domain',
+        self.assignment_api.update_account(account_ref['id'], account_ref)
+        self._assert_notify_not_sent(account_ref['id'], 'disabled', 'account',
                                      public=False)
 
     def test_update_group(self):
-        group_ref = self.new_group_ref(domain_id=self.domain_id)
+        group_ref = self.new_group_ref(account_id=self.account_id)
         group_ref = self.identity_api.create_group(group_ref)
         self.identity_api.update_group(group_ref['id'], group_ref)
         self._assert_last_note(group_ref['id'], UPDATED_OPERATION, 'group')
@@ -577,7 +577,7 @@ class NotificationsForEntities(BaseNotificationTest):
                                 cadftaxonomy.SECURITY_GROUP)
 
     def test_update_project(self):
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         self.assignment_api.create_project(project_ref['id'], project_ref)
         self.assignment_api.update_project(project_ref['id'], project_ref)
         self._assert_notify_sent(
@@ -586,7 +586,7 @@ class NotificationsForEntities(BaseNotificationTest):
                                 'project', cadftaxonomy.SECURITY_PROJECT)
 
     def test_disable_project(self):
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         self.assignment_api.create_project(project_ref['id'], project_ref)
         project_ref['enabled'] = False
         self.assignment_api.update_project(project_ref['id'], project_ref)
@@ -594,7 +594,7 @@ class NotificationsForEntities(BaseNotificationTest):
                                  public=False)
 
     def test_disable_of_disabled_project_does_not_notify(self):
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         project_ref['enabled'] = False
         self.assignment_api.create_project(project_ref['id'], project_ref)
         # The project_ref above is not changed during the create process. We
@@ -604,7 +604,7 @@ class NotificationsForEntities(BaseNotificationTest):
                                      public=False)
 
     def test_update_project_does_not_send_disable(self):
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         self.assignment_api.create_project(project_ref['id'], project_ref)
         project_ref['enabled'] = True
         self.assignment_api.update_project(project_ref['id'], project_ref)
@@ -621,7 +621,7 @@ class NotificationsForEntities(BaseNotificationTest):
                                 cadftaxonomy.SECURITY_ROLE)
 
     def test_update_user(self):
-        user_ref = self.new_user_ref(domain_id=self.domain_id)
+        user_ref = self.new_user_ref(account_id=self.account_id)
         user_ref = self.identity_api.create_user(user_ref)
         self.identity_api.update_user(user_ref['id'], user_ref)
         self._assert_last_note(user_ref['id'], UPDATED_OPERATION, 'user')
@@ -646,14 +646,14 @@ class CADFNotificationsForEntities(NotificationsForEntities):
         self.config_fixture.config(notification_format='cadf')
 
     def test_initiator_data_is_set(self):
-        ref = self.new_domain_ref()
-        resp = self.post('/domains', body={'domain': ref})
-        resource_id = resp.result.get('domain').get('id')
-        self._assert_last_audit(resource_id, CREATED_OPERATION, 'domain',
-                                cadftaxonomy.SECURITY_DOMAIN)
+        ref = self.new_account_ref()
+        resp = self.post('/accounts', body={'account': ref})
+        resource_id = resp.result.get('account').get('id')
+        self._assert_last_audit(resource_id, CREATED_OPERATION, 'account',
+                                cadftaxonomy.SECURITY_ACCOUNT)
         self._assert_initiator_data_is_set(CREATED_OPERATION,
-                                           'domain',
-                                           cadftaxonomy.SECURITY_DOMAIN)
+                                           'account',
+                                           cadftaxonomy.SECURITY_ACCOUNT)
 
 
 class V2Notifications(BaseNotificationTest):
@@ -817,7 +817,7 @@ class TestEventCallbacks(test_v3.RestfulTestCase):
 
     def test_notification_received(self):
         callback = register_callback(CREATED_OPERATION, 'project')
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         self.assignment_api.create_project(project_ref['id'], project_ref)
         self.assertTrue(callback.called)
 
@@ -862,7 +862,7 @@ class TestEventCallbacks(test_v3.RestfulTestCase):
                 callback_called.append(True)
 
         Foo()
-        project_ref = self.new_project_ref(domain_id=self.domain_id)
+        project_ref = self.new_project_ref(account_id=self.account_id)
         self.assignment_api.create_project(project_ref['id'], project_ref)
         self.assertEqual([True], callback_called)
 
@@ -930,7 +930,7 @@ class CadfNotificationsWrapperTestCase(test_v3.RestfulTestCase):
         if event_type:
             self.assertEqual(note['event_type'], event_type)
 
-    def _assert_event(self, role_id, project=None, domain=None,
+    def _assert_event(self, role_id, project=None, account=None,
                       user=None, group=None, inherit=False):
         """Assert that the CADF event is valid.
 
@@ -957,7 +957,7 @@ class CadfNotificationsWrapperTestCase(test_v3.RestfulTestCase):
                 'eventType': 'activity',
                 'eventTime': '2014-08-21T21:04:56.204536+0000',
                 'role': u'0e6b990380154a2599ce6b6e91548a68',
-                'domain': u'24bdcff1aab8474895dbaac509793de1',
+                'account': u'24bdcff1aab8474895dbaac509793de1',
                 'inherited_to_projects': False,
                 'group': u'c1e22dc67cbd469ea0e33bf428fe597a',
                 'action': 'created.role_assignment',
@@ -970,8 +970,8 @@ class CadfNotificationsWrapperTestCase(test_v3.RestfulTestCase):
         event = note['event']
         if project:
             self.assertEqual(project, event.project)
-        if domain:
-            self.assertEqual(domain, event.domain)
+        if account:
+            self.assertEqual(account, event.account)
         if group:
             self.assertEqual(group, event.group)
         elif user:
@@ -979,13 +979,13 @@ class CadfNotificationsWrapperTestCase(test_v3.RestfulTestCase):
         self.assertEqual(role_id, event.role)
         self.assertEqual(inherit, event.inherited_to_projects)
 
-    def test_v3_authenticate_user_name_and_domain_id(self):
+    def test_v3_authenticate_user_name_and_account_id(self):
         user_id = self.user_id
         user_name = self.user['name']
         password = self.user['password']
-        domain_id = self.domain_id
+        account_id = self.account_id
         data = self.build_authentication_request(username=user_name,
-                                                 user_domain_id=domain_id,
+                                                 user_account_id=account_id,
                                                  password=password)
         self.post('/auth/tokens', body=data)
         self._assert_last_note(self.ACTION, user_id)
@@ -998,31 +998,31 @@ class CadfNotificationsWrapperTestCase(test_v3.RestfulTestCase):
         self.post('/auth/tokens', body=data)
         self._assert_last_note(self.ACTION, user_id)
 
-    def test_v3_authenticate_user_name_and_domain_name(self):
+    def test_v3_authenticate_user_name_and_account_name(self):
         user_id = self.user_id
         user_name = self.user['name']
         password = self.user['password']
-        domain_name = self.domain['name']
+        account_name = self.account['name']
         data = self.build_authentication_request(username=user_name,
-                                                 user_domain_name=domain_name,
+                                                 user_account_name=account_name,
                                                  password=password)
         self.post('/auth/tokens', body=data)
         self._assert_last_note(self.ACTION, user_id)
 
-    def _test_role_assignment(self, url, role, project=None, domain=None,
+    def _test_role_assignment(self, url, role, project=None, account=None,
                               user=None, group=None):
         self.put(url)
         action = "%s.%s" % (CREATED_OPERATION, self.ROLE_ASSIGNMENT)
         event_type = '%s.%s.%s' % (notifications.SERVICE,
                                    self.ROLE_ASSIGNMENT, CREATED_OPERATION)
         self._assert_last_note(action, self.user_id, event_type)
-        self._assert_event(role, project, domain, user, group)
+        self._assert_event(role, project, account, user, group)
         self.delete(url)
         action = "%s.%s" % (DELETED_OPERATION, self.ROLE_ASSIGNMENT)
         event_type = '%s.%s.%s' % (notifications.SERVICE,
                                    self.ROLE_ASSIGNMENT, DELETED_OPERATION)
         self._assert_last_note(action, self.user_id, event_type)
-        self._assert_event(role, project, domain, user, None)
+        self._assert_event(role, project, account, user, None)
 
     def test_user_project_grant(self):
         url = ('/projects/%s/users/%s/roles/%s' %
@@ -1031,14 +1031,14 @@ class CadfNotificationsWrapperTestCase(test_v3.RestfulTestCase):
                                    project=self.project_id,
                                    user=self.user_id)
 
-    def test_group_domain_grant(self):
-        group_ref = self.new_group_ref(domain_id=self.domain_id)
+    def test_group_account_grant(self):
+        group_ref = self.new_group_ref(account_id=self.account_id)
         group = self.identity_api.create_group(group_ref)
         self.identity_api.add_user_to_group(self.user_id, group['id'])
-        url = ('/domains/%s/groups/%s/roles/%s' %
-               (self.domain_id, group['id'], self.role_id))
+        url = ('/accounts/%s/groups/%s/roles/%s' %
+               (self.account_id, group['id'], self.role_id))
         self._test_role_assignment(url, self.role_id,
-                                   domain=self.domain_id,
+                                   account=self.account_id,
                                    user=self.user_id,
                                    group=group['id'])
 
@@ -1046,7 +1046,7 @@ class CadfNotificationsWrapperTestCase(test_v3.RestfulTestCase):
         # A notification is sent when add_role_to_user_and_project is called on
         # the assignment manager.
 
-        project_ref = self.new_project_ref(self.domain_id)
+        project_ref = self.new_project_ref(self.account_id)
         project = self.resource_api.create_project(
             project_ref['id'], project_ref)
         tenant_id = project['id']

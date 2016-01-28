@@ -157,7 +157,7 @@ class Auth(controller.V2Controller):
             raise exception.Forbidden()
         if not CONF.token.allow_rescope_scoped_token:
             # Do not allow conversion from scoped tokens.
-            if token_model_ref.project_scoped or token_model_ref.domain_scoped:
+            if token_model_ref.project_scoped or token_model_ref.account_scoped:
                 raise exception.Forbidden(action=_("rescope a scoped token"))
 
     def _authenticate_token(self, context, auth):
@@ -290,7 +290,7 @@ class Auth(controller.V2Controller):
                                                     size=CONF.max_param_size)
             try:
                 user_ref = self.identity_api.get_user_by_name(
-                    username, CONF.identity.default_domain_id)
+                    username, CONF.identity.default_account_id)
                 user_id = user_ref['id']
             except exception.UserNotFound as e:
                 raise exception.Unauthorized(e)
@@ -325,7 +325,7 @@ class Auth(controller.V2Controller):
         username = environment['REMOTE_USER']
         try:
             user_ref = self.identity_api.get_user_by_name(
-                username, CONF.identity.default_domain_id)
+                username, CONF.identity.default_account_id)
             user_id = user_ref['id']
         except exception.UserNotFound as e:
             raise exception.Unauthorized(e)
@@ -369,7 +369,7 @@ class Auth(controller.V2Controller):
         if tenant_name:
             try:
                 tenant_ref = self.resource_api.get_project_by_name(
-                    tenant_name, CONF.identity.default_domain_id)
+                    tenant_name, CONF.identity.default_account_id)
                 tenant_id = tenant_ref['id']
             except exception.ProjectNotFound as e:
                 raise exception.Unauthorized(e)

@@ -97,13 +97,13 @@ class OSRevokeTests(test_v3.RestfulTestCase, test_v3.JsonHomeTestMixin):
         self.assertEqual(1, len(events))
         self.assertReportedEventMatchesRecorded(events[0], sample, before_time)
 
-    def test_disabled_domain_in_list(self):
-        domain_id = uuid.uuid4().hex
+    def test_disabled_account_in_list(self):
+        account_id = uuid.uuid4().hex
         sample = dict()
-        sample['domain_id'] = six.text_type(domain_id)
+        sample['account_id'] = six.text_type(account_id)
         before_time = timeutils.utcnow()
         self.revoke_api.revoke(
-            model.RevokeEvent(domain_id=domain_id))
+            model.RevokeEvent(account_id=account_id))
 
         resp = self.get('/OS-REVOKE/events')
         events = resp.json_body['events']
@@ -119,12 +119,12 @@ class OSRevokeTests(test_v3.RestfulTestCase, test_v3.JsonHomeTestMixin):
         self.assertEqual(0, len(events))
 
     def test_since_future_time_no_events(self):
-        domain_id = uuid.uuid4().hex
+        account_id = uuid.uuid4().hex
         sample = dict()
-        sample['domain_id'] = six.text_type(domain_id)
+        sample['account_id'] = six.text_type(account_id)
 
         self.revoke_api.revoke(
-            model.RevokeEvent(domain_id=domain_id))
+            model.RevokeEvent(account_id=account_id))
 
         resp = self.get('/OS-REVOKE/events')
         events = resp.json_body['events']

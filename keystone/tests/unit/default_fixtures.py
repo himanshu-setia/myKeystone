@@ -15,20 +15,20 @@
 # NOTE(dolph): please try to avoid additional fixtures if possible; test suite
 #              performance may be negatively affected.
 
-DEFAULT_DOMAIN_ID = 'default'
+DEFAULT_ACCOUNT_ID = 'default'
 
 TENANTS = [
     {
         'id': 'bar',
         'name': 'BAR',
-        'domain_id': DEFAULT_DOMAIN_ID,
+        'account_id': DEFAULT_ACCOUNT_ID,
         'description': 'description',
         'enabled': True,
         'parent_id': None,
     }, {
         'id': 'baz',
         'name': 'BAZ',
-        'domain_id': DEFAULT_DOMAIN_ID,
+        'account_id': DEFAULT_ACCOUNT_ID,
         'description': 'description',
         'enabled': True,
         'parent_id': None,
@@ -37,14 +37,14 @@ TENANTS = [
         'name': 'MTU',
         'description': 'description',
         'enabled': True,
-        'domain_id': DEFAULT_DOMAIN_ID,
+        'account_id': DEFAULT_ACCOUNT_ID,
         'parent_id': None,
     }, {
         'id': 'service',
         'name': 'service',
         'description': 'description',
         'enabled': True,
-        'domain_id': DEFAULT_DOMAIN_ID,
+        'account_id': DEFAULT_ACCOUNT_ID,
         'parent_id': None,
     }
 ]
@@ -54,7 +54,7 @@ USERS = [
     {
         'id': 'foo',
         'name': 'FOO',
-        'domain_id': DEFAULT_DOMAIN_ID,
+        'account_id': DEFAULT_ACCOUNT_ID,
         'password': 'foo2',
         'tenants': ['bar'],
         'enabled': True,
@@ -62,7 +62,7 @@ USERS = [
     }, {
         'id': 'two',
         'name': 'TWO',
-        'domain_id': DEFAULT_DOMAIN_ID,
+        'account_id': DEFAULT_ACCOUNT_ID,
         'password': 'two2',
         'enabled': True,
         'default_project_id': 'baz',
@@ -71,7 +71,7 @@ USERS = [
     }, {
         'id': 'badguy',
         'name': 'BadGuy',
-        'domain_id': DEFAULT_DOMAIN_ID,
+        'account_id': DEFAULT_ACCOUNT_ID,
         'password': 'bad',
         'enabled': False,
         'default_project_id': 'baz',
@@ -80,7 +80,7 @@ USERS = [
     }, {
         'id': 'sna',
         'name': 'SNA',
-        'domain_id': DEFAULT_DOMAIN_ID,
+        'account_id': DEFAULT_ACCOUNT_ID,
         'password': 'snafu',
         'enabled': True,
         'tenants': ['bar'],
@@ -113,9 +113,9 @@ ROLES = [
     }
 ]
 
-DOMAINS = [{'description':
+ACCOUNTS = [{'description':
             (u'Owns users and tenants (i.e. projects)'
                 ' available on Identity API v2.'),
             'enabled': True,
-            'id': DEFAULT_DOMAIN_ID,
+            'id': DEFAULT_ACCOUNT_ID,
             'name': u'Default'}]

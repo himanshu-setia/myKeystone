@@ -126,7 +126,7 @@ class Policy(jio_policy.Driver):
                 resource = stmt.get('resource', None)
 
                 # Autofill account id in resource
-                # Assumption account_id == domain_id == project_id
+                # Assumption account_id == account_id == project_id
                 for index, item in enumerate(resource):
                     if len(item.split(':')) > 4 and item.split(':')[3]=='':
                         var=item.split(':')

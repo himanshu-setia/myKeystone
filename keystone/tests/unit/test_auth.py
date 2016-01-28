@@ -37,7 +37,7 @@ from keystone import trust
 
 CONF = cfg.CONF
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
-DEFAULT_DOMAIN_ID = CONF.identity.default_domain_id
+DEFAULT_ACCOUNT_ID = CONF.identity.default_account_id
 
 HOST_URL = 'http://keystone:5001'
 
@@ -289,9 +289,9 @@ class AuthWithToken(AuthTest):
             self.tenant_bar['id'],
             self.role_member['id'])
         # Now create a group role for this user as well
-        domain1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(domain1['id'], domain1)
-        new_group = {'domain_id': domain1['id'], 'name': uuid.uuid4().hex}
+        account1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(account1['id'], account1)
+        new_group = {'account_id': account1['id'], 'name': uuid.uuid4().hex}
         new_group = self.identity_api.create_group(new_group)
         self.identity_api.add_user_to_group(self.user_foo['id'],
                                             new_group['id'])
@@ -382,7 +382,7 @@ class AuthWithToken(AuthTest):
     def test_deleting_role_revokes_token(self):
         role_controller = assignment.controllers.Role()
         project1 = {'id': 'Project1', 'name': uuid.uuid4().hex,
-                    'domain_id': DEFAULT_DOMAIN_ID}
+                    'account_id': DEFAULT_ACCOUNT_ID}
         self.resource_api.create_project(project1['id'], project1)
         role_one = {'id': 'role_one', 'name': uuid.uuid4().hex}
         self.role_api.create_role(role_one['id'], role_one)
@@ -612,39 +612,39 @@ class AuthWithPasswordCredentials(AuthTest):
         token = self.controller.authenticate({}, body_dict)
         self.assertNotIn('bind', token['access']['token'])
 
-    def test_change_default_domain_id(self):
-        # If the default_domain_id config option is not the default then the
-        # user in auth data is from the new default domain.
+    def test_change_default_account_id(self):
+        # If the default_account_id config option is not the default then the
+        # user in auth data is from the new default account.
 
-        # 1) Create a new domain.
-        new_domain_id = uuid.uuid4().hex
-        new_domain = {
+        # 1) Create a new account.
+        new_account_id = uuid.uuid4().hex
+        new_account = {
             'description': uuid.uuid4().hex,
             'enabled': True,
-            'id': new_domain_id,
+            'id': new_account_id,
             'name': uuid.uuid4().hex,
         }
 
-        self.resource_api.create_domain(new_domain_id, new_domain)
+        self.resource_api.create_account(new_account_id, new_account)
 
-        # 2) Create user "foo" in new domain with different password than
-        #    default-domain foo.
+        # 2) Create user "foo" in new account with different password than
+        #    default-account foo.
         new_user_password = uuid.uuid4().hex
         new_user = {
             'name': self.user_foo['name'],
-            'domain_id': new_domain_id,
+            'account_id': new_account_id,
             'password': new_user_password,
             'email': 'foo@bar2.com',
         }
 
         new_user = self.identity_api.create_user(new_user)
 
-        # 3) Update the default_domain_id config option to the new domain
+        # 3) Update the default_account_id config option to the new account
 
         self.config_fixture.config(group='identity',
-                                   default_domain_id=new_domain_id)
+                                   default_account_id=new_account_id)
 
-        # 4) Authenticate as "foo" using the password in the new domain.
+        # 4) Authenticate as "foo" using the password in the new account.
 
         body_dict = _build_user_auth(
             username=self.user_foo['name'],

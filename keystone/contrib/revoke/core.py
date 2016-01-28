@@ -89,10 +89,10 @@ class Manager(manager.Manager):
         self.revoke(
             model.RevokeEvent(project_id=payload['resource_info']))
 
-    def _domain_callback(self, service, resource_type, operation,
+    def _account_callback(self, service, resource_type, operation,
                          payload):
         self.revoke(
-            model.RevokeEvent(domain_id=payload['resource_info']))
+            model.RevokeEvent(account_id=payload['resource_info']))
 
     def _trust_callback(self, service, resource_type, operation,
                         payload):
@@ -113,7 +113,7 @@ class Manager(manager.Manager):
                                   payload):
         info = payload['resource_info']
         self.revoke_by_grant(role_id=info['role_id'], user_id=info['user_id'],
-                             domain_id=info.get('domain_id'),
+                             account_id=info.get('account_id'),
                              project_id=info.get('project_id'))
 
     def _register_listeners(self):
@@ -130,7 +130,7 @@ class Manager(manager.Manager):
             notifications.ACTIONS.disabled: [
                 ['user', self._user_callback],
                 ['project', self._project_callback],
-                ['domain', self._domain_callback],
+                ['account', self._account_callback],
             ],
             notifications.ACTIONS.internal: [
                 [notifications.INVALIDATE_USER_TOKEN_PERSISTENCE,
@@ -146,10 +146,10 @@ class Manager(manager.Manager):
     def revoke_by_user(self, user_id):
         return self.revoke(model.RevokeEvent(user_id=user_id))
 
-    def _assert_not_domain_and_project_scoped(self, domain_id=None,
+    def _assert_not_account_and_project_scoped(self, account_id=None,
                                               project_id=None):
-        if domain_id is not None and project_id is not None:
-            msg = _('The revoke call must not have both domain_id and '
+        if account_id is not None and project_id is not None:
+            msg = _('The revoke call must not have both account_id and '
                     'project_id. This is a bug in the Keystone server. The '
                     'current request is aborted.')
             raise exception.UnexpectedError(exception=msg)
@@ -157,36 +157,36 @@ class Manager(manager.Manager):
     @versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
                              remove_in=0)
     def revoke_by_expiration(self, user_id, expires_at,
-                             domain_id=None, project_id=None):
+                             account_id=None, project_id=None):
 
-        self._assert_not_domain_and_project_scoped(domain_id=domain_id,
+        self._assert_not_account_and_project_scoped(account_id=account_id,
                                                    project_id=project_id)
 
         self.revoke(
             model.RevokeEvent(user_id=user_id,
                               expires_at=expires_at,
-                              domain_id=domain_id,
+                              account_id=account_id,
                               project_id=project_id))
 
     def revoke_by_audit_id(self, audit_id):
         self.revoke(model.RevokeEvent(audit_id=audit_id))
 
     def revoke_by_audit_chain_id(self, audit_chain_id, project_id=None,
-                                 domain_id=None):
+                                 account_id=None):
 
-        self._assert_not_domain_and_project_scoped(domain_id=domain_id,
+        self._assert_not_account_and_project_scoped(account_id=account_id,
                                                    project_id=project_id)
 
         self.revoke(model.RevokeEvent(audit_chain_id=audit_chain_id,
-                                      domain_id=domain_id,
+                                      account_id=account_id,
                                       project_id=project_id))
 
     def revoke_by_grant(self, role_id, user_id=None,
-                        domain_id=None, project_id=None):
+                        account_id=None, project_id=None):
         self.revoke(
             model.RevokeEvent(user_id=user_id,
                               role_id=role_id,
-                              domain_id=domain_id,
+                              account_id=account_id,
                               project_id=project_id))
 
     def revoke_by_user_and_project(self, user_id, project_id):
@@ -196,8 +196,8 @@ class Manager(manager.Manager):
     def revoke_by_project_role_assignment(self, project_id, role_id):
         self.revoke(model.RevokeEvent(project_id=project_id, role_id=role_id))
 
-    def revoke_by_domain_role_assignment(self, domain_id, role_id):
-        self.revoke(model.RevokeEvent(domain_id=domain_id, role_id=role_id))
+    def revoke_by_account_role_assignment(self, account_id, role_id):
+        self.revoke(model.RevokeEvent(account_id=account_id, role_id=role_id))
 
     @MEMOIZE
     def _get_revoke_tree(self):

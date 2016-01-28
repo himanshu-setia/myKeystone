@@ -70,14 +70,14 @@ class TenantTestCase(tests.TestCase):
         # without asserting the order of the results
         self.assertEqual(sorted(orig_project_users), sorted(new_project_users))
 
-    def test_list_projects_default_domain(self):
-        """Test that list projects only returns those in the default domain."""
+    def test_list_projects_default_account(self):
+        """Test that list projects only returns those in the default account."""
 
-        domain = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex,
+        account = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex,
                   'enabled': True}
-        self.resource_api.create_domain(domain['id'], domain)
+        self.resource_api.create_account(account['id'], account)
         project1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex,
-                    'domain_id': domain['id']}
+                    'account_id': account['id']}
         self.resource_api.create_project(project1['id'], project1)
         # Check the real total number of projects, we should have the above
         # plus those in the default features
@@ -86,11 +86,11 @@ class TenantTestCase(tests.TestCase):
 
         # Now list all projects using the v2 API - we should only get
         # back those in the default features, since only those are in the
-        # default domain.
+        # default account.
         refs = self.tenant_controller.get_all_projects(_ADMIN_CONTEXT)
         self.assertEqual(len(default_fixtures.TENANTS), len(refs['tenants']))
         for tenant in default_fixtures.TENANTS:
             tenant_copy = tenant.copy()
-            tenant_copy.pop('domain_id')
+            tenant_copy.pop('account_id')
             tenant_copy.pop('parent_id')
             self.assertIn(tenant_copy, refs['tenants'])

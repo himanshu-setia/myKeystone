@@ -93,7 +93,7 @@ class AuthContext(dict):
 
     # identity attributes need to be reconciled among the auth plugins
     IDENTITY_ATTRIBUTES = frozenset(['user_id', 'project_id',
-                                     'access_token_id', 'domain_id',
+                                     'access_token_id', 'account_id',
                                      'expires_at'])
 
     def __setitem__(self, key, val):
@@ -139,9 +139,9 @@ class AuthInfo(object):
         self.context = context
         self.auth = auth
         self._scope_data = (None, None, None, None)
-        # self._scope_data is (domain_id, project_id, trust_ref, unscoped)
+        # self._scope_data is (account_id, project_id, trust_ref, unscoped)
         # project scope: (None, project_id, None, None)
-        # domain scope: (domain_id, None, None, None)
+        # account scope: (account_id, None, None, None)
         # trust scope: (None, None, trust_ref, None)
         # unscoped: (None, None, None, 'unscoped')
 
@@ -156,34 +156,34 @@ class AuthInfo(object):
             six.reraise(exception.Unauthorized, exception.Unauthorized(e),
                         sys.exc_info()[2])
 
-    def _assert_domain_is_enabled(self, domain_ref):
+    def _assert_account_is_enabled(self, account_ref):
         try:
-            self.resource_api.assert_domain_enabled(
-                domain_id=domain_ref['id'],
-                domain=domain_ref)
+            self.resource_api.assert_account_enabled(
+                account_id=account_ref['id'],
+                account=account_ref)
         except AssertionError as e:
             LOG.warning(six.text_type(e))
             six.reraise(exception.Unauthorized, exception.Unauthorized(e),
                         sys.exc_info()[2])
 
-    def _lookup_domain(self, domain_info):
-        domain_id = domain_info.get('id')
-        domain_name = domain_info.get('name')
-        domain_ref = None
-        if not domain_id and not domain_name:
+    def _lookup_account(self, account_info):
+        account_id = account_info.get('id')
+        account_name = account_info.get('name')
+        account_ref = None
+        if not account_id and not account_name:
             raise exception.ValidationError(attribute='id or name',
-                                            target='domain')
+                                            target='account')
         try:
-            if domain_name:
-                domain_ref = self.resource_api.get_domain_by_name(
-                    domain_name)
+            if account_name:
+                account_ref = self.resource_api.get_account_by_name(
+                    account_name)
             else:
-                domain_ref = self.resource_api.get_domain(domain_id)
-        except exception.DomainNotFound as e:
+                account_ref = self.resource_api.get_account(account_id)
+        except exception.AccountNotFound as e:
             LOG.exception(six.text_type(e))
             raise exception.Unauthorized(e)
-        self._assert_domain_is_enabled(domain_ref)
-        return domain_ref
+        self._assert_account_is_enabled(account_ref)
+        return account_ref
 
     def _lookup_project(self, project_info):
         project_id = project_info.get('id')
@@ -194,18 +194,18 @@ class AuthInfo(object):
                                             target='project')
         try:
             if project_name:
-                if 'domain' not in project_info:
-                    raise exception.ValidationError(attribute='domain',
+                if 'account' not in project_info:
+                    raise exception.ValidationError(attribute='account',
                                                     target='project')
-                domain_ref = self._lookup_domain(project_info['domain'])
+                account_ref = self._lookup_account(project_info['account'])
                 project_ref = self.resource_api.get_project_by_name(
-                    project_name, domain_ref['id'])
+                    project_name, account_ref['id'])
             else:
                 project_ref = self.resource_api.get_project(project_id)
-                # NOTE(morganfainberg): The _lookup_domain method will raise
-                # exception.Unauthorized if the domain isn't found or is
+                # NOTE(morganfainberg): The _lookup_account method will raise
+                # exception.Unauthorized if the account isn't found or is
                 # disabled.
-                self._lookup_domain({'id': project_ref['domain_id']})
+                self._lookup_account({'id': project_ref['account_id']})
         except exception.ProjectNotFound as e:
             raise exception.Unauthorized(e)
         self._assert_project_is_enabled(project_ref)
@@ -226,11 +226,11 @@ class AuthInfo(object):
         if 'scope' not in self.auth:
             return
         if sum(['project' in self.auth['scope'],
-                'domain' in self.auth['scope'],
+                'account' in self.auth['scope'],
                 'unscoped' in self.auth['scope'],
                 'OS-TRUST:trust' in self.auth['scope']]) != 1:
             raise exception.ValidationError(
-                attribute='project, domain, OS-TRUST:trust or unscoped',
+                attribute='project, account, OS-TRUST:trust or unscoped',
                 target='scope')
         if 'unscoped' in self.auth['scope']:
             self._scope_data = (None, None, None, 'unscoped')
@@ -238,15 +238,15 @@ class AuthInfo(object):
         if 'project' in self.auth['scope']:
             project_ref = self._lookup_project(self.auth['scope']['project'])
             self._scope_data = (None, project_ref['id'], None, None)
-        elif 'domain' in self.auth['scope']:
-            domain_ref = self._lookup_domain(self.auth['scope']['domain'])
-            self._scope_data = (domain_ref['id'], None, None, None)
+        elif 'account' in self.auth['scope']:
+            account_ref = self._lookup_account(self.auth['scope']['account'])
+            self._scope_data = (account_ref['id'], None, None, None)
         elif 'OS-TRUST:trust' in self.auth['scope']:
             if not CONF.trust.enabled:
                 raise exception.Forbidden('Trusts are disabled.')
             trust_ref = self._lookup_trust(
                 self.auth['scope']['OS-TRUST:trust'])
-            # TODO(ayoung): when trusts support domains, fill in domain data
+            # TODO(ayoung): when trusts support accounts, fill in account data
             if trust_ref.get('project_id') is not None:
                 project_ref = self._lookup_project(
                     {'id': trust_ref['project_id']})
@@ -315,10 +315,10 @@ class AuthInfo(object):
 
         Verify and return the scoping information.
 
-        :returns: (domain_id, project_id, trust_ref, unscoped).
+        :returns: (account_id, project_id, trust_ref, unscoped).
                    If scope to a project, (None, project_id, None, None)
                    will be returned.
-                   If scoped to a domain, (domain_id, None, None, None)
+                   If scoped to a account, (account_id, None, None, None)
                    will be returned.
                    If scoped to a trust, (None, project_id, trust_ref, None),
                    Will be returned, where the project_id comes from the
@@ -329,19 +329,19 @@ class AuthInfo(object):
         """
         return self._scope_data
 
-    def set_scope(self, domain_id=None, project_id=None, trust=None,
+    def set_scope(self, account_id=None, project_id=None, trust=None,
                   unscoped=None):
         """Set scope information."""
-        if domain_id and project_id:
-            msg = _('Scoping to both domain and project is not allowed')
+        if account_id and project_id:
+            msg = _('Scoping to both account and project is not allowed')
             raise ValueError(msg)
-        if domain_id and trust:
-            msg = _('Scoping to both domain and trust is not allowed')
+        if account_id and trust:
+            msg = _('Scoping to both account and trust is not allowed')
             raise ValueError(msg)
         if project_id and trust:
             msg = _('Scoping to both project and trust is not allowed')
             raise ValueError(msg)
-        self._scope_data = (domain_id, project_id, trust, unscoped)
+        self._scope_data = (account_id, project_id, trust, unscoped)
 
 
 @dependency.requires('assignment_api', 'catalog_api', 'identity_api',
@@ -379,7 +379,7 @@ class Auth(controller.V3Controller):
             if auth_context.get('access_token_id'):
                 auth_info.set_scope(None, auth_context['project_id'], None)
             self._check_and_set_default_scoping(auth_info, auth_context)
-            (domain_id, project_id, trust, unscoped) = auth_info.get_scope()
+            (account_id, project_id, trust, unscoped) = auth_info.get_scope()
 
             method_names = auth_info.get_method_names()
             method_names += auth_context.get('method_names', [])
@@ -394,7 +394,7 @@ class Auth(controller.V3Controller):
 
             (token_id, token_data) = self.token_provider_api.issue_v3_token(
                 auth_context['user_id'], method_names, expires_at, project_id,
-                domain_id, auth_context, trust, metadata_ref, include_catalog,
+                account_id, auth_context, trust, metadata_ref, include_catalog,
                 parent_audit_id=token_audit_id)
 
             # NOTE(wanghong): We consume a trust use only when we are using
@@ -409,10 +409,10 @@ class Auth(controller.V3Controller):
             raise exception.Unauthorized(e)
 
     def _check_and_set_default_scoping(self, auth_info, auth_context):
-        (domain_id, project_id, trust, unscoped) = auth_info.get_scope()
+        (account_id, project_id, trust, unscoped) = auth_info.get_scope()
         if trust:
             project_id = trust['project_id']
-        if domain_id or project_id or trust:
+        if account_id or project_id or trust:
             # scope is specified
             return
 
@@ -440,10 +440,10 @@ class Auth(controller.V3Controller):
         try:
             default_project_ref = self.resource_api.get_project(
                 default_project_id)
-            default_project_domain_ref = self.resource_api.get_domain(
-                default_project_ref['domain_id'])
+            default_project_account_ref = self.resource_api.get_account(
+                default_project_ref['account_id'])
             if (default_project_ref.get('enabled', True) and
-                    default_project_domain_ref.get('enabled', True)):
+                    default_project_account_ref.get('enabled', True)):
                 if self.assignment_api.get_roles_for_user_and_project(
                         user_ref['id'], default_project_id):
                     auth_info.set_scope(project_id=default_project_id)
@@ -462,8 +462,8 @@ class Auth(controller.V3Controller):
                 LOG.warning(msg,
                             {'user_id': user_ref['id'],
                              'project_id': default_project_id})
-        except (exception.ProjectNotFound, exception.DomainNotFound):
-            # default project or default project domain doesn't exist,
+        except (exception.ProjectNotFound, exception.AccountNotFound):
+            # default project or default project account doesn't exist,
             # will issue unscoped token instead
             msg = _LW("User %(user_id)s's default project %(project_id)s not"
                       " found. The token will be unscoped rather than"
@@ -537,7 +537,7 @@ class Auth(controller.V3Controller):
             token_id)
         if not include_catalog and 'catalog' in token_data['token']:
             del token_data['token']['catalog']
-        response = dict(domain_id=token_data["token"]["user"]["domain"]["id"],
+        response = dict(account_id=token_data["token"]["user"]["account"]["id"],
                         user_id=token_data["token"]["user"]["id"])
         return render_token_data_response(token_id, response)
 
@@ -593,10 +593,10 @@ class Auth(controller.V3Controller):
         # get user id
         auth_context = self.get_auth_context(context)
         user_id = token_data["token"]["user"]["id"]
-        project_id = token_data["token"]["user"]["domain"]["id"]
+        project_id = token_data["token"]["user"]["account"]["id"]
         self._validate_token_with_action_resource(
                     [action], [resource], user_id, project_id, [is_implicit_allow], context)
-        response = dict(domain_id=token_data["token"]["user"]["domain"]["id"],
+        response = dict(account_id=token_data["token"]["user"]["account"]["id"],
                         user_id=token_data["token"]["user"]["id"])
         return self.render_response(response,context)
 
@@ -618,10 +618,10 @@ class Auth(controller.V3Controller):
                                               'perform this action')
         auth_context = self.get_auth_context(context)
         user_id = token_data["token"]["user"]["id"]
-        project_id = token_data["token"]["user"]["domain"]["id"]
+        project_id = token_data["token"]["user"]["account"]["id"]
         self._validate_token_with_action_resource(
                     action, resource, user_id, project_id, is_implicit_allow, context)
-        response = dict(domain_id=token_data["token"]["user"]["domain"]["id"],
+        response = dict(account_id=token_data["token"]["user"]["account"]["id"],
                         user_id=token_data["token"]["user"]["id"])
         return self.render_response(response,context)
 
@@ -673,14 +673,14 @@ class Auth(controller.V3Controller):
         return resource_controllers.ProjectV3.wrap_collection(context, refs)
 
     @controller.protected()
-    def get_auth_domains(self, context):
+    def get_auth_accounts(self, context):
         auth_context = self.get_auth_context(context)
 
         user_id = auth_context.get('user_id')
         user_refs = []
         if user_id:
             try:
-                user_refs = self.assignment_api.list_domains_for_user(user_id)
+                user_refs = self.assignment_api.list_accounts_for_user(user_id)
             except exception.UserNotFound:
                 # federated users have an id but they don't link to anything
                 pass
@@ -688,10 +688,10 @@ class Auth(controller.V3Controller):
         group_ids = auth_context.get('group_ids')
         grp_refs = []
         if group_ids:
-            grp_refs = self.assignment_api.list_domains_for_groups(group_ids)
+            grp_refs = self.assignment_api.list_accounts_for_groups(group_ids)
 
         refs = self._combine_lists_uniquely(user_refs, grp_refs)
-        return resource_controllers.DomainV3.wrap_collection(context, refs)
+        return resource_controllers.AccountV3.wrap_collection(context, refs)
 
     @controller.protected()
     def get_auth_catalog(self, context):

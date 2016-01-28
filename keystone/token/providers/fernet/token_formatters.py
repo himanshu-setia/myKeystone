@@ -104,7 +104,7 @@ class TokenFormatter(object):
         return created_at
 
     def create_token(self, user_id, expires_at, audit_ids, methods=None,
-                     domain_id=None, project_id=None, trust_id=None,
+                     account_id=None, project_id=None, trust_id=None,
                      federated_info=None):
         """Given a set of payload attributes, generate a Fernet token."""
         if trust_id:
@@ -132,12 +132,12 @@ class TokenFormatter(object):
                 project_id,
                 expires_at,
                 audit_ids)
-        elif domain_id:
-            version = DomainScopedPayload.version
-            payload = DomainScopedPayload.assemble(
+        elif account_id:
+            version = AccountScopedPayload.version
+            payload = AccountScopedPayload.assemble(
                 user_id,
                 methods,
-                domain_id,
+                account_id,
                 expires_at,
                 audit_ids)
         else:
@@ -165,7 +165,7 @@ class TokenFormatter(object):
         version, payload = versioned_payload[0], versioned_payload[1:]
 
         # depending on the formatter, these may or may not be defined
-        domain_id = None
+        account_id = None
         project_id = None
         trust_id = None
         federated_info = None
@@ -173,9 +173,9 @@ class TokenFormatter(object):
         if version == UnscopedPayload.version:
             (user_id, methods, expires_at, audit_ids) = (
                 UnscopedPayload.disassemble(payload))
-        elif version == DomainScopedPayload.version:
-            (user_id, methods, domain_id, expires_at, audit_ids) = (
-                DomainScopedPayload.disassemble(payload))
+        elif version == AccountScopedPayload.version:
+            (user_id, methods, account_id, expires_at, audit_ids) = (
+                AccountScopedPayload.disassemble(payload))
         elif version == ProjectScopedPayload.version:
             (user_id, methods, project_id, expires_at, audit_ids) = (
                 ProjectScopedPayload.disassemble(payload))
@@ -198,7 +198,7 @@ class TokenFormatter(object):
         expires_at = timeutils.parse_isotime(expires_at)
         expires_at = timeutils.isotime(at=expires_at, subsecond=True)
 
-        return (user_id, methods, audit_ids, domain_id, project_id, trust_id,
+        return (user_id, methods, audit_ids, account_id, project_id, trust_id,
                 federated_info, created_at, expires_at)
 
 
@@ -343,59 +343,59 @@ class UnscopedPayload(BasePayload):
         return (user_id, methods, expires_at_str, audit_ids)
 
 
-class DomainScopedPayload(BasePayload):
+class AccountScopedPayload(BasePayload):
     version = 1
 
     @classmethod
-    def assemble(cls, user_id, methods, domain_id, expires_at, audit_ids):
-        """Assemble the payload of a domain-scoped token.
+    def assemble(cls, user_id, methods, account_id, expires_at, audit_ids):
+        """Assemble the payload of a account-scoped token.
 
         :param user_id: ID of the user in the token request
         :param methods: list of authentication methods used
-        :param domain_id: ID of the domain to scope to
+        :param account_id: ID of the account to scope to
         :param expires_at: datetime of the token's expiration
         :param audit_ids: list of the token's audit IDs
-        :returns: the payload of a domain-scoped token
+        :returns: the payload of a account-scoped token
 
         """
         b_user_id = cls.attempt_convert_uuid_hex_to_bytes(user_id)
         methods = auth_plugins.convert_method_list_to_integer(methods)
         try:
-            b_domain_id = cls.convert_uuid_hex_to_bytes(domain_id)
+            b_account_id = cls.convert_uuid_hex_to_bytes(account_id)
         except ValueError:
-            # the default domain ID is configurable, and probably isn't a UUID
-            if domain_id == CONF.identity.default_domain_id:
-                b_domain_id = domain_id
+            # the default account ID is configurable, and probably isn't a UUID
+            if account_id == CONF.identity.default_account_id:
+                b_account_id = account_id
             else:
                 raise
         expires_at_int = cls._convert_time_string_to_int(expires_at)
         b_audit_ids = list(map(provider.random_urlsafe_str_to_bytes,
                            audit_ids))
-        return (b_user_id, methods, b_domain_id, expires_at_int, b_audit_ids)
+        return (b_user_id, methods, b_account_id, expires_at_int, b_audit_ids)
 
     @classmethod
     def disassemble(cls, payload):
         """Disassemble a payload into the component data.
 
         :param payload: the payload of a token
-        :return: a tuple containing the user_id, auth methods, domain_id,
+        :return: a tuple containing the user_id, auth methods, account_id,
                  expires_at_str, and audit_ids
 
         """
         user_id = cls.attempt_convert_uuid_bytes_to_hex(payload[0])
         methods = auth_plugins.convert_integer_to_method_list(payload[1])
         try:
-            domain_id = cls.convert_uuid_bytes_to_hex(payload[2])
+            account_id = cls.convert_uuid_bytes_to_hex(payload[2])
         except ValueError:
-            # the default domain ID is configurable, and probably isn't a UUID
-            if payload[2] == CONF.identity.default_domain_id:
-                domain_id = payload[2]
+            # the default account ID is configurable, and probably isn't a UUID
+            if payload[2] == CONF.identity.default_account_id:
+                account_id = payload[2]
             else:
                 raise
         expires_at_str = cls._convert_int_to_time_string(payload[3])
         audit_ids = list(map(provider.base64_encode, payload[4]))
 
-        return (user_id, methods, domain_id, expires_at_str, audit_ids)
+        return (user_id, methods, account_id, expires_at_str, audit_ids)
 
 
 class ProjectScopedPayload(BasePayload):
@@ -499,7 +499,7 @@ class FederatedPayload(BasePayload):
         :param expires_at: datetime of the token's expiration
         :param audit_ids: list of the token's audit IDs
         :param federated_info: dictionary containing group IDs, the identity
-                               provider ID, protocol ID, and federated domain
+                               provider ID, protocol ID, and federated account
                                ID
         :returns: the payload of a federated token
 
@@ -527,7 +527,7 @@ class FederatedPayload(BasePayload):
         :return: a tuple containing the user_id, auth methods, audit_ids, and
                  a dictionary containing federated information such as the the
                  group IDs, the identity provider ID, the protocol ID, and the
-                 federated domain ID
+                 federated account ID
 
         """
         def unpack_group_ids(group_id_in_bytes):

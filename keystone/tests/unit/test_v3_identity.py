@@ -35,7 +35,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         super(IdentityTestCase, self).setUp()
 
         self.group = self.new_group_ref(
-            domain_id=self.domain_id)
+            account_id=self.account_id)
         self.group = self.identity_api.create_group(self.group)
         self.group_id = self.group['id']
 
@@ -52,56 +52,56 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_create_user(self):
         """Call ``POST /users``."""
-        ref = self.new_user_ref(domain_id=self.domain_id)
+        ref = self.new_user_ref(account_id=self.account_id)
         r = self.post(
             '/users',
             body={'user': ref})
         return self.assertValidUserResponse(r, ref)
 
-    def test_create_user_without_domain(self):
-        """Call ``POST /users`` without specifying domain.
+    def test_create_user_without_account(self):
+        """Call ``POST /users`` without specifying account.
 
         According to the identity-api specification, if you do not
-        explicitly specific the domain_id in the entity, it should
-        take the domain scope of the token as the domain_id.
+        explicitly specific the account_id in the entity, it should
+        take the account scope of the token as the account_id.
 
         """
-        # Create a user with a role on the domain so we can get a
-        # domain scoped token
-        domain = self.new_domain_ref()
-        self.resource_api.create_domain(domain['id'], domain)
-        user = self.new_user_ref(domain_id=domain['id'])
+        # Create a user with a role on the account so we can get a
+        # account scoped token
+        account = self.new_account_ref()
+        self.resource_api.create_account(account['id'], account)
+        user = self.new_user_ref(account_id=account['id'])
         password = user['password']
         user = self.identity_api.create_user(user)
         user['password'] = password
         self.assignment_api.create_grant(
             role_id=self.role_id, user_id=user['id'],
-            domain_id=domain['id'])
+            account_id=account['id'])
 
-        ref = self.new_user_ref(domain_id=domain['id'])
+        ref = self.new_user_ref(account_id=account['id'])
         ref_nd = ref.copy()
-        ref_nd.pop('domain_id')
+        ref_nd.pop('account_id')
         auth = self.build_authentication_request(
             user_id=user['id'],
             password=user['password'],
-            domain_id=domain['id'])
+            account_id=account['id'])
         r = self.post('/users', body={'user': ref_nd}, auth=auth)
         self.assertValidUserResponse(r, ref)
 
-        # Now try the same thing without a domain token - which should fail
-        ref = self.new_user_ref(domain_id=domain['id'])
+        # Now try the same thing without a account token - which should fail
+        ref = self.new_user_ref(account_id=account['id'])
         ref_nd = ref.copy()
-        ref_nd.pop('domain_id')
+        ref_nd.pop('account_id')
         auth = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
             project_id=self.project['id'])
         r = self.post('/users', body={'user': ref_nd}, auth=auth)
         # TODO(henry-nash): Due to bug #1283539 we currently automatically
-        # use the default domain_id if a domain scoped token is not being
+        # use the default account_id if a account scoped token is not being
         # used. Change the code below to expect a failure once this bug is
         # fixed.
-        ref['domain_id'] = CONF.identity.default_domain_id
+        ref['account_id'] = CONF.identity.default_account_id
         return self.assertValidUserResponse(r, ref)
 
     def test_create_user_400(self):
@@ -140,61 +140,61 @@ class IdentityTestCase(test_v3.RestfulTestCase):
     def test_list_users_with_multiple_backends(self):
         """Call ``GET /users`` when multiple backends is enabled.
 
-        In this scenario, the controller requires a domain to be specified
-        either as a filter or by using a domain scoped token.
+        In this scenario, the controller requires a account to be specified
+        either as a filter or by using a account scoped token.
 
         """
         self.config_fixture.config(group='identity',
-                                   domain_specific_drivers_enabled=True)
+                                   account_specific_drivers_enabled=True)
 
-        # Create a user with a role on the domain so we can get a
-        # domain scoped token
-        domain = self.new_domain_ref()
-        self.resource_api.create_domain(domain['id'], domain)
-        user = self.new_user_ref(domain_id=domain['id'])
+        # Create a user with a role on the account so we can get a
+        # account scoped token
+        account = self.new_account_ref()
+        self.resource_api.create_account(account['id'], account)
+        user = self.new_user_ref(account_id=account['id'])
         password = user['password']
         user = self.identity_api.create_user(user)
         user['password'] = password
         self.assignment_api.create_grant(
             role_id=self.role_id, user_id=user['id'],
-            domain_id=domain['id'])
+            account_id=account['id'])
 
-        ref = self.new_user_ref(domain_id=domain['id'])
+        ref = self.new_user_ref(account_id=account['id'])
         ref_nd = ref.copy()
-        ref_nd.pop('domain_id')
+        ref_nd.pop('account_id')
         auth = self.build_authentication_request(
             user_id=user['id'],
             password=user['password'],
-            domain_id=domain['id'])
+            account_id=account['id'])
 
-        # First try using a domain scoped token
+        # First try using a account scoped token
         resource_url = '/users'
         r = self.get(resource_url, auth=auth)
         self.assertValidUserListResponse(r, ref=user,
                                          resource_url=resource_url)
 
         # Now try with an explicit filter
-        resource_url = ('/users?domain_id=%(domain_id)s' %
-                        {'domain_id': domain['id']})
+        resource_url = ('/users?account_id=%(account_id)s' %
+                        {'account_id': account['id']})
         r = self.get(resource_url)
         self.assertValidUserListResponse(r, ref=user,
                                          resource_url=resource_url)
 
-        # Now try the same thing without a domain token or filter,
+        # Now try the same thing without a account token or filter,
         # which should fail
         r = self.get('/users', expected_status=exception.Unauthorized.code)
 
     def test_list_users_with_static_admin_token_and_multiple_backends(self):
-        # domain-specific operations with the bootstrap ADMIN token is
-        # disallowed when domain-specific drivers are enabled
+        # account-specific operations with the bootstrap ADMIN token is
+        # disallowed when account-specific drivers are enabled
         self.config_fixture.config(group='identity',
-                                   domain_specific_drivers_enabled=True)
+                                   account_specific_drivers_enabled=True)
         self.get('/users', token=CONF.admin_token,
                  expected_status=exception.Unauthorized.code)
 
     def test_list_users_no_default_project(self):
         """Call ``GET /users`` making sure no default_project_id."""
-        user = self.new_user_ref(self.domain_id)
+        user = self.new_user_ref(self.account_id)
         user = self.identity_api.create_user(user)
         resource_url = '/users'
         r = self.get(resource_url)
@@ -209,7 +209,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_get_user_with_default_project(self):
         """Call ``GET /users/{user_id}`` making sure of default_project_id."""
-        user = self.new_user_ref(domain_id=self.domain_id,
+        user = self.new_user_ref(account_id=self.account_id,
                                  project_id=self.project_id)
         user = self.identity_api.create_user(user)
         r = self.get('/users/%(user_id)s' % {'user_id': user['id']})
@@ -224,12 +224,12 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         """Call ``GET /users/{user_id}/groups``."""
 
         self.user1 = self.new_user_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         password = self.user1['password']
         self.user1 = self.identity_api.create_user(self.user1)
         self.user1['password'] = password
         self.user2 = self.new_user_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         password = self.user2['password']
         self.user2 = self.identity_api.create_user(self.user2)
         self.user2['password'] = password
@@ -291,7 +291,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_update_user(self):
         """Call ``PATCH /users/{user_id}``."""
-        user = self.new_user_ref(domain_id=self.domain_id)
+        user = self.new_user_ref(account_id=self.account_id)
         del user['id']
         r = self.patch('/users/%(user_id)s' % {
             'user_id': self.user['id']},
@@ -300,7 +300,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_admin_password_reset(self):
         # bootstrap a user as admin
-        user_ref = self.new_user_ref(domain_id=self.domain['id'])
+        user_ref = self.new_user_ref(account_id=self.account['id'])
         password = user_ref['password']
         user_ref = self.identity_api.create_user(user_ref)
 
@@ -333,17 +333,17 @@ class IdentityTestCase(test_v3.RestfulTestCase):
             password=new_password)
         self.v3_authenticate_token(new_password_auth, expected_status=201)
 
-    def test_update_user_domain_id(self):
-        """Call ``PATCH /users/{user_id}`` with domain_id."""
-        user = self.new_user_ref(domain_id=self.domain['id'])
+    def test_update_user_account_id(self):
+        """Call ``PATCH /users/{user_id}`` with account_id."""
+        user = self.new_user_ref(account_id=self.account['id'])
         user = self.identity_api.create_user(user)
-        user['domain_id'] = CONF.identity.default_domain_id
+        user['account_id'] = CONF.identity.default_account_id
         r = self.patch('/users/%(user_id)s' % {
             'user_id': user['id']},
             body={'user': user},
             expected_status=exception.ValidationError.code)
-        self.config_fixture.config(domain_id_immutable=False)
-        user['domain_id'] = self.domain['id']
+        self.config_fixture.config(account_id_immutable=False)
+        user['account_id'] = self.account['id']
         r = self.patch('/users/%(user_id)s' % {
             'user_id': user['id']},
             body={'user': user})
@@ -363,7 +363,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         self.assertDictEqual(r, self.credential)
         # Create a second credential with a different user
         self.user2 = self.new_user_ref(
-            domain_id=self.domain['id'],
+            account_id=self.account['id'],
             project_id=self.project['id'])
         self.user2 = self.identity_api.create_user(self.user2)
         self.credential2 = self.new_credential_ref(
@@ -405,7 +405,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_create_group(self):
         """Call ``POST /groups``."""
-        ref = self.new_group_ref(domain_id=self.domain_id)
+        ref = self.new_group_ref(account_id=self.account_id)
         r = self.post(
             '/groups',
             body={'group': ref})
@@ -430,24 +430,24 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_update_group(self):
         """Call ``PATCH /groups/{group_id}``."""
-        group = self.new_group_ref(domain_id=self.domain_id)
+        group = self.new_group_ref(account_id=self.account_id)
         del group['id']
         r = self.patch('/groups/%(group_id)s' % {
             'group_id': self.group_id},
             body={'group': group})
         self.assertValidGroupResponse(r, group)
 
-    def test_update_group_domain_id(self):
-        """Call ``PATCH /groups/{group_id}`` with domain_id."""
-        group = self.new_group_ref(domain_id=self.domain['id'])
+    def test_update_group_account_id(self):
+        """Call ``PATCH /groups/{group_id}`` with account_id."""
+        group = self.new_group_ref(account_id=self.account['id'])
         group = self.identity_api.create_group(group)
-        group['domain_id'] = CONF.identity.default_domain_id
+        group['account_id'] = CONF.identity.default_account_id
         r = self.patch('/groups/%(group_id)s' % {
             'group_id': group['id']},
             body={'group': group},
             expected_status=exception.ValidationError.code)
-        self.config_fixture.config(domain_id_immutable=False)
-        group['domain_id'] = self.domain['id']
+        self.config_fixture.config(account_id_immutable=False)
+        group['account_id'] = self.account['id']
         r = self.patch('/groups/%(group_id)s' % {
             'group_id': group['id']},
             body={'group': group})
@@ -463,7 +463,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
         log_fix = self.useFixture(fixtures.FakeLogger(level=logging.DEBUG))
 
-        ref = self.new_user_ref(domain_id=self.domain_id)
+        ref = self.new_user_ref(account_id=self.account_id)
         self.post(
             '/users',
             body={'user': ref})
@@ -477,7 +477,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         log_fix = self.useFixture(fixtures.FakeLogger(level=logging.DEBUG))
 
         # bootstrap a user as admin
-        user_ref = self.new_user_ref(domain_id=self.domain['id'])
+        user_ref = self.new_user_ref(account_id=self.account['id'])
         password = user_ref['password']
         user_ref = self.identity_api.create_user(user_ref)
 
@@ -504,22 +504,22 @@ class IdentityV3toV2MethodsTestCase(tests.TestCase):
         self.user1 = {'id': self.user_id,
                       'name': self.user_id,
                       'default_project_id': self.default_project_id,
-                      'domain_id': CONF.identity.default_domain_id}
+                      'account_id': CONF.identity.default_account_id}
         # User without default_project_id or tenantId in ref
         self.user2 = {'id': self.user_id,
                       'name': self.user_id,
-                      'domain_id': CONF.identity.default_domain_id}
+                      'account_id': CONF.identity.default_account_id}
         # User with both tenantId and default_project_id in ref
         self.user3 = {'id': self.user_id,
                       'name': self.user_id,
                       'default_project_id': self.default_project_id,
                       'tenantId': self.tenant_id,
-                      'domain_id': CONF.identity.default_domain_id}
+                      'account_id': CONF.identity.default_account_id}
         # User with only tenantId in ref
         self.user4 = {'id': self.user_id,
                       'name': self.user_id,
                       'tenantId': self.tenant_id,
-                      'domain_id': CONF.identity.default_domain_id}
+                      'account_id': CONF.identity.default_account_id}
 
         # Expected result if the user is meant to have a tenantId element
         self.expected_user = {'id': self.user_id,
@@ -567,7 +567,7 @@ class UserSelfServiceChangingPasswordsTestCase(test_v3.RestfulTestCase):
 
     def setUp(self):
         super(UserSelfServiceChangingPasswordsTestCase, self).setUp()
-        self.user_ref = self.new_user_ref(domain_id=self.domain['id'])
+        self.user_ref = self.new_user_ref(account_id=self.account['id'])
         password = self.user_ref['password']
         self.user_ref = self.identity_api.create_user(self.user_ref)
         # self.user_ref['password'] = password

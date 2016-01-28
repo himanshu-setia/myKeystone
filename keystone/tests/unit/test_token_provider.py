@@ -306,7 +306,7 @@ SAMPLE_V3_TOKEN = {
             "password"
         ],
         "project": {
-            "domain": {
+            "account": {
                 "id": "default",
                 "name": "Default"
             },
@@ -324,7 +324,7 @@ SAMPLE_V3_TOKEN = {
             }
         ],
         "user": {
-            "domain": {
+            "account": {
                 "id": "default",
                 "name": "Default"
             },
@@ -615,7 +615,7 @@ SAMPLE_V3_TOKEN_WITH_EMBEDED_VERSION = {
             "password"
         ],
         "project": {
-            "domain": {
+            "account": {
                 "id": "default",
                 "name": "Default"
             },
@@ -633,7 +633,7 @@ SAMPLE_V3_TOKEN_WITH_EMBEDED_VERSION = {
             }
         ],
         "user": {
-            "domain": {
+            "account": {
                 "id": "default",
                 "name": "Default"
             },

@@ -112,7 +112,7 @@ class Catalog(kvs.Catalog):
         :param user_id: The id of the user who has been authenticated for
             creating service catalog.
         :param tenant_id: The id of the project. 'tenant_id' will be None in
-            the case this being called to create a catalog to go in a domain
+            the case this being called to create a catalog to go in a account
             scoped token. In this case, any endpoint that requires a tenant_id
             as part of their URL will be skipped.
 

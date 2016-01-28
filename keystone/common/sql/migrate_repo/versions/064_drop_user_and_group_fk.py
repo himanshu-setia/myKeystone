@@ -20,14 +20,14 @@ def list_constraints(migrate_engine):
     meta.bind = migrate_engine
     user_table = sqlalchemy.Table('user', meta, autoload=True)
     group_table = sqlalchemy.Table('group', meta, autoload=True)
-    domain_table = sqlalchemy.Table('domain', meta, autoload=True)
+    account_table = sqlalchemy.Table('account', meta, autoload=True)
 
     constraints = [{'table': user_table,
-                    'fk_column': 'domain_id',
-                    'ref_column': domain_table.c.id},
+                    'fk_column': 'account_id',
+                    'ref_column': account_table.c.id},
                    {'table': group_table,
-                    'fk_column': 'domain_id',
-                    'ref_column': domain_table.c.id}]
+                    'fk_column': 'account_id',
+                    'ref_column': account_table.c.id}]
     return constraints
 
 

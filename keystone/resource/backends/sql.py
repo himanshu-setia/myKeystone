@@ -39,11 +39,11 @@ class Resource(keystone_resource.Driver):
         with sql.transaction() as session:
             return self._get_project(session, tenant_id).to_dict()
 
-    def get_project_by_name(self, tenant_name, domain_id):
+    def get_project_by_name(self, tenant_name, account_id):
         with sql.transaction() as session:
             query = session.query(Project)
             query = query.filter_by(name=tenant_name)
-            query = query.filter_by(domain_id=domain_id)
+            query = query.filter_by(account_id=account_id)
             try:
                 project_ref = query.one()
             except sql.NotFound:
@@ -66,21 +66,21 @@ class Resource(keystone_resource.Driver):
                 query = query.filter(Project.id.in_(ids))
                 return [project_ref.to_dict() for project_ref in query.all()]
 
-    def list_project_ids_from_domain_ids(self, domain_ids):
-        if not domain_ids:
+    def list_project_ids_from_account_ids(self, account_ids):
+        if not account_ids:
             return []
         else:
             with sql.transaction() as session:
                 query = session.query(Project.id)
                 query = (
-                    query.filter(Project.domain_id.in_(domain_ids)))
+                    query.filter(Project.account_id.in_(account_ids)))
                 return [x.id for x in query.all()]
 
-    def list_projects_in_domain(self, domain_id):
+    def list_projects_in_account(self, account_id):
         with sql.transaction() as session:
-            self._get_domain(session, domain_id)
+            self._get_account(session, account_id)
             query = session.query(Project)
-            project_refs = query.filter_by(domain_id=domain_id)
+            project_refs = query.filter_by(account_id=account_id)
             return [project_ref.to_dict() for project_ref in project_refs]
 
     def _get_children(self, session, project_ids):
@@ -168,83 +168,83 @@ class Resource(keystone_resource.Driver):
             tenant_ref = self._get_project(session, tenant_id)
             session.delete(tenant_ref)
 
-    # domain crud
+    # account crud
 
-    @sql.handle_conflicts(conflict_type='domain')
-    def create_domain(self, domain_id, domain):
+    @sql.handle_conflicts(conflict_type='account')
+    def create_account(self, account_id, account):
         with sql.transaction() as session:
-            ref = Domain.from_dict(domain)
+            ref = Account.from_dict(account)
             session.add(ref)
         return ref.to_dict()
 
-    def duplicate(self, domain_id):
+    def duplicate(self, account_id):
         with sql.transaction() as session:
-            query = session.query(Domain)
-            query.filter(Domain.id == domain_id)
-            domain_refs = query.all()
-            if domain_refs == None or domain_refs == []:
+            query = session.query(Account)
+            query.filter(Account.id == account_id)
+            account_refs = query.all()
+            if account_refs == None or account_refs == []:
                 return True
             else:
                 return False
 
     @sql.truncated
-    def list_domains(self, hints):
+    def list_accounts(self, hints):
         with sql.transaction() as session:
-            query = session.query(Domain)
-            refs = sql.filter_limit_query(Domain, query, hints)
+            query = session.query(Account)
+            refs = sql.filter_limit_query(Account, query, hints)
             return [ref.to_dict() for ref in refs]
 
-    def list_domains_from_ids(self, ids):
+    def list_accounts_from_ids(self, ids):
         if not ids:
             return []
         else:
             with sql.transaction() as session:
-                query = session.query(Domain)
-                query = query.filter(Domain.id.in_(ids))
-                domain_refs = query.all()
-                return [domain_ref.to_dict() for domain_ref in domain_refs]
+                query = session.query(Account)
+                query = query.filter(Account.id.in_(ids))
+                account_refs = query.all()
+                return [account_ref.to_dict() for account_ref in account_refs]
 
-    def _get_domain(self, session, domain_id):
-        ref = session.query(Domain).get(domain_id)
+    def _get_account(self, session, account_id):
+        ref = session.query(Account).get(account_id)
         if ref is None:
-            raise exception.DomainNotFound(domain_id=domain_id)
+            raise exception.AccountNotFound(account_id=account_id)
         return ref
 
-    def get_domain(self, domain_id):
+    def get_account(self, account_id):
         with sql.transaction() as session:
-            return self._get_domain(session, domain_id).to_dict()
+            return self._get_account(session, account_id).to_dict()
 
-    def get_domain_by_name(self, domain_name):
+    def get_account_by_name(self, account_name):
         with sql.transaction() as session:
             try:
-                ref = (session.query(Domain).
-                       filter_by(name=domain_name).one())
+                ref = (session.query(Account).
+                       filter_by(name=account_name).one())
             except sql.NotFound:
-                raise exception.DomainNotFound(domain_id=domain_name)
+                raise exception.AccountNotFound(account_id=account_name)
             return ref.to_dict()
 
-    @sql.handle_conflicts(conflict_type='domain')
-    def update_domain(self, domain_id, domain):
+    @sql.handle_conflicts(conflict_type='account')
+    def update_account(self, account_id, account):
         with sql.transaction() as session:
-            ref = self._get_domain(session, domain_id)
+            ref = self._get_account(session, account_id)
             old_dict = ref.to_dict()
-            for k in domain:
-                old_dict[k] = domain[k]
-            new_domain = Domain.from_dict(old_dict)
-            for attr in Domain.attributes:
+            for k in account:
+                old_dict[k] = account[k]
+            new_account = Account.from_dict(old_dict)
+            for attr in Account.attributes:
                 if attr != 'id':
-                    setattr(ref, attr, getattr(new_domain, attr))
-            ref.extra = new_domain.extra
+                    setattr(ref, attr, getattr(new_account, attr))
+            ref.extra = new_account.extra
             return ref.to_dict()
 
-    def delete_domain(self, domain_id):
+    def delete_account(self, account_id):
         with sql.transaction() as session:
-            ref = self._get_domain(session, domain_id)
+            ref = self._get_account(session, account_id)
             session.delete(ref)
 
 
-class Domain(sql.ModelBase, sql.DictBase):
-    __tablename__ = 'domain'
+class Account(sql.ModelBase, sql.DictBase):
+    __tablename__ = 'account'
     attributes = ['id', 'name', 'enabled']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(64), nullable=False)
@@ -255,11 +255,11 @@ class Domain(sql.ModelBase, sql.DictBase):
 
 class Project(sql.ModelBase, sql.DictBase):
     __tablename__ = 'project'
-    attributes = ['id', 'name', 'domain_id', 'description', 'enabled',
+    attributes = ['id', 'name', 'account_id', 'description', 'enabled',
                   'parent_id']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(64), nullable=False)
-    domain_id = sql.Column(sql.String(64), sql.ForeignKey('domain.id'),
+    account_id = sql.Column(sql.String(64), sql.ForeignKey('account.id'),
                            nullable=False)
     description = sql.Column(sql.Text())
     enabled = sql.Column(sql.Boolean)
@@ -267,4 +267,4 @@ class Project(sql.ModelBase, sql.DictBase):
     parent_id = sql.Column(sql.String(64), sql.ForeignKey('project.id'))
     # Unique constraint across two columns to create the separation
     # rather than just only 'name' being unique
-    __table_args__ = (sql.UniqueConstraint('domain_id', 'name'), {})
+    __table_args__ = (sql.UniqueConstraint('account_id', 'name'), {})

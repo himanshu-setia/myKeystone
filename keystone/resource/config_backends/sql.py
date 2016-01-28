@@ -18,31 +18,31 @@ from keystone import resource
 
 class WhiteListedConfig(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'whitelisted_config'
-    domain_id = sql.Column(sql.String(64), primary_key=True)
+    account_id = sql.Column(sql.String(64), primary_key=True)
     group = sql.Column(sql.String(255), primary_key=True)
     option = sql.Column(sql.String(255), primary_key=True)
     value = sql.Column(sql.JsonBlob(), nullable=False)
 
     def to_dict(self):
         d = super(WhiteListedConfig, self).to_dict()
-        d.pop('domain_id')
+        d.pop('account_id')
         return d
 
 
 class SensitiveConfig(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'sensitive_config'
-    domain_id = sql.Column(sql.String(64), primary_key=True)
+    account_id = sql.Column(sql.String(64), primary_key=True)
     group = sql.Column(sql.String(255), primary_key=True)
     option = sql.Column(sql.String(255), primary_key=True)
     value = sql.Column(sql.JsonBlob(), nullable=False)
 
     def to_dict(self):
         d = super(SensitiveConfig, self).to_dict()
-        d.pop('domain_id')
+        d.pop('account_id')
         return d
 
 
-class DomainConfig(resource.DomainConfigDriver):
+class AccountConfig(resource.AccountConfigDriver):
 
     def choose_table(self, sensitive):
         if sensitive:
@@ -50,56 +50,56 @@ class DomainConfig(resource.DomainConfigDriver):
         else:
             return WhiteListedConfig
 
-    @sql.handle_conflicts(conflict_type='domain_config')
-    def create_config_option(self, domain_id, group, option, value,
+    @sql.handle_conflicts(conflict_type='account_config')
+    def create_config_option(self, account_id, group, option, value,
                              sensitive=False):
         with sql.transaction() as session:
             config_table = self.choose_table(sensitive)
-            ref = config_table(domain_id=domain_id, group=group,
+            ref = config_table(account_id=account_id, group=group,
                                option=option, value=value)
             session.add(ref)
         return ref.to_dict()
 
-    def _get_config_option(self, session, domain_id, group, option, sensitive):
+    def _get_config_option(self, session, account_id, group, option, sensitive):
         try:
             config_table = self.choose_table(sensitive)
             ref = (session.query(config_table).
-                   filter_by(domain_id=domain_id, group=group,
+                   filter_by(account_id=account_id, group=group,
                              option=option).one())
         except sql.NotFound:
             msg = _('option %(option)s in group %(group)s') % {
                 'group': group, 'option': option}
-            raise exception.DomainConfigNotFound(
-                domain_id=domain_id, group_or_option=msg)
+            raise exception.AccountConfigNotFound(
+                account_id=account_id, group_or_option=msg)
         return ref
 
-    def get_config_option(self, domain_id, group, option, sensitive=False):
+    def get_config_option(self, account_id, group, option, sensitive=False):
         with sql.transaction() as session:
-            ref = self._get_config_option(session, domain_id, group, option,
+            ref = self._get_config_option(session, account_id, group, option,
                                           sensitive)
         return ref.to_dict()
 
-    def list_config_options(self, domain_id, group=None, option=None,
+    def list_config_options(self, account_id, group=None, option=None,
                             sensitive=False):
         with sql.transaction() as session:
             config_table = self.choose_table(sensitive)
             query = session.query(config_table)
-            query = query.filter_by(domain_id=domain_id)
+            query = query.filter_by(account_id=account_id)
             if group:
                 query = query.filter_by(group=group)
                 if option:
                     query = query.filter_by(option=option)
             return [ref.to_dict() for ref in query.all()]
 
-    def update_config_option(self, domain_id, group, option, value,
+    def update_config_option(self, account_id, group, option, value,
                              sensitive=False):
         with sql.transaction() as session:
-            ref = self._get_config_option(session, domain_id, group, option,
+            ref = self._get_config_option(session, account_id, group, option,
                                           sensitive)
             ref.value = value
         return ref.to_dict()
 
-    def delete_config_options(self, domain_id, group=None, option=None,
+    def delete_config_options(self, account_id, group=None, option=None,
                               sensitive=False):
         """Deletes config options that match the filter parameters.
 
@@ -111,7 +111,7 @@ class DomainConfig(resource.DomainConfigDriver):
         with sql.transaction() as session:
             config_table = self.choose_table(sensitive)
             query = session.query(config_table)
-            query = query.filter_by(domain_id=domain_id)
+            query = query.filter_by(account_id=account_id)
             if group:
                 query = query.filter_by(group=group)
                 if option:

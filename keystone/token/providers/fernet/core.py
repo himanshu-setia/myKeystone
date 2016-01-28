@@ -155,7 +155,7 @@ class Provider(common.BaseProvider):
         return token_dict
 
     def issue_v3_token(self, user_id, method_names, expires_at=None,
-                       project_id=None, domain_id=None, auth_context=None,
+                       project_id=None, account_id=None, auth_context=None,
                        trust=None, metadata_ref=None, include_catalog=True,
                        parent_audit_id=None):
         """Issue a V3 formatted token.
@@ -169,7 +169,7 @@ class Provider(common.BaseProvider):
         :param method_names: method of authentication
         :param expires_at: token expiration time
         :param project_id: ID of the project being scoped to
-        :param domain_id: ID of the domain being scoped to
+        :param account_id: ID of the account being scoped to
         :param auth_context: authentication context
         :param trust: ID of the trust
         :param metadata_ref: metadata reference
@@ -191,14 +191,14 @@ class Provider(common.BaseProvider):
         federated_dict = None
         if auth_context and self._is_mapped_token(auth_context):
             token_ref = self._handle_mapped_tokens(
-                auth_context, project_id, domain_id)
+                auth_context, project_id, account_id)
             federated_dict = self._build_federated_info(token_ref)
 
         token_data = self.v3_token_data_helper.get_token_data(
             user_id,
             method_names,
             auth_context.get('extras') if auth_context else None,
-            domain_id=domain_id,
+            account_id=account_id,
             project_id=project_id,
             expires=expires_at,
             trust=trust,
@@ -212,7 +212,7 @@ class Provider(common.BaseProvider):
             token_data['token']['expires_at'],
             token_data['token']['audit_ids'],
             methods=method_names,
-            domain_id=domain_id,
+            account_id=account_id,
             project_id=project_id,
             trust_id=token_data['token'].get('OS-TRUST:trust', {}).get('id'),
             federated_info=federated_dict)
@@ -230,16 +230,16 @@ class Provider(common.BaseProvider):
         """
         try:
             (user_id, methods,
-             audit_ids, domain_id,
+             audit_ids, account_id,
              project_id, trust_id,
              federated_info, created_at,
              expires_at) = self.token_formatter.validate_token(token_ref)
         except exception.ValidationError as e:
             raise exception.TokenNotFound(e)
 
-        if trust_id or domain_id or federated_info:
+        if trust_id or account_id or federated_info:
             msg = _('This is not a v2.0 Fernet token. Use v3 for trust, '
-                    'domain, or federated tokens.')
+                    'account, or federated tokens.')
             raise exception.Unauthorized(msg)
 
         v3_token_data = self.v3_token_data_helper.get_token_data(
@@ -264,7 +264,7 @@ class Provider(common.BaseProvider):
 
         """
         try:
-            (user_id, methods, audit_ids, domain_id, project_id, trust_id,
+            (user_id, methods, audit_ids, account_id, project_id, trust_id,
                 federated_info, created_at, expires_at) = (
                     self.token_formatter.validate_token(token))
         except exception.ValidationError as e:
@@ -278,7 +278,7 @@ class Provider(common.BaseProvider):
         return self.v3_token_data_helper.get_token_data(
             user_id,
             method_names=methods,
-            domain_id=domain_id,
+            account_id=account_id,
             project_id=project_id,
             issued_at=created_at,
             expires=expires_at,

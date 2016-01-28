@@ -57,9 +57,9 @@ class KeystoneToken(dict):
         self.short_id = cms.cms_hash_token(token_id,
                                            mode=CONF.token.hash_algorithm)
 
-        if self.project_scoped and self.domain_scoped:
+        if self.project_scoped and self.account_scoped:
             raise exception.UnexpectedError(_('Found invalid token: scoped to '
-                                              'both project and domain.'))
+                                              'both project and account.'))
 
     def __repr__(self):
         desc = ('<%(type)s (audit_id=%(audit_id)s, '
@@ -110,10 +110,10 @@ class KeystoneToken(dict):
         return self['user']['name']
 
     @property
-    def user_domain_name(self):
+    def user_account_name(self):
         try:
             if self.version == V3:
-                return self['user']['domain']['name']
+                return self['user']['account']['name']
             elif 'user' in self:
                 return "Default"
         except KeyError:
@@ -122,37 +122,37 @@ class KeystoneToken(dict):
         raise exception.UnexpectedError()
 
     @property
-    def user_domain_id(self):
+    def user_account_id(self):
         try:
             if self.version == V3:
-                return self['user']['domain']['id']
+                return self['user']['account']['id']
             elif 'user' in self:
-                return CONF.identity.default_domain_id
+                return CONF.identity.default_account_id
         except KeyError:
             # Do not raise KeyError, raise UnexpectedError
             pass
         raise exception.UnexpectedError()
 
     @property
-    def domain_id(self):
+    def account_id(self):
         if self.version is V3:
             try:
-                return self['domain']['id']
+                return self['account']['id']
             except KeyError:
                 # Do not raise KeyError, raise UnexpectedError
                 raise exception.UnexpectedError()
-        # No domain scoped tokens in V2.
+        # No account scoped tokens in V2.
         raise NotImplementedError()
 
     @property
-    def domain_name(self):
+    def account_name(self):
         if self.version is V3:
             try:
-                return self['domain']['name']
+                return self['account']['name']
             except KeyError:
                 # Do not raise KeyError, raise UnexpectedError
                 raise exception.UnexpectedError()
-        # No domain scoped tokens in V2.
+        # No account scoped tokens in V2.
         raise NotImplementedError()
 
     @property
@@ -178,12 +178,12 @@ class KeystoneToken(dict):
             raise exception.UnexpectedError()
 
     @property
-    def project_domain_id(self):
+    def project_account_id(self):
         try:
             if self.version is V3:
-                return self['project']['domain']['id']
+                return self['project']['account']['id']
             elif 'tenant' in self['token']:
-                return CONF.identity.default_domain_id
+                return CONF.identity.default_account_id
         except KeyError:
             # Do not raise KeyError, raise UnexpectedError
             pass
@@ -191,10 +191,10 @@ class KeystoneToken(dict):
         raise exception.UnexpectedError()
 
     @property
-    def project_domain_name(self):
+    def project_account_name(self):
         try:
             if self.version is V3:
-                return self['project']['domain']['name']
+                return self['project']['account']['name']
             if 'tenant' in self['token']:
                 return 'Default'
         except KeyError:
@@ -211,14 +211,14 @@ class KeystoneToken(dict):
             return 'tenant' in self['token']
 
     @property
-    def domain_scoped(self):
+    def account_scoped(self):
         if self.version is V3:
-            return 'domain' in self
+            return 'account' in self
         return False
 
     @property
     def scoped(self):
-        return self.project_scoped or self.domain_scoped
+        return self.project_scoped or self.account_scoped
 
     @property
     def trust_id(self):

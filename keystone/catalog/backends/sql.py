@@ -275,7 +275,7 @@ class Catalog(catalog.Driver):
             creating service catalog.
         :param tenant_id: The id of the project. 'tenant_id' will be None
             in the case this being called to create a catalog to go in a
-            domain scoped token. In this case, any endpoint that requires
+            account scoped token. In this case, any endpoint that requires
             a tenant_id as part of their URL will be skipped (as would a whole
             service if, as a consequence, it has no valid endpoints).
 
@@ -334,7 +334,7 @@ class Catalog(catalog.Driver):
         :param user_id: The id of the user who has been authenticated for
             creating service catalog.
         :param tenant_id: The id of the project. 'tenant_id' will be None in
-            the case this being called to create a catalog to go in a domain
+            the case this being called to create a catalog to go in a account
             scoped token. In this case, any endpoint that requires a
             tenant_id as part of their URL will be skipped.
 

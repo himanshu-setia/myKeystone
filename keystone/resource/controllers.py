@@ -52,8 +52,8 @@ class Tenant(controller.V2Controller):
                 context, context['query_string'].get('name'))
 
         self.assert_admin(context)
-        tenant_refs = self.resource_api.list_projects_in_domain(
-            CONF.identity.default_domain_id)
+        tenant_refs = self.resource_api.list_projects_in_account(
+            CONF.identity.default_account_id)
         for tenant_ref in tenant_refs:
             tenant_ref = self.v3_to_v2_project(tenant_ref)
         params = {
@@ -73,7 +73,7 @@ class Tenant(controller.V2Controller):
     def get_project_by_name(self, context, tenant_name):
         self.assert_admin(context)
         ref = self.resource_api.get_project_by_name(
-            tenant_name, CONF.identity.default_domain_id)
+            tenant_name, CONF.identity.default_account_id)
         return {'tenant': self.v3_to_v2_project(ref)}
 
     # CRUD Extension
@@ -90,17 +90,17 @@ class Tenant(controller.V2Controller):
         initiator = notifications._get_request_audit_info(context)
         tenant = self.resource_api.create_project(
             tenant_ref['id'],
-            self._normalize_domain_id(context, tenant_ref),
+            self._normalize_account_id(context, tenant_ref),
             initiator)
         return {'tenant': self.v3_to_v2_project(tenant)}
 
     @controller.v2_deprecated
     def update_project(self, context, tenant_id, tenant):
         self.assert_admin(context)
-        # Remove domain_id if specified - a v2 api caller should not
+        # Remove account_id if specified - a v2 api caller should not
         # be specifying that
         clean_tenant = tenant.copy()
-        clean_tenant.pop('domain_id', None)
+        clean_tenant.pop('account_id', None)
         initiator = notifications._get_request_audit_info(context)
         tenant_ref = self.resource_api.update_project(
             tenant_id, clean_tenant, initiator)
@@ -114,13 +114,13 @@ class Tenant(controller.V2Controller):
 
 
 @dependency.requires('resource_api', 'identity_api', 'jio_policy_api')
-class DomainV3(controller.V3Controller):
-    collection_name = 'domains'
-    member_name = 'domain'
+class AccountV3(controller.V3Controller):
+    collection_name = 'accounts'
+    member_name = 'account'
 
     def __init__(self):
-        super(DomainV3, self).__init__()
-        self.get_member_from_driver = self.resource_api.get_domain
+        super(AccountV3, self).__init__()
+        self.get_member_from_driver = self.resource_api.get_account
 
     def attach_root_policy(self, user_id):
         # For root user, account id is same as user id
@@ -137,9 +137,9 @@ class DomainV3(controller.V3Controller):
         self.jio_policy_api.attach_policy_to_user(policy.get('id'), user_id)
 
     @controller.protected()
-    @validation.validated(schema.domain_create, 'domain')
-    def create_domain(self, context, domain):
-        ref = self._assign_unique_id(self._normalize_dict(domain))
+    @validation.validated(schema.account_create, 'account')
+    def create_account(self, context, account):
+        ref = self._assign_unique_id(self._normalize_dict(account))
         initiator = notifications._get_request_audit_info(context)
         user_ref = dict()
         user_ref['id'] =  ref['id']
@@ -148,55 +148,55 @@ class DomainV3(controller.V3Controller):
         while self.resource_api.duplicate(ref['id']):
             ref['id'] = _unique_account_id()
 
-        ref = self.resource_api.create_domain(ref['id'], ref, initiator)
+        ref = self.resource_api.create_account(ref['id'], ref, initiator)
         project = dict()
-        project['domain_id'] = ref['id']
+        project['account_id'] = ref['id']
         project['name'] = ref['name']
         project['id'] = ref['id']
         project = self.resource_api.create_project(ref['id'], project,
                                           initiator=initiator)
-        user_ref['domain_id'] = ref['id']
+        user_ref['account_id'] = ref['id']
         user_ref['name'] = ref['name']
-        if 'password' in domain and domain.get('password') is not None:
-            user_ref['password'] = domain.get('password')
+        if 'password' in account and account.get('password') is not None:
+            user_ref['password'] = account.get('password')
         user = self.identity_api.create_user(user_ref, initiator=None)
         self.attach_root_policy(user.get('id'))
-        return DomainV3.wrap_member(context, ref)
+        return AccountV3.wrap_member(context, ref)
 
     @controller.filterprotected('enabled', 'name')
-    def list_domains(self, context, filters):
-        hints = DomainV3.build_driver_hints(context, filters)
-        refs = self.resource_api.list_domains(hints=hints)
-        return DomainV3.wrap_collection(context, refs, hints=hints)
+    def list_accounts(self, context, filters):
+        hints = AccountV3.build_driver_hints(context, filters)
+        refs = self.resource_api.list_accounts(hints=hints)
+        return AccountV3.wrap_collection(context, refs, hints=hints)
 
     @controller.protected()
-    def get_domain(self, context, domain_id):
-        ref = self.resource_api.get_domain(domain_id)
-        return DomainV3.wrap_member(context, ref)
+    def get_account(self, context, account_id):
+        ref = self.resource_api.get_account(account_id)
+        return AccountV3.wrap_member(context, ref)
 
     @controller.protected()
-    @validation.validated(schema.domain_update, 'domain')
-    def update_domain(self, context, domain_id, domain):
-        self._require_matching_id(domain_id, domain)
+    @validation.validated(schema.account_update, 'account')
+    def update_account(self, context, account_id, account):
+        self._require_matching_id(account_id, account)
         initiator = notifications._get_request_audit_info(context)
-        ref = self.resource_api.update_domain(domain_id, domain, initiator)
-        return DomainV3.wrap_member(context, ref)
+        ref = self.resource_api.update_account(account_id, account, initiator)
+        return AccountV3.wrap_member(context, ref)
 
     @controller.protected()
-    def delete_domain(self, context, domain_id):
+    def delete_account(self, context, account_id):
         initiator = notifications._get_request_audit_info(context)
-        return self.resource_api.delete_domain(domain_id, initiator)
+        return self.resource_api.delete_account(account_id, initiator)
 
 
-@dependency.requires('domain_config_api')
-class DomainConfigV3(controller.V3Controller):
+@dependency.requires('account_config_api')
+class AccountConfigV3(controller.V3Controller):
     member_name = 'config'
 
     @controller.protected()
-    def create_domain_config(self, context, domain_id, config):
+    def create_account_config(self, context, account_id, config):
         original_config = (
-            self.domain_config_api.get_config_with_sensitive_info(domain_id))
-        ref = self.domain_config_api.create_config(domain_id, config)
+            self.account_config_api.get_config_with_sensitive_info(account_id))
+        ref = self.account_config_api.create_config(account_id, config)
         if original_config:
             # Return status code 200, since config already existed
             return wsgi.render_response(body={self.member_name: ref})
@@ -205,29 +205,29 @@ class DomainConfigV3(controller.V3Controller):
                                         status=('201', 'Created'))
 
     @controller.protected()
-    def get_domain_config(self, context, domain_id, group=None, option=None):
-        ref = self.domain_config_api.get_config(domain_id, group, option)
+    def get_account_config(self, context, account_id, group=None, option=None):
+        ref = self.account_config_api.get_config(account_id, group, option)
         return {self.member_name: ref}
 
     @controller.protected()
-    def update_domain_config(
-            self, context, domain_id, config, group, option):
-        ref = self.domain_config_api.update_config(
-            domain_id, config, group, option)
+    def update_account_config(
+            self, context, account_id, config, group, option):
+        ref = self.account_config_api.update_config(
+            account_id, config, group, option)
         return wsgi.render_response(body={self.member_name: ref})
 
-    def update_domain_config_group(self, context, domain_id, group, config):
-        return self.update_domain_config(
-            context, domain_id, config, group, option=None)
+    def update_account_config_group(self, context, account_id, group, config):
+        return self.update_account_config(
+            context, account_id, config, group, option=None)
 
-    def update_domain_config_only(self, context, domain_id, config):
-        return self.update_domain_config(
-            context, domain_id, config, group=None, option=None)
+    def update_account_config_only(self, context, account_id, config):
+        return self.update_account_config(
+            context, account_id, config, group=None, option=None)
 
     @controller.protected()
-    def delete_domain_config(
-            self, context, domain_id, group=None, option=None):
-        self.domain_config_api.delete_config(domain_id, group, option)
+    def delete_account_config(
+            self, context, account_id, group=None, option=None):
+        self.account_config_api.delete_config(account_id, group, option)
 
 
 @dependency.requires('resource_api')
@@ -243,13 +243,13 @@ class ProjectV3(controller.V3Controller):
     @validation.validated(schema.project_create, 'project')
     def create_project(self, context, project):
         ref = self._assign_unique_id(self._normalize_dict(project))
-        ref = self._normalize_domain_id(context, ref)
+        ref = self._normalize_account_id(context, ref)
         initiator = notifications._get_request_audit_info(context)
         ref = self.resource_api.create_project(ref['id'], ref,
                                                initiator=initiator)
         return ProjectV3.wrap_member(context, ref)
 
-    @controller.filterprotected('domain_id', 'enabled', 'name',
+    @controller.filterprotected('account_id', 'enabled', 'name',
                                 'parent_id')
     def list_projects(self, context, filters):
         hints = ProjectV3.build_driver_hints(context, filters)
@@ -310,7 +310,7 @@ class ProjectV3(controller.V3Controller):
     @validation.validated(schema.project_update, 'project')
     def update_project(self, context, project_id, project):
         self._require_matching_id(project_id, project)
-        self._require_matching_domain_id(
+        self._require_matching_account_id(
             project_id, project, self.resource_api.get_project)
         initiator = notifications._get_request_audit_info(context)
         ref = self.resource_api.update_project(project_id, project,

@@ -1911,5 +1911,5 @@ class ProjectLdapStructureMixin(object):
     attribute_options_names = {'name': 'name',
                                'description': 'desc',
                                'enabled': 'enabled',
-                               'domain_id': 'domain_id'}
+                               'account_id': 'account_id'}
     immutable_attrs = ['name']

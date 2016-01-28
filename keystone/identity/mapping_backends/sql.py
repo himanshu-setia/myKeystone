@@ -21,7 +21,7 @@ from keystone.identity.mapping_backends import mapping as identity_mapping
 class IDMapping(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'id_mapping'
     public_id = sql.Column(sql.String(64), primary_key=True)
-    domain_id = sql.Column(sql.String(64), nullable=False)
+    account_id = sql.Column(sql.String(64), nullable=False)
     local_id = sql.Column(sql.String(64), nullable=False)
     # NOTE(henry-nash); Postgres requires a name to be defined for an Enum
     entity_type = sql.Column(
@@ -32,7 +32,7 @@ class IDMapping(sql.ModelBase, sql.ModelDictMixin):
     # Unique constraint to ensure you can't store more than one mapping to the
     # same underlying values
     __table_args__ = (
-        sql.UniqueConstraint('domain_id', 'local_id', 'entity_type'), {})
+        sql.UniqueConstraint('account_id', 'local_id', 'entity_type'), {})
 
 
 @dependency.requires('id_generator_api')
@@ -47,7 +47,7 @@ class Mapping(identity.MappingDriver):
         # algorithm was immutable (e.g. it had always been sha256).
         session = sql.get_session()
         query = session.query(IDMapping.public_id)
-        query = query.filter_by(domain_id=local_entity['domain_id'])
+        query = query.filter_by(account_id=local_entity['account_id'])
         query = query.filter_by(local_id=local_entity['local_id'])
         query = query.filter_by(entity_type=local_entity['entity_type'])
         try:
@@ -86,8 +86,8 @@ class Mapping(identity.MappingDriver):
     def purge_mappings(self, purge_filter):
         session = sql.get_session()
         query = session.query(IDMapping)
-        if 'domain_id' in purge_filter:
-            query = query.filter_by(domain_id=purge_filter['domain_id'])
+        if 'account_id' in purge_filter:
+            query = query.filter_by(account_id=purge_filter['account_id'])
         if 'public_id' in purge_filter:
             query = query.filter_by(public_id=purge_filter['public_id'])
         if 'local_id' in purge_filter:

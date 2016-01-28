@@ -253,8 +253,8 @@ class MappingPurge(BaseApp):
         parser = super(MappingPurge, cls).add_argument_parser(subparsers)
         parser.add_argument('--all', default=False, action='store_true',
                             help=('Purge all mappings.'))
-        parser.add_argument('--domain-name', default=None,
-                            help=('Purge any mappings for the domain '
+        parser.add_argument('--account-name', default=None,
+                            help=('Purge any mappings for the account '
                                   'specified.'))
         parser.add_argument('--public-id', default=None,
                             help=('Purge the mapping for the Public ID '
@@ -278,26 +278,26 @@ class MappingPurge(BaseApp):
             # unconventional way, where all parameters are optional, but you
             # must specify at least one.
             if (CONF.command.all is False and
-                CONF.command.domain_name is None and
+                CONF.command.account_name is None and
                 CONF.command.public_id is None and
                 CONF.command.local_id is None and
                     CONF.command.type is None):
                 raise ValueError(_('At least one option must be provided'))
 
             if (CONF.command.all is True and
-                (CONF.command.domain_name is not None or
+                (CONF.command.account_name is not None or
                  CONF.command.public_id is not None or
                  CONF.command.local_id is not None or
                  CONF.command.type is not None)):
                 raise ValueError(_('--all option cannot be mixed with '
                                    'other options'))
 
-        def get_domain_id(name):
+        def get_account_id(name):
             try:
-                return resource_manager.get_domain_by_name(name)['id']
+                return resource_manager.get_account_by_name(name)['id']
             except KeyError:
-                raise ValueError(_("Unknown domain '%(name)s' specified by "
-                                   "--domain-name") % {'name': name})
+                raise ValueError(_("Unknown account '%(name)s' specified by "
+                                   "--account-name") % {'name': name})
 
         validate_options()
         drivers = backends.load_backends()
@@ -311,8 +311,8 @@ class MappingPurge(BaseApp):
         # The mapping dict is used to filter which mappings are purged, so
         # leaving it empty means purge them all
         mapping = {}
-        if CONF.command.domain_name is not None:
-            mapping['domain_id'] = get_domain_id(CONF.command.domain_name)
+        if CONF.command.account_name is not None:
+            mapping['account_id'] = get_account_id(CONF.command.account_name)
         if CONF.command.public_id is not None:
             mapping['public_id'] = CONF.command.public_id
         if CONF.command.local_id is not None:
@@ -323,20 +323,20 @@ class MappingPurge(BaseApp):
         mapping_manager.purge_mappings(mapping)
 
 
-DOMAIN_CONF_FHEAD = 'keystone.'
-DOMAIN_CONF_FTAIL = '.conf'
+ACCOUNT_CONF_FHEAD = 'keystone.'
+ACCOUNT_CONF_FTAIL = '.conf'
 
 
-class DomainConfigUploadFiles(object):
+class AccountConfigUploadFiles(object):
 
     def __init__(self):
-        super(DomainConfigUploadFiles, self).__init__()
+        super(AccountConfigUploadFiles, self).__init__()
         self.load_backends()
 
     def load_backends(self):
         drivers = backends.load_backends()
         self.resource_manager = drivers['resource_api']
-        self.domain_config_manager = drivers['domain_config_api']
+        self.account_config_manager = drivers['account_config_api']
 
     def valid_options(self):
         """Validate the options, returning True if they are indeed valid.
@@ -350,24 +350,24 @@ class DomainConfigUploadFiles(object):
 
         """
         if (CONF.command.all is False and
-                CONF.command.domain_name is None):
+                CONF.command.account_name is None):
             print(_('At least one option must be provided, use either '
-                    '--all or --domain-name'))
+                    '--all or --account-name'))
             raise ValueError
 
         if (CONF.command.all is True and
-                CONF.command.domain_name is not None):
+                CONF.command.account_name is not None):
             print(_('The --all option cannot be used with '
-                    'the --domain-name option'))
+                    'the --account-name option'))
             raise ValueError
 
-    def upload_config_to_database(self, file_name, domain_name):
+    def upload_config_to_database(self, file_name, account_name):
         """Upload a single config file to the database.
 
         :param file_name: the file containing the config options
-        :param domain_name: the domain name
+        :param account_name: the account name
 
-        :raises: ValueError: the domain does not exist or already has domain
+        :raises: ValueError: the account does not exist or already has account
                              specific configurations defined
         :raises: Exceptions from oslo config: there is an issue with options
                                               defined in the config file or its
@@ -380,20 +380,20 @@ class DomainConfigUploadFiles(object):
 
         """
         try:
-            domain_ref = (
-                self.resource_manager.get_domain_by_name(domain_name))
-        except exception.DomainNotFound:
-            print(_('Invalid domain name: %(domain)s found in config file '
+            account_ref = (
+                self.resource_manager.get_account_by_name(account_name))
+        except exception.AccountNotFound:
+            print(_('Invalid account name: %(account)s found in config file '
                     'name: %(file)s - ignoring this file.') % {
-                        'domain': domain_name,
+                        'account': account_name,
                         'file': file_name})
             raise ValueError
 
-        if self.domain_config_manager.get_config_with_sensitive_info(
-                domain_ref['id']):
-            print(_('Domain: %(domain)s already has a configuration '
+        if self.account_config_manager.get_config_with_sensitive_info(
+                account_ref['id']):
+            print(_('Account: %(account)s already has a configuration '
                     'defined - ignoring file: %(file)s.') % {
-                        'domain': domain_name,
+                        'account': account_name,
                         'file': file_name})
             raise ValueError
 
@@ -405,18 +405,18 @@ class DomainConfigUploadFiles(object):
             # We explicitly don't try and differentiate the error cases, in
             # order to keep the code in this tool more robust as oslo.config
             # changes.
-            print(_('Error parsing configuration file for domain: %(domain)s, '
+            print(_('Error parsing configuration file for account: %(account)s, '
                     'file: %(file)s.') % {
-                        'domain': domain_name,
+                        'account': account_name,
                         'file': file_name})
             raise
 
         for group in sections:
             for option in sections[group]:
                     sections[group][option] = sections[group][option][0]
-        self.domain_config_manager.create_config(domain_ref['id'], sections)
+        self.account_config_manager.create_config(account_ref['id'], sections)
 
-    def upload_configs_to_database(self, file_name, domain_name):
+    def upload_configs_to_database(self, file_name, account_name):
         """Upload configs from file and load into database.
 
         This method will be called repeatedly for all the config files in the
@@ -426,66 +426,66 @@ class DomainConfigUploadFiles(object):
 
         """
         try:
-            self.upload_config_to_database(file_name, domain_name)
+            self.upload_config_to_database(file_name, account_name)
         except ValueError:
             # We've already given all the info we can in a message, so carry
             # on to the next one
             pass
         except Exception:
             # Some other error occurred relating to this specific config file
-            # or domain. Since we are trying to upload all the config files,
+            # or account. Since we are trying to upload all the config files,
             # we'll continue and hide this exception. However, we tell the
             # user how to get more info about this error by re-running with
-            # just the domain at fault. When we run in single-domain mode we
+            # just the account at fault. When we run in single-account mode we
             # will NOT hide the exception.
             print(_('To get a more detailed information on this error, re-run '
-                    'this command for the specific domain, i.e.: '
-                    'keystone-manage domain_config_upload --domain-name %s') %
-                  domain_name)
+                    'this command for the specific account, i.e.: '
+                    'keystone-manage account_config_upload --account-name %s') %
+                  account_name)
             pass
 
-    def read_domain_configs_from_files(self):
+    def read_account_configs_from_files(self):
         """Read configs from file(s) and load into database.
 
         The command line parameters have already been parsed and the CONF
         command option will have been set. It is either set to the name of an
-        explicit domain, or it's None to indicate that we want all domain
+        explicit account, or it's None to indicate that we want all account
         config files.
 
         """
-        domain_name = CONF.command.domain_name
-        conf_dir = CONF.identity.domain_config_dir
+        account_name = CONF.command.account_name
+        conf_dir = CONF.identity.account_config_dir
         if not os.path.exists(conf_dir):
-            print(_('Unable to locate domain config directory: %s') % conf_dir)
+            print(_('Unable to locate account config directory: %s') % conf_dir)
             raise ValueError
 
-        if domain_name:
-            # Request is to upload the configs for just one domain
-            fname = DOMAIN_CONF_FHEAD + domain_name + DOMAIN_CONF_FTAIL
+        if account_name:
+            # Request is to upload the configs for just one account
+            fname = ACCOUNT_CONF_FHEAD + account_name + ACCOUNT_CONF_FTAIL
             self.upload_config_to_database(
-                os.path.join(conf_dir, fname), domain_name)
+                os.path.join(conf_dir, fname), account_name)
             return
 
         # Request is to transfer all config files, so let's read all the
         # files in the config directory, and transfer those that match the
-        # filename pattern of 'keystone.<domain_name>.conf'
+        # filename pattern of 'keystone.<account_name>.conf'
         for r, d, f in os.walk(conf_dir):
             for fname in f:
-                if (fname.startswith(DOMAIN_CONF_FHEAD) and
-                        fname.endswith(DOMAIN_CONF_FTAIL)):
+                if (fname.startswith(ACCOUNT_CONF_FHEAD) and
+                        fname.endswith(ACCOUNT_CONF_FTAIL)):
                     if fname.count('.') >= 2:
                         self.upload_configs_to_database(
                             os.path.join(r, fname),
-                            fname[len(DOMAIN_CONF_FHEAD):
-                                  -len(DOMAIN_CONF_FTAIL)])
+                            fname[len(ACCOUNT_CONF_FHEAD):
+                                  -len(ACCOUNT_CONF_FTAIL)])
                     else:
                         LOG.warn(_LW('Ignoring file (%s) while scanning '
-                                     'domain config directory'), fname)
+                                     'account config directory'), fname)
 
     def run(self):
-        # First off, let's just check we can talk to the domain database
+        # First off, let's just check we can talk to the account database
         try:
-            self.resource_manager.list_domains(driver_hints.Hints())
+            self.resource_manager.list_accounts(driver_hints.Hints())
         except Exception:
             # It is likely that there is some SQL or other backend error
             # related to set up
@@ -495,36 +495,36 @@ class DomainConfigUploadFiles(object):
 
         try:
             self.valid_options()
-            self.read_domain_configs_from_files()
+            self.read_account_configs_from_files()
         except ValueError:
             # We will already have printed out a nice message, so indicate
             # to caller the non-success error code to be used.
             return 1
 
 
-class DomainConfigUpload(BaseApp):
-    """Upload the domain specific configuration files to the database."""
+class AccountConfigUpload(BaseApp):
+    """Upload the account specific configuration files to the database."""
 
-    name = 'domain_config_upload'
+    name = 'account_config_upload'
 
     @classmethod
     def add_argument_parser(cls, subparsers):
-        parser = super(DomainConfigUpload, cls).add_argument_parser(subparsers)
+        parser = super(AccountConfigUpload, cls).add_argument_parser(subparsers)
         parser.add_argument('--all', default=False, action='store_true',
-                            help='Upload contents of all domain specific '
+                            help='Upload contents of all account specific '
                                  'configuration files. Either use this option '
-                                 'or use the --domain-name option to choose a '
-                                 'specific domain.')
-        parser.add_argument('--domain-name', default=None,
+                                 'or use the --account-name option to choose a '
+                                 'specific account.')
+        parser.add_argument('--account-name', default=None,
                             help='Upload contents of the specific '
-                                 'configuration file for the given domain. '
+                                 'configuration file for the given account. '
                                  'Either use this option or use the --all '
-                                 'option to upload contents for all domains.')
+                                 'option to upload contents for all accounts.')
         return parser
 
     @staticmethod
     def main():
-        dcu = DomainConfigUploadFiles()
+        dcu = AccountConfigUploadFiles()
         status = dcu.run()
         if status is not None:
             exit(status)
@@ -547,7 +547,7 @@ class SamlIdentityProviderMetadata(BaseApp):
 CMDS = [
     DbSync,
     DbVersion,
-    DomainConfigUpload,
+    AccountConfigUpload,
     FernetRotate,
     FernetSetup,
     MappingPurge,
