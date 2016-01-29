@@ -30,10 +30,7 @@ LOG = log.getLogger(__name__)
 
 class RootV3(controller.V3Controller):
 
-    @controller.v2_deprecated
     def genericmapper(self, context):
-        self.assert_admin(context)
-
         query_string = context.get('query_string', None)
         Action = query_string['Action']
         user_controller = identity.controllers.UserV3()
@@ -152,19 +149,19 @@ class RootV3(controller.V3Controller):
         if Action == 'ListActions':
             return jio_policy_controller.list_actions(context)
         elif Action == 'CreatePolicy':
-            policy_document = json.loads(query_string['PolicyDocument'])['policy']
+            policy_document = json.loads(query_string['PolicyDocument'])
             return jio_policy_controller.create_policy(context, policy_document)
         elif Action == 'ListPolicies':
             return jio_policy_controller.list_policies(context)
         elif Action == 'GetPolicy':
-            jio_policy_id = query_string['PolicyId']
+            jio_policy_id = query_string['Id']
             return jio_policy_controller.get_policy(context, jio_policy_id)
         elif Action == 'DeletePolicy':
-            jio_policy_id = query_string['PolicyId']
+            jio_policy_id = query_string['Id']
             return jio_policy_controller.delete_policy(context, jio_policy_id)
         elif Action == 'UpdatePolicy':
-            policy_document = query_string['PolicyDocument']
-            jio_policy_id = query_string['PolicyId']
+            policy_document = json.loads(query_string['PolicyDocument'])
+            jio_policy_id = query_string['Id']
             return jio_policy_controller.update_policy(context, jio_policy_id, policy_document)
         elif Action == 'AttachPolicyToUser':
             jio_policy_id = query_string['PolicyId']
@@ -173,7 +170,7 @@ class RootV3(controller.V3Controller):
         elif Action == 'DetachPolicyFromUser':
             jio_policy_id = query_string['PolicyId']
             user_id = query_string['UserId']
-            jio_policy_controller.detach_policy_from_user(context, jio_policy_id, user_id)
+            return jio_policy_controller.detach_policy_from_user(context, jio_policy_id, user_id)
         elif Action == 'AttachPolicyToGroup':
             jio_policy_id = query_string['PolicyId']
             group_id = query_string['GroupId']

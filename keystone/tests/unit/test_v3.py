@@ -14,6 +14,7 @@
 
 import datetime
 import uuid
+import copy
 
 from oslo_config import cfg
 from oslo_serialization import jsonutils
@@ -202,7 +203,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.account['id'] = self.account_id
         self.resource_api.create_account(self.account_id, self.account)
 
-        self.project_id = uuid.uuid4().hex
+        self.project_id = self.account_id
         self.project = self.new_project_ref(
             account_id=self.account_id)
         self.project['id'] = self.project_id
@@ -256,6 +257,11 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.catalog_api.create_service(
             self.service_id,
             self.service.copy())
+
+        self.jio_root_policy = self.new_jio_policy_root_ref()
+        self.jio_policy_api.create_policy(self.project_id, self.jio_root_policy.get('id'), copy.deepcopy(self.jio_root_policy))
+        self.jio_policy_api.attach_policy_to_user(self.jio_root_policy.get('id'), self.user_id)
+
 
         self.endpoint_id = uuid.uuid4().hex
         self.endpoint = self.new_endpoint_ref(service_id=self.service_id)
@@ -547,8 +553,8 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
                         }
                     },
                     'scope': {
-                        'project': {
-                            'id': self.project['id'],
+                        'account': {
+                            'id': self.account['id'],
                         }
                     }
                 }
@@ -593,7 +599,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
     def get(self, path, **kwargs):
         r = self.v3_request(method='GET', path=path, **kwargs)
         if 'expected_status' not in kwargs:
-            self.assertResponseStatus(r, 200)
+            self.assertResponseSuccessful(r)
         return r
 
     def head(self, path, **kwargs):
