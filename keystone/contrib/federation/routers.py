@@ -60,7 +60,7 @@ class FederationExtension(wsgi.V3ExtensionRouter):
         DELETE /OS-FEDERATION/mappings/$mapping_id
 
         GET /OS-FEDERATION/projects
-        GET /OS-FEDERATION/domains
+        GET /OS-FEDERATION/accounts
 
         PUT /OS-FEDERATION/service_providers/$service_provider
         GET /OS-FEDERATION/service_providers
@@ -93,7 +93,7 @@ class FederationExtension(wsgi.V3ExtensionRouter):
         protocol_controller = controllers.FederationProtocol()
         mapping_controller = controllers.MappingController()
         project_controller = controllers.ProjectAssignmentV3()
-        domain_controller = controllers.DomainV3()
+        account_controller = controllers.AccountV3()
         saml_metadata_controller = controllers.SAMLMetadataV3()
         sp_controller = controllers.ServiceProvider()
 
@@ -183,10 +183,10 @@ class FederationExtension(wsgi.V3ExtensionRouter):
             rel=build_resource_relation(resource_name='service_providers'))
 
         self._add_resource(
-            mapper, domain_controller,
-            path=self._construct_url('domains'),
-            get_action='list_domains_for_groups',
-            rel=build_resource_relation(resource_name='domains'))
+            mapper, account_controller,
+            path=self._construct_url('accounts'),
+            get_action='list_accounts_for_groups',
+            rel=build_resource_relation(resource_name='accounts'))
         self._add_resource(
             mapper, project_controller,
             path=self._construct_url('projects'),

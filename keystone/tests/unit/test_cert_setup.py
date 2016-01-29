@@ -29,7 +29,7 @@ from keystone import token
 
 SSLDIR = tests.dirs.tmp('ssl')
 CONF = tests.CONF
-DEFAULT_DOMAIN_ID = CONF.identity.default_domain_id
+DEFAULT_ACCOUNT_ID = CONF.identity.default_account_id
 
 
 CERTDIR = os.path.join(SSLDIR, 'certs')
@@ -80,7 +80,7 @@ class CertSetupTestCase(rest.RestfulTestCase):
         user = {
             'name': 'fake1',
             'password': password,
-            'domain_id': DEFAULT_DOMAIN_ID
+            'account_id': DEFAULT_ACCOUNT_ID
         }
         user = self.identity_api.create_user(user)
         body_dict = {

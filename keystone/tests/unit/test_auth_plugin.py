@@ -64,7 +64,7 @@ class TestAuthPlugin(tests.SQLDriverOverrides, tests.TestCase):
     def config_overrides(self):
         super(TestAuthPlugin, self).config_overrides()
         method_opts = {
-            'external': 'keystone.auth.plugins.external.DefaultDomain',
+            'external': 'keystone.auth.plugins.external.DefaultAccount',
             'password': 'keystone.auth.plugins.password.Password',
             'token': 'keystone.auth.plugins.token.Token',
             METHOD_NAME:

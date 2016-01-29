@@ -42,41 +42,41 @@ class IdentityTestFilteredCase(filtering.FilterTests,
     def load_sample_data(self):
         """Create sample data for these tests.
 
-        As well as the usual housekeeping, create a set of domains,
+        As well as the usual housekeeping, create a set of accounts,
         users, roles and projects for the subsequent tests:
 
-        - Three domains: A,B & C.  C is disabled.
-        - DomainA has user1, DomainB has user2 and user3
-        - DomainA has group1 and group2, DomainB has group3
-        - User1 has a role on DomainA
+        - Three accounts: A,B & C.  C is disabled.
+        - AccountA has user1, AccountB has user2 and user3
+        - AccountA has group1 and group2, AccountB has group3
+        - User1 has a role on AccountA
 
-        Remember that there will also be a fourth domain in existence,
-        the default domain.
+        Remember that there will also be a fourth account in existence,
+        the default account.
 
         """
-        # Start by creating a few domains
-        self._populate_default_domain()
-        self.domainA = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainA['id'], self.domainA)
-        self.domainB = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainB['id'], self.domainB)
-        self.domainC = self.new_domain_ref()
-        self.domainC['enabled'] = False
-        self.resource_api.create_domain(self.domainC['id'], self.domainC)
+        # Start by creating a few accounts
+        self._populate_default_account()
+        self.accountA = self.new_account_ref()
+        self.resource_api.create_account(self.accountA['id'], self.accountA)
+        self.accountB = self.new_account_ref()
+        self.resource_api.create_account(self.accountB['id'], self.accountB)
+        self.accountC = self.new_account_ref()
+        self.accountC['enabled'] = False
+        self.resource_api.create_account(self.accountC['id'], self.accountC)
 
-        # Now create some users, one in domainA and two of them in domainB
-        self.user1 = self.new_user_ref(domain_id=self.domainA['id'])
+        # Now create some users, one in accountA and two of them in accountB
+        self.user1 = self.new_user_ref(account_id=self.accountA['id'])
         password = uuid.uuid4().hex
         self.user1['password'] = password
         self.user1 = self.identity_api.create_user(self.user1)
         self.user1['password'] = password
 
-        self.user2 = self.new_user_ref(domain_id=self.domainB['id'])
+        self.user2 = self.new_user_ref(account_id=self.accountB['id'])
         self.user2['password'] = password
         self.user2 = self.identity_api.create_user(self.user2)
         self.user2['password'] = password
 
-        self.user3 = self.new_user_ref(domain_id=self.domainB['id'])
+        self.user3 = self.new_user_ref(account_id=self.accountB['id'])
         self.user3['password'] = password
         self.user3 = self.identity_api.create_user(self.user3)
         self.user3['password'] = password
@@ -85,7 +85,7 @@ class IdentityTestFilteredCase(filtering.FilterTests,
         self.role_api.create_role(self.role['id'], self.role)
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.user1['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
 
         # A default auth request we can use - un-scoped user token
         self.auth = self.build_authentication_request(
@@ -102,89 +102,89 @@ class IdentityTestFilteredCase(filtering.FilterTests,
         with open(self.tmpfilename, "w") as policyfile:
             policyfile.write(jsonutils.dumps(new_policy))
 
-    def test_list_users_filtered_by_domain(self):
-        """GET /users?domain_id=mydomain (filtered)
+    def test_list_users_filtered_by_account(self):
+        """GET /users?account_id=myaccount (filtered)
 
         Test Plan:
 
         - Update policy so api is unprotected
         - Use an un-scoped token to make sure we can filter the
-          users by domainB, getting back the 2 users in that domain
+          users by accountB, getting back the 2 users in that account
 
         """
         self._set_policy({"identity:list_users": []})
-        url_by_name = '/users?domain_id=%s' % self.domainB['id']
+        url_by_name = '/users?account_id=%s' % self.accountB['id']
         r = self.get(url_by_name, auth=self.auth)
-        # We should  get back two users, those in DomainB
+        # We should  get back two users, those in AccountB
         id_list = self._get_id_list_from_ref_list(r.result.get('users'))
         self.assertIn(self.user2['id'], id_list)
         self.assertIn(self.user3['id'], id_list)
 
-    def test_list_filtered_domains(self):
-        """GET /domains?enabled=0
+    def test_list_filtered_accounts(self):
+        """GET /accounts?enabled=0
 
         Test Plan:
 
         - Update policy for no protection on api
-        - Filter by the 'enabled' boolean to get disabled domains, which
-          should return just domainC
+        - Filter by the 'enabled' boolean to get disabled accounts, which
+          should return just accountC
         - Try the filter using different ways of specifying True/False
           to test that our handling of booleans in filter matching is
           correct
 
         """
-        new_policy = {"identity:list_domains": []}
+        new_policy = {"identity:list_accounts": []}
         self._set_policy(new_policy)
-        r = self.get('/domains?enabled=0', auth=self.auth)
-        id_list = self._get_id_list_from_ref_list(r.result.get('domains'))
+        r = self.get('/accounts?enabled=0', auth=self.auth)
+        id_list = self._get_id_list_from_ref_list(r.result.get('accounts'))
         self.assertEqual(1, len(id_list))
-        self.assertIn(self.domainC['id'], id_list)
+        self.assertIn(self.accountC['id'], id_list)
 
         # Try a few ways of specifying 'false'
         for val in ('0', 'false', 'False', 'FALSE', 'n', 'no', 'off'):
-            r = self.get('/domains?enabled=%s' % val, auth=self.auth)
-            id_list = self._get_id_list_from_ref_list(r.result.get('domains'))
-            self.assertEqual([self.domainC['id']], id_list)
+            r = self.get('/accounts?enabled=%s' % val, auth=self.auth)
+            id_list = self._get_id_list_from_ref_list(r.result.get('accounts'))
+            self.assertEqual([self.accountC['id']], id_list)
 
         # Now try a few ways of specifying 'true' when we should get back
-        # the other two domains, plus the default domain
+        # the other two accounts, plus the default account
         for val in ('1', 'true', 'True', 'TRUE', 'y', 'yes', 'on'):
-            r = self.get('/domains?enabled=%s' % val, auth=self.auth)
-            id_list = self._get_id_list_from_ref_list(r.result.get('domains'))
+            r = self.get('/accounts?enabled=%s' % val, auth=self.auth)
+            id_list = self._get_id_list_from_ref_list(r.result.get('accounts'))
             self.assertEqual(3, len(id_list))
-            self.assertIn(self.domainA['id'], id_list)
-            self.assertIn(self.domainB['id'], id_list)
-            self.assertIn(CONF.identity.default_domain_id, id_list)
+            self.assertIn(self.accountA['id'], id_list)
+            self.assertIn(self.accountB['id'], id_list)
+            self.assertIn(CONF.identity.default_account_id, id_list)
 
-        r = self.get('/domains?enabled', auth=self.auth)
-        id_list = self._get_id_list_from_ref_list(r.result.get('domains'))
+        r = self.get('/accounts?enabled', auth=self.auth)
+        id_list = self._get_id_list_from_ref_list(r.result.get('accounts'))
         self.assertEqual(3, len(id_list))
-        self.assertIn(self.domainA['id'], id_list)
-        self.assertIn(self.domainB['id'], id_list)
-        self.assertIn(CONF.identity.default_domain_id, id_list)
+        self.assertIn(self.accountA['id'], id_list)
+        self.assertIn(self.accountB['id'], id_list)
+        self.assertIn(CONF.identity.default_account_id, id_list)
 
     def test_multiple_filters(self):
-        """GET /domains?enabled&name=myname
+        """GET /accounts?enabled&name=myname
 
         Test Plan:
 
         - Update policy for no protection on api
         - Filter by the 'enabled' boolean and name - this should
-          return a single domain
+          return a single account
 
         """
-        new_policy = {"identity:list_domains": []}
+        new_policy = {"identity:list_accounts": []}
         self._set_policy(new_policy)
 
-        my_url = '/domains?enabled&name=%s' % self.domainA['name']
+        my_url = '/accounts?enabled&name=%s' % self.accountA['name']
         r = self.get(my_url, auth=self.auth)
-        id_list = self._get_id_list_from_ref_list(r.result.get('domains'))
+        id_list = self._get_id_list_from_ref_list(r.result.get('accounts'))
         self.assertEqual(1, len(id_list))
-        self.assertIn(self.domainA['id'], id_list)
-        self.assertIs(True, r.result.get('domains')[0]['enabled'])
+        self.assertIn(self.accountA['id'], id_list)
+        self.assertIs(True, r.result.get('accounts')[0]['enabled'])
 
     def test_invalid_filter_is_ignored(self):
-        """GET /domains?enableds&name=myname
+        """GET /accounts?enableds&name=myname
 
         Test Plan:
 
@@ -193,18 +193,18 @@ class IdentityTestFilteredCase(filtering.FilterTests,
         - Assert 'enableds' is ignored
 
         """
-        new_policy = {"identity:list_domains": []}
+        new_policy = {"identity:list_accounts": []}
         self._set_policy(new_policy)
 
-        my_url = '/domains?enableds=0&name=%s' % self.domainA['name']
+        my_url = '/accounts?enableds=0&name=%s' % self.accountA['name']
         r = self.get(my_url, auth=self.auth)
-        id_list = self._get_id_list_from_ref_list(r.result.get('domains'))
+        id_list = self._get_id_list_from_ref_list(r.result.get('accounts'))
 
-        # domainA is returned and it is enabled, since enableds=0 is not the
+        # accountA is returned and it is enabled, since enableds=0 is not the
         # same as enabled=0
         self.assertEqual(1, len(id_list))
-        self.assertIn(self.domainA['id'], id_list)
-        self.assertIs(True, r.result.get('domains')[0]['enabled'])
+        self.assertIn(self.accountA['id'], id_list)
+        self.assertIs(True, r.result.get('accounts')[0]['enabled'])
 
     def test_list_users_filtered_by_funny_name(self):
         """GET /users?name=%myname%
@@ -310,7 +310,7 @@ class IdentityTestFilteredCase(filtering.FilterTests,
 
         # See if we can add a SQL command...use the group table instead of the
         # user table since 'user' is reserved word for SQLAlchemy.
-        group = self.new_group_ref(domain_id=self.domainB['id'])
+        group = self.new_group_ref(account_id=self.accountB['id'])
         group = self.identity_api.create_group(group)
 
         url_by_name = "/users?name=x'; drop table group"

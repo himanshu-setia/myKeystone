@@ -319,7 +319,7 @@ class FederationExtension(test_sql_upgrade.SqlMigrateBase):
 
 class RevokeExtension(test_sql_upgrade.SqlMigrateBase):
 
-    _REVOKE_COLUMN_NAMES = ['id', 'domain_id', 'project_id', 'user_id',
+    _REVOKE_COLUMN_NAMES = ['id', 'account_id', 'project_id', 'user_id',
                             'role_id', 'trust_id', 'consumer_id',
                             'access_token_id', 'issued_before', 'expires_at',
                             'revoked_at']

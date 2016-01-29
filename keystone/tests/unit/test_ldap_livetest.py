@@ -136,7 +136,7 @@ class LiveLDAPIdentity(test_backend_ldap.LDAPIdentity):
     # FakeLDAP does not correctly process filters, so this test can only be
     # run against a live LDAP server
     def test_list_groups_for_user_filtered(self):
-        domain = self._get_domain_fixture()
+        account = self._get_account_fixture()
         test_groups = []
         test_users = []
         GROUP_COUNT = 3
@@ -144,7 +144,7 @@ class LiveLDAPIdentity(test_backend_ldap.LDAPIdentity):
 
         for x in range(0, USER_COUNT):
             new_user = {'name': uuid.uuid4().hex, 'password': uuid.uuid4().hex,
-                        'enabled': True, 'domain_id': domain['id']}
+                        'enabled': True, 'account_id': account['id']}
             new_user = self.identity_api.create_user(new_user)
             test_users.append(new_user)
         positive_user = test_users[0]
@@ -156,7 +156,7 @@ class LiveLDAPIdentity(test_backend_ldap.LDAPIdentity):
             self.assertEqual(0, len(group_refs))
 
         for x in range(0, GROUP_COUNT):
-            new_group = {'domain_id': domain['id'],
+            new_group = {'account_id': account['id'],
                          'name': uuid.uuid4().hex}
             new_group = self.identity_api.create_group(new_group)
             test_groups.append(new_group)
@@ -177,7 +177,7 @@ class LiveLDAPIdentity(test_backend_ldap.LDAPIdentity):
             self.assertEqual(0, len(group_refs))
 
         self.config_fixture.config(group='ldap', group_filter='(dn=xx)')
-        self.reload_backends(CONF.identity.default_domain_id)
+        self.reload_backends(CONF.identity.default_account_id)
         group_refs = self.identity_api.list_groups_for_user(
             positive_user['id'])
         self.assertEqual(0, len(group_refs))
@@ -187,7 +187,7 @@ class LiveLDAPIdentity(test_backend_ldap.LDAPIdentity):
 
         self.config_fixture.config(group='ldap',
                                    group_filter='(objectclass=*)')
-        self.reload_backends(CONF.identity.default_domain_id)
+        self.reload_backends(CONF.identity.default_account_id)
         group_refs = self.identity_api.list_groups_for_user(
             positive_user['id'])
         self.assertEqual(GROUP_COUNT, len(group_refs))

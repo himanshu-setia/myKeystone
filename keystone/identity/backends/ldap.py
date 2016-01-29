@@ -44,7 +44,7 @@ class Identity(identity.Driver):
     def default_assignment_driver(self):
         return "keystone.assignment.backends.ldap.Assignment"
 
-    def is_domain_aware(self):
+    def is_account_aware(self):
         return False
 
     def generates_uuids(self):
@@ -81,8 +81,8 @@ class Identity(identity.Driver):
     def list_users(self, hints):
         return self.user.get_all_filtered(hints)
 
-    def get_user_by_name(self, user_name, domain_id):
-        # domain_id will already have been handled in the Manager layer,
+    def get_user_by_name(self, user_name, account_id):
+        # account_id will already have been handled in the Manager layer,
         # parameter left in so this matches the Driver specification
         return self.user.filter_attributes(self.user.get_by_name(user_name))
 
@@ -130,8 +130,8 @@ class Identity(identity.Driver):
     def get_group(self, group_id):
         return self.group.get_filtered(group_id)
 
-    def get_group_by_name(self, group_name, domain_id):
-        # domain_id will already have been handled in the Manager layer,
+    def get_group_by_name(self, group_name, account_id):
+        # account_id will already have been handled in the Manager layer,
         # parameter left in so this matches the Driver specification
         return self.group.get_filtered_by_name(group_name)
 
@@ -317,7 +317,7 @@ class GroupApi(common_ldap.BaseLdap):
         if self.subtree_delete_enabled:
             super(GroupApi, self).deleteTree(group_id)
         else:
-            # TODO(spzala): this is only placeholder for group and domain
+            # TODO(spzala): this is only placeholder for group and account
             # role support which will be added under bug 1101287
 
             group_ref = self.get(group_id)

@@ -35,7 +35,7 @@ action_default_service = 'iam'
 resource_default_service = 'iam'
 jio_delimiter = ':'
 jio_namespace = 'jrn:jcs'
-jio_admin_domain_default = 'jcs_domain'
+jio_admin_account_default = 'jcs_account'
 res_postfix = 'Id'
 
 def v2_deprecated(f):
@@ -143,17 +143,17 @@ def protected(callback=None):
                     policy_dict['target'][self.member_name]['user_id'] = (
                         token_ref.user_id)
                     try:
-                        user_domain_id = token_ref.user_domain_id
+                        user_account_id = token_ref.user_account_id
                     except exception.UnexpectedError:
-                        user_domain_id = None
-                    if user_domain_id:
+                        user_account_id = None
+                    if user_account_id:
                         policy_dict['target'][self.member_name].setdefault(
                             'user', {})
                         policy_dict['target'][self.member_name][
-                            'user'].setdefault('domain', {})
+                            'user'].setdefault('account', {})
                         policy_dict['target'][self.member_name]['user'][
-                            'domain']['id'] = (
-                                user_domain_id)
+                            'account']['id'] = (
+                                user_account_id)
 
                 # Add in the kwargs, which means that any entity provided as a
                 # parameter for calls like create and update will be included.
@@ -352,37 +352,37 @@ def filterprotected(*filters):
 
 class V2Controller(wsgi.Application):
     """Base controller class for Identity API v2."""
-    def _normalize_domain_id(self, context, ref):
-        """Fill in domain_id since v2 calls are not domain-aware.
+    def _normalize_account_id(self, context, ref):
+        """Fill in account_id since v2 calls are not account-aware.
 
-        This will overwrite any domain_id that was inadvertently
+        This will overwrite any account_id that was inadvertently
         specified in the v2 call.
 
         """
-        ref['domain_id'] = CONF.identity.default_domain_id
+        ref['account_id'] = CONF.identity.default_account_id
         return ref
 
     @staticmethod
-    def filter_domain_id(ref):
-        """Remove domain_id since v2 calls are not domain-aware."""
-        if 'domain_id' in ref:
-            del ref['domain_id']
+    def filter_account_id(ref):
+        """Remove account_id since v2 calls are not account-aware."""
+        if 'account_id' in ref:
+            del ref['account_id']
         return ref
 
     @staticmethod
-    def filter_domain(ref):
-        """Remove domain since v2 calls are not domain-aware.
+    def filter_account(ref):
+        """Remove account since v2 calls are not account-aware.
 
-        V3 Fernet tokens builds the users with a domain in the token data.
+        V3 Fernet tokens builds the users with a account in the token data.
         This method will ensure that users create in v3 belong to the default
-        domain.
+        account.
 
         """
-        if 'domain' in ref:
-            if ref['domain'].get('id') != CONF.identity.default_domain_id:
+        if 'account' in ref:
+            if ref['account'].get('id') != CONF.identity.default_account_id:
                 raise exception.Unauthorized(
-                    _('Non-default domain is not supported'))
-            del ref['domain']
+                    _('Non-default account is not supported'))
+            del ref['account']
         return ref
 
     @staticmethod
@@ -419,8 +419,8 @@ class V2Controller(wsgi.Application):
     def v3_to_v2_user(ref):
         """Convert a user_ref from v3 to v2 compatible.
 
-        - v2.0 users are not domain aware, and should have domain_id validated
-          to be the default domain, and then removed.
+        - v2.0 users are not account aware, and should have account_id validated
+          to be the default account, and then removed.
 
         - v2.0 users expect the use of tenantId instead of default_project_id.
 
@@ -448,8 +448,8 @@ class V2Controller(wsgi.Application):
         def _normalize_and_filter_user_properties(ref):
             """Run through the various filter/normalization methods."""
             _format_default_project_id(ref)
-            V2Controller.filter_domain(ref)
-            V2Controller.filter_domain_id(ref)
+            V2Controller.filter_account(ref)
+            V2Controller.filter_account_id(ref)
             V2Controller.normalize_username_in_response(ref)
             return ref
 
@@ -464,7 +464,7 @@ class V2Controller(wsgi.Application):
     def v3_to_v2_project(ref):
         """Convert a project_ref from v3 to v2.
 
-        * v2.0 projects are not domain aware, and should have domain_id removed
+        * v2.0 projects are not account aware, and should have account_id removed
         * v2.0 projects are not hierarchy aware, and should have parent_id
           removed
 
@@ -477,7 +477,7 @@ class V2Controller(wsgi.Application):
 
         def _filter_project_properties(ref):
             """Run through the various filter methods."""
-            V2Controller.filter_domain_id(ref)
+            V2Controller.filter_account_id(ref)
             V2Controller.filter_project_parent_id(ref)
             return ref
 
@@ -798,12 +798,12 @@ class V3Controller(wsgi.Application):
         if 'id' in ref and ref['id'] != value:
             raise exception.ValidationError('Cannot change ID')
 
-    def _require_matching_domain_id(self, ref_id, ref, get_member):
-        """Ensure the current domain ID matches the reference one, if any.
+    def _require_matching_account_id(self, ref_id, ref, get_member):
+        """Ensure the current account ID matches the reference one, if any.
 
-        Provided we want domain IDs to be immutable, check whether any
-        domain_id specified in the ref dictionary matches the existing
-        domain_id for this entity.
+        Provided we want account IDs to be immutable, check whether any
+        account_id specified in the ref dictionary matches the existing
+        account_id for this entity.
 
         :param ref_id: the ID of the entity
         :param ref: the dictionary of new values proposed for this entity
@@ -815,10 +815,10 @@ class V3Controller(wsgi.Application):
         # TODO(henry-nash): It might be safer and more efficient to do this
         # check in the managers affected, so look to migrate this check to
         # there in the future.
-        if CONF.domain_id_immutable and 'domain_id' in ref:
+        if CONF.account_id_immutable and 'account_id' in ref:
             existing_ref = get_member(ref_id)
-            if ref['domain_id'] != existing_ref['domain_id']:
-                raise exception.ValidationError(_('Cannot change Domain ID'))
+            if ref['account_id'] != existing_ref['account_id']:
+                raise exception.ValidationError(_('Cannot change Account ID'))
 
     def _assign_unique_id(self, ref):
         """Generates and assigns a unique identifier to a reference."""
@@ -826,19 +826,19 @@ class V3Controller(wsgi.Application):
         ref['id'] = uuid.uuid4().hex
         return ref
 
-    def _get_domain_id_for_list_request(self, context):
-        """Get the domain_id for a v3 list call.
+    def _get_account_id_for_list_request(self, context):
+        """Get the account_id for a v3 list call.
 
-        If we running with multiple domain drivers, then the caller must
-        specify a domain_id either as a filter or as part of the token scope.
+        If we running with multiple account drivers, then the caller must
+        specify a account_id either as a filter or as part of the token scope.
 
         """
-        if not CONF.identity.domain_specific_drivers_enabled:
-            # We don't need to specify a domain ID in this case
+        if not CONF.identity.account_specific_drivers_enabled:
+            # We don't need to specify a account ID in this case
             return
 
-        if context['query_string'].get('domain_id') is not None:
-            return context['query_string'].get('domain_id')
+        if context['query_string'].get('account_id') is not None:
+            return context['query_string'].get('account_id')
 
         try:
             token_ref = token_model.KeystoneToken(
@@ -847,31 +847,31 @@ class V3Controller(wsgi.Application):
                     context['token_id']))
         except KeyError:
             raise exception.ValidationError(
-                _('domain_id is required as part of entity'))
+                _('account_id is required as part of entity'))
         except (exception.TokenNotFound,
                 exception.UnsupportedTokenVersionException):
-            LOG.warning(_LW('Invalid token found while getting domain ID '
+            LOG.warning(_LW('Invalid token found while getting account ID '
                             'for list request'))
             raise exception.Unauthorized()
 
-        if token_ref.domain_scoped:
-            return token_ref.domain_id
+        if token_ref.account_scoped:
+            return token_ref.account_id
         else:
             LOG.warning(
-                _LW('No domain information specified as part of list request'))
+                _LW('No account information specified as part of list request'))
             raise exception.Unauthorized()
 
-    def _get_domain_id_from_token(self, context):
-        """Get the domain_id for a v3 create call.
+    def _get_account_id_from_token(self, context):
+        """Get the account_id for a v3 create call.
 
-        In the case of a v3 create entity call that does not specify a domain
-        ID, the spec says that we should use the domain scoping from the token
+        In the case of a v3 create entity call that does not specify a account
+        ID, the spec says that we should use the account scoping from the token
         being used.
 
         """
-        # We could make this more efficient by loading the domain_id
+        # We could make this more efficient by loading the account_id
         # into the context in the wrapper function above (since
-        # this version of normalize_domain will only be called inside
+        # this version of normalize_account will only be called inside
         # a v3 protected call).  However, this optimization is probably not
         # worth the duplication of state
         try:
@@ -882,33 +882,33 @@ class V3Controller(wsgi.Application):
         except KeyError:
             # This might happen if we use the Admin token, for instance
             raise exception.ValidationError(
-                _('A domain-scoped token must be used'))
+                _('A account-scoped token must be used'))
         except (exception.TokenNotFound,
                 exception.UnsupportedTokenVersionException):
-            LOG.warning(_LW('Invalid token found while getting domain ID '
+            LOG.warning(_LW('Invalid token found while getting account ID '
                             'for list request'))
             raise exception.Unauthorized()
 
-        if token_ref.domain_scoped:
-            return token_ref.domain_id
+        if token_ref.account_scoped:
+            return token_ref.account_id
         else:
             # TODO(henry-nash): We should issue an exception here since if
-            # a v3 call does not explicitly specify the domain_id in the
-            # entity, it should be using a domain scoped token.  However,
+            # a v3 call does not explicitly specify the account_id in the
+            # entity, it should be using a account scoped token.  However,
             # the current tempest heat tests issue a v3 call without this.
             # This is raised as bug #1283539.  Once this is fixed, we
             # should remove the line below and replace it with an error.
-            return CONF.identity.default_domain_id
+            return CONF.identity.default_account_id
 
-    def _normalize_domain_id(self, context, ref):
-        """Fill in domain_id if not specified in a v3 call."""
-        if 'domain_id' not in ref:
-            ref['domain_id'] = self._get_domain_id_from_token(context)
+    def _normalize_account_id(self, context, ref):
+        """Fill in account_id if not specified in a v3 call."""
+        if 'account_id' not in ref:
+            ref['account_id'] = self._get_account_id_from_token(context)
         return ref
 
     @staticmethod
-    def filter_domain_id(ref):
-        """Override v2 filter to let domain_id out for v3 calls."""
+    def filter_account_id(ref):
+        """Override v2 filter to let account_id out for v3 calls."""
         return ref
 
     def check_protection(self, context, prep_info, target_attr=None):

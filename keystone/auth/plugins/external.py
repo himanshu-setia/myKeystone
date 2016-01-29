@@ -66,38 +66,38 @@ class Base(auth.AuthMethodHandler):
 
 
 @dependency.requires('identity_api')
-class DefaultDomain(Base):
+class DefaultAccount(Base):
     def _authenticate(self, remote_user, context):
         """Use remote_user to look up the user in the identity backend."""
-        domain_id = CONF.identity.default_domain_id
-        user_ref = self.identity_api.get_user_by_name(remote_user, domain_id)
+        account_id = CONF.identity.default_account_id
+        user_ref = self.identity_api.get_user_by_name(remote_user, account_id)
         return user_ref
 
 
 @dependency.requires('identity_api', 'resource_api')
-class Domain(Base):
+class Account(Base):
     def _authenticate(self, remote_user, context):
         """Use remote_user to look up the user in the identity backend.
 
-        The domain will be extracted from the REMOTE_DOMAIN environment
-        variable if present. If not, the default domain will be used.
+        The account will be extracted from the REMOTE_ACCOUNT environment
+        variable if present. If not, the default account will be used.
         """
 
         username = remote_user
         try:
-            domain_name = context['environment']['REMOTE_DOMAIN']
+            account_name = context['environment']['REMOTE_ACCOUNT']
         except KeyError:
-            domain_id = CONF.identity.default_domain_id
+            account_id = CONF.identity.default_account_id
         else:
-            domain_ref = self.resource_api.get_domain_by_name(domain_name)
-            domain_id = domain_ref['id']
+            account_ref = self.resource_api.get_account_by_name(account_name)
+            account_id = account_ref['id']
 
-        user_ref = self.identity_api.get_user_by_name(username, domain_id)
+        user_ref = self.identity_api.get_user_by_name(username, account_id)
         return user_ref
 
 
 @dependency.requires('assignment_api', 'identity_api')
-class KerberosDomain(Domain):
+class KerberosAccount(Account):
     """Allows `kerberos` as a method."""
     method = 'kerberos'
 
@@ -105,34 +105,34 @@ class KerberosDomain(Domain):
         auth_type = context['environment'].get('AUTH_TYPE')
         if auth_type != 'Negotiate':
             raise exception.Unauthorized(_("auth_type is not Negotiate"))
-        return super(KerberosDomain, self)._authenticate(remote_user, context)
+        return super(KerberosAccount, self)._authenticate(remote_user, context)
 
 
-class ExternalDefault(DefaultDomain):
-    """Deprecated. Please use keystone.auth.external.DefaultDomain instead."""
+class ExternalDefault(DefaultAccount):
+    """Deprecated. Please use keystone.auth.external.DefaultAccount instead."""
 
     @versionutils.deprecated(
         as_of=versionutils.deprecated.ICEHOUSE,
-        in_favor_of='keystone.auth.external.DefaultDomain',
+        in_favor_of='keystone.auth.external.DefaultAccount',
         remove_in=+1)
     def __init__(self):
         super(ExternalDefault, self).__init__()
 
 
-class ExternalDomain(Domain):
-    """Deprecated. Please use keystone.auth.external.Domain instead."""
+class ExternalAccount(Account):
+    """Deprecated. Please use keystone.auth.external.Account instead."""
 
     @versionutils.deprecated(
         as_of=versionutils.deprecated.ICEHOUSE,
-        in_favor_of='keystone.auth.external.Domain',
+        in_favor_of='keystone.auth.external.Account',
         remove_in=+1)
     def __init__(self):
-        super(ExternalDomain, self).__init__()
+        super(ExternalAccount, self).__init__()
 
 
 @dependency.requires('identity_api')
-class LegacyDefaultDomain(Base):
-    """Deprecated. Please use keystone.auth.external.DefaultDomain instead.
+class LegacyDefaultAccount(Base):
+    """Deprecated. Please use keystone.auth.external.DefaultAccount instead.
 
     This plugin exists to provide compatibility for the unintended behavior
     described here: https://bugs.launchpad.net/keystone/+bug/1253484
@@ -141,46 +141,46 @@ class LegacyDefaultDomain(Base):
 
     @versionutils.deprecated(
         as_of=versionutils.deprecated.ICEHOUSE,
-        in_favor_of='keystone.auth.external.DefaultDomain',
+        in_favor_of='keystone.auth.external.DefaultAccount',
         remove_in=+1)
     def __init__(self):
-        super(LegacyDefaultDomain, self).__init__()
+        super(LegacyDefaultAccount, self).__init__()
 
     def _authenticate(self, remote_user, context):
         """Use remote_user to look up the user in the identity backend."""
         # NOTE(dolph): this unintentionally discards half the REMOTE_USER value
         names = remote_user.split('@')
         username = names.pop(0)
-        domain_id = CONF.identity.default_domain_id
-        user_ref = self.identity_api.get_user_by_name(username, domain_id)
+        account_id = CONF.identity.default_account_id
+        user_ref = self.identity_api.get_user_by_name(username, account_id)
         return user_ref
 
 
 @dependency.requires('identity_api', 'resource_api')
-class LegacyDomain(Base):
-    """Deprecated. Please use keystone.auth.external.Domain instead."""
+class LegacyAccount(Base):
+    """Deprecated. Please use keystone.auth.external.Account instead."""
 
     @versionutils.deprecated(
         as_of=versionutils.deprecated.ICEHOUSE,
-        in_favor_of='keystone.auth.external.Domain',
+        in_favor_of='keystone.auth.external.Account',
         remove_in=+1)
     def __init__(self):
-        super(LegacyDomain, self).__init__()
+        super(LegacyAccount, self).__init__()
 
     def _authenticate(self, remote_user, context):
         """Use remote_user to look up the user in the identity backend.
 
         If remote_user contains an `@` assume that the substring before the
         rightmost `@` is the username, and the substring after the @ is the
-        domain name.
+        account name.
         """
         names = remote_user.rsplit('@', 1)
         username = names.pop(0)
         if names:
-            domain_name = names[0]
-            domain_ref = self.resource_api.get_domain_by_name(domain_name)
-            domain_id = domain_ref['id']
+            account_name = names[0]
+            account_ref = self.resource_api.get_account_by_name(account_name)
+            account_id = account_ref['id']
         else:
-            domain_id = CONF.identity.default_domain_id
-        user_ref = self.identity_api.get_user_by_name(username, domain_id)
+            account_id = CONF.identity.default_account_id
+        user_ref = self.identity_api.get_user_by_name(username, account_id)
         return user_ref

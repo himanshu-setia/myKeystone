@@ -63,7 +63,7 @@ class TenantAssignment(controller.V2Controller):
         tenant_refs = (
             self.assignment_api.list_projects_for_user(token_ref.user_id))
         tenant_refs = [self.v3_to_v2_project(ref) for ref in tenant_refs
-                       if ref['domain_id'] == CONF.identity.default_domain_id]
+                       if ref['account_id'] == CONF.identity.default_account_id]
         params = {
             'limit': context['query_string'].get('limit'),
             'marker': context['query_string'].get('marker'),
@@ -204,8 +204,8 @@ class RoleAssignmentV2(controller.V2Controller):
         o = []
         for tenant in tenants:
             # As a v2 call, we should limit the response to those projects in
-            # the default domain.
-            if tenant['domain_id'] != CONF.identity.default_domain_id:
+            # the default account.
+            if tenant['account_id'] != CONF.identity.default_account_id:
                 continue
             role_ids = self.assignment_api.get_roles_for_user_and_project(
                 user_id, tenant['id'])
@@ -343,12 +343,12 @@ class GrantAssignmentV3(controller.V3Controller):
         super(GrantAssignmentV3, self).__init__()
         self.get_member_from_driver = self.role_api.get_role
 
-    def _require_domain_xor_project(self, domain_id, project_id):
-        if domain_id and project_id:
-            msg = _('Specify a domain or project, not both')
+    def _require_account_xor_project(self, account_id, project_id):
+        if account_id and project_id:
+            msg = _('Specify a account or project, not both')
             raise exception.ValidationError(msg)
-        if not domain_id and not project_id:
-            msg = _('Specify one of domain or project')
+        if not account_id and not project_id:
+            msg = _('Specify one of account or project')
             raise exception.ValidationError(msg)
 
     def _require_user_xor_group(self, user_id, group_id):
@@ -366,7 +366,7 @@ class GrantAssignmentV3(controller.V3Controller):
 
     def _check_grant_protection(self, context, protection, role_id=None,
                                 user_id=None, group_id=None,
-                                domain_id=None, project_id=None,
+                                account_id=None, project_id=None,
                                 allow_no_user=False):
         """Check protection for role grant APIs.
 
@@ -387,8 +387,8 @@ class GrantAssignmentV3(controller.V3Controller):
         else:
             ref['group'] = self.identity_api.get_group(group_id)
 
-        if domain_id:
-            ref['domain'] = self.resource_api.get_domain(domain_id)
+        if account_id:
+            ref['account'] = self.resource_api.get_account(account_id)
         else:
             ref['project'] = self.resource_api.get_project(project_id)
 
@@ -396,36 +396,36 @@ class GrantAssignmentV3(controller.V3Controller):
 
     @controller.protected(callback=_check_grant_protection)
     def create_grant(self, context, role_id, user_id=None,
-                     group_id=None, domain_id=None, project_id=None):
-        """Grants a role to a user or group on either a domain or project."""
-        self._require_domain_xor_project(domain_id, project_id)
+                     group_id=None, account_id=None, project_id=None):
+        """Grants a role to a user or group on either a account or project."""
+        self._require_account_xor_project(account_id, project_id)
         self._require_user_xor_group(user_id, group_id)
 
         self.assignment_api.create_grant(
-            role_id, user_id, group_id, domain_id, project_id,
+            role_id, user_id, group_id, account_id, project_id,
             self._check_if_inherited(context), context)
 
     @controller.protected(callback=_check_grant_protection)
     def list_grants(self, context, user_id=None,
-                    group_id=None, domain_id=None, project_id=None):
-        """Lists roles granted to user/group on either a domain or project."""
-        self._require_domain_xor_project(domain_id, project_id)
+                    group_id=None, account_id=None, project_id=None):
+        """Lists roles granted to user/group on either a account or project."""
+        self._require_account_xor_project(account_id, project_id)
         self._require_user_xor_group(user_id, group_id)
 
         refs = self.assignment_api.list_grants(
-            user_id, group_id, domain_id, project_id,
+            user_id, group_id, account_id, project_id,
             self._check_if_inherited(context))
         return GrantAssignmentV3.wrap_collection(context, refs)
 
     @controller.protected(callback=_check_grant_protection)
     def check_grant(self, context, role_id, user_id=None,
-                    group_id=None, domain_id=None, project_id=None):
-        """Checks if a role has been granted on either a domain or project."""
-        self._require_domain_xor_project(domain_id, project_id)
+                    group_id=None, account_id=None, project_id=None):
+        """Checks if a role has been granted on either a account or project."""
+        self._require_account_xor_project(account_id, project_id)
         self._require_user_xor_group(user_id, group_id)
 
         self.assignment_api.get_grant(
-            role_id, user_id, group_id, domain_id, project_id,
+            role_id, user_id, group_id, account_id, project_id,
             self._check_if_inherited(context))
 
     # NOTE(lbragstad): This will allow users to clean up role assignments
@@ -434,13 +434,13 @@ class GrantAssignmentV3(controller.V3Controller):
     @controller.protected(callback=functools.partial(
         _check_grant_protection, allow_no_user=True))
     def revoke_grant(self, context, role_id, user_id=None,
-                     group_id=None, domain_id=None, project_id=None):
-        """Revokes a role from user/group on either a domain or project."""
-        self._require_domain_xor_project(domain_id, project_id)
+                     group_id=None, account_id=None, project_id=None):
+        """Revokes a role from user/group on either a account or project."""
+        self._require_account_xor_project(account_id, project_id)
         self._require_user_xor_group(user_id, group_id)
 
         self.assignment_api.delete_grant(
-            role_id, user_id, group_id, domain_id, project_id,
+            role_id, user_id, group_id, account_id, project_id,
             self._check_if_inherited(context), context)
 
 
@@ -467,17 +467,17 @@ class RoleAssignmentV3(controller.V3Controller):
         """Format an assignment entity for API response.
 
         The driver layer returns entities as dicts containing the ids of the
-        actor (e.g. user or group), target (e.g. domain or project) and role.
+        actor (e.g. user or group), target (e.g. account or project) and role.
         If it is an inherited role, then this is also indicated. Examples:
 
         {'user_id': user_id,
-         'project_id': domain_id,
+         'project_id': account_id,
          'role_id': role_id}
 
         or, for an inherited role:
 
         {'user_id': user_id,
-         'domain_id': domain_id,
+         'account_id': account_id,
          'role_id': role_id,
          'inherited_to_projects': true}
 
@@ -489,8 +489,8 @@ class RoleAssignmentV3(controller.V3Controller):
                 {'id': user_id}
             },
             'scope': {
-                'domain': {
-                    {'id': domain_id}
+                'account': {
+                    {'id': account_id}
                 },
                 'OS-INHERIT:inherited_to': 'projects
             },
@@ -498,7 +498,7 @@ class RoleAssignmentV3(controller.V3Controller):
                 {'id': role_id}
             },
             'links': {
-                'assignment': '/domains/domain_id/users/user_id/roles/'
+                'assignment': '/accounts/account_id/users/user_id/roles/'
                               'role_id/inherited_to_projects'
             }
         }
@@ -525,16 +525,16 @@ class RoleAssignmentV3(controller.V3Controller):
                 suffix = '/inherited_to_projects'
             else:
                 target_link = '/projects/%s' % entity['project_id']
-        if 'domain_id' in entity:
+        if 'account_id' in entity:
             formatted_entity['scope'] = (
-                {'domain': {'id': entity['domain_id']}})
+                {'account': {'id': entity['account_id']}})
             if 'inherited_to_projects' in entity:
                 formatted_entity['scope']['OS-INHERIT:inherited_to'] = (
                     'projects')
-                target_link = '/OS-INHERIT/domains/%s' % entity['domain_id']
+                target_link = '/OS-INHERIT/accounts/%s' % entity['account_id']
                 suffix = '/inherited_to_projects'
             else:
-                target_link = '/domains/%s' % entity['domain_id']
+                target_link = '/accounts/%s' % entity['account_id']
         formatted_entity.setdefault('links', {})
 
         path = '%(target)s/%(actor)s/roles/%(role)s%(suffix)s' % {
@@ -554,8 +554,8 @@ class RoleAssignmentV3(controller.V3Controller):
         assignment entity itself from the list.
 
         If the OS-INHERIT extension is enabled, then honor any inherited
-        roles on the domain by creating the equivalent on all projects
-        owned by the domain.
+        roles on the account by creating the equivalent on all projects
+        owned by the account.
 
         For any new entity created by virtue of group membership, add in an
         additional link to that membership.
@@ -578,12 +578,12 @@ class RoleAssignmentV3(controller.V3Controller):
                 # group deletion should remove any related assignments, so
                 # log a warning
                 target = 'Unknown'
-                # Should always be a domain or project, but since to get
+                # Should always be a account or project, but since to get
                 # here things have gone astray, let's be cautious.
                 if 'scope' in ref:
-                    if 'domain' in ref['scope']:
-                        dom_id = ref['scope']['domain'].get('id', 'Unknown')
-                        target = 'Domain: %s' % dom_id
+                    if 'account' in ref['scope']:
+                        dom_id = ref['scope']['account'].get('id', 'Unknown')
+                        target = 'Account: %s' % dom_id
                     elif 'project' in ref['scope']:
                         proj_id = ref['scope']['project'].get('id', 'Unknown')
                         target = 'Project: %s' % proj_id
@@ -617,9 +617,9 @@ class RoleAssignmentV3(controller.V3Controller):
 
         def _build_project_equivalent_of_user_target_role(
                 project_id, target_id, target_type, template):
-            """Create a user project assignment equivalent to the domain one.
+            """Create a user project assignment equivalent to the account one.
 
-            The template has had the 'domain' entity removed, so
+            The template has had the 'account' entity removed, so
             substitute a 'project' one, modifying the 'assignment' link
             to match.
 
@@ -638,9 +638,9 @@ class RoleAssignmentV3(controller.V3Controller):
         def _build_project_equivalent_of_group_target_role(
                 user_id, group_id, project_id,
                 target_id, target_type, template):
-            """Create a user project equivalent to the domain group one.
+            """Create a user project equivalent to the account group one.
 
-            The template has had the 'domain' and 'group' entities removed, so
+            The template has had the 'account' and 'group' entities removed, so
             substitute a 'user-project' one, modifying the 'assignment' link
             to match.
 
@@ -663,7 +663,7 @@ class RoleAssignmentV3(controller.V3Controller):
         # expanded.
         #
         # If the OS-INERIT extension is enabled, the refs lists may
-        # contain roles to be inherited from domain to project, so expand
+        # contain roles to be inherited from account to project, so expand
         # these as well into project equivalents
         #
         # For any regular group entries, expand these into user entries based
@@ -676,17 +676,17 @@ class RoleAssignmentV3(controller.V3Controller):
         new_refs = []
         for r in refs:
             if 'OS-INHERIT:inherited_to' in r['scope']:
-                if 'domain' in r['scope']:
-                    # It's an inherited domain role - so get the list of
-                    # projects owned by this domain.
+                if 'account' in r['scope']:
+                    # It's an inherited account role - so get the list of
+                    # projects owned by this account.
                     project_ids = (
                         [x['id'] for x in
-                            self.resource_api.list_projects_in_domain(
-                                r['scope']['domain']['id'])])
+                            self.resource_api.list_projects_in_account(
+                                r['scope']['account']['id'])])
                     base_entry = copy.deepcopy(r)
-                    target_type = 'domains'
-                    target_id = base_entry['scope']['domain']['id']
-                    base_entry['scope'].pop('domain')
+                    target_type = 'accounts'
+                    target_id = base_entry['scope']['account']['id']
+                    base_entry['scope'].pop('account')
                 else:
                     # It's an inherited project role - so get the list of
                     # projects in this project subtree.
@@ -746,13 +746,13 @@ class RoleAssignmentV3(controller.V3Controller):
         else:
             return True
 
-    def _assert_effective_filters(self, inherited, group, domain):
+    def _assert_effective_filters(self, inherited, group, account):
         """Assert that useless filter combinations are avoided.
 
         In effective mode, the following filter combinations are useless, since
         they would always return an empty list of role assignments:
         - group id, since no group assignment is returned in effective mode;
-        - domain id and inherited, since no domain inherited assignment is
+        - account id and inherited, since no account inherited assignment is
         returned in effective mode.
 
         """
@@ -761,14 +761,14 @@ class RoleAssignmentV3(controller.V3Controller):
                     'result in an empty list.')
             raise exception.ValidationError(msg)
 
-        if inherited and domain:
-            msg = _('Combining effective, domain and inherited filters will '
+        if inherited and account:
+            msg = _('Combining effective, account and inherited filters will '
                     'always result in an empty list.')
             raise exception.ValidationError(msg)
 
-    def _assert_domain_nand_project(self, domain_id, project_id):
-        if domain_id and project_id:
-            msg = _('Specify a domain or project, not both')
+    def _assert_account_nand_project(self, account_id, project_id):
+        if account_id and project_id:
+            msg = _('Specify a account or project, not both')
             raise exception.ValidationError(msg)
 
     def _assert_user_nand_group(self, user_id, group_id):
@@ -777,7 +777,7 @@ class RoleAssignmentV3(controller.V3Controller):
             raise exception.ValidationError(msg)
 
     @controller.filterprotected('group.id', 'role.id',
-                                'scope.domain.id', 'scope.project.id',
+                                'scope.account.id', 'scope.project.id',
                                 'scope.OS-INHERIT:inherited_to', 'user.id')
     def list_role_assignments(self, context, filters):
 
@@ -798,7 +798,7 @@ class RoleAssignmentV3(controller.V3Controller):
             # None means querying both inherited and direct assignments
             inherited = None
 
-        self._assert_domain_nand_project(params.get('scope.domain.id'),
+        self._assert_account_nand_project(params.get('scope.account.id'),
                                          params.get('scope.project.id'))
         self._assert_user_nand_group(params.get('user.id'),
                                      params.get('group.id'))
@@ -806,8 +806,8 @@ class RoleAssignmentV3(controller.V3Controller):
         if effective:
             self._assert_effective_filters(inherited=inherited,
                                            group=params.get('group.id'),
-                                           domain=params.get(
-                                               'scope.domain.id'))
+                                           account=params.get(
+                                               'scope.account.id'))
 
         hints = self.build_driver_hints(context, filters)
         refs = self.assignment_api.list_role_assignments()

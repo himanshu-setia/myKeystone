@@ -31,21 +31,21 @@ LOG = log.getLogger(__name__)
 class AssignmentType(object):
     USER_PROJECT = 'UserProject'
     GROUP_PROJECT = 'GroupProject'
-    USER_DOMAIN = 'UserDomain'
-    GROUP_DOMAIN = 'GroupDomain'
+    USER_ACCOUNT = 'UserAccount'
+    GROUP_ACCOUNT = 'GroupAccount'
 
     @classmethod
-    def calculate_type(cls, user_id, group_id, project_id, domain_id):
+    def calculate_type(cls, user_id, group_id, project_id, account_id):
         if user_id:
             if project_id:
                 return cls.USER_PROJECT
-            if domain_id:
-                return cls.USER_DOMAIN
+            if account_id:
+                return cls.USER_ACCOUNT
         if group_id:
             if project_id:
                 return cls.GROUP_PROJECT
-            if domain_id:
-                return cls.GROUP_DOMAIN
+            if account_id:
+                return cls.GROUP_ACCOUNT
         # Invalid parameters combination
         raise exception.AssignmentTypeCalculationError(**locals())
 
@@ -68,7 +68,7 @@ class Assignment(keystone_assignment.Driver):
             return [assignment.actor_id for assignment in assignments]
 
     def _get_metadata(self, user_id=None, tenant_id=None,
-                      domain_id=None, group_id=None, session=None):
+                      account_id=None, group_id=None, session=None):
         # TODO(henry-nash): This method represents the last vestiges of the old
         # metadata concept in this driver.  Although we no longer need it here,
         # since the Manager layer uses the metadata concept across all
@@ -87,16 +87,16 @@ class Assignment(keystone_assignment.Driver):
                 if tenant_id:
                     return AssignmentType.USER_PROJECT
                 else:
-                    return AssignmentType.USER_DOMAIN
+                    return AssignmentType.USER_ACCOUNT
             else:
                 if tenant_id:
                     return AssignmentType.GROUP_PROJECT
                 else:
-                    return AssignmentType.GROUP_DOMAIN
+                    return AssignmentType.GROUP_ACCOUNT
 
         q = q.filter_by(type=_calc_assignment_type())
         q = q.filter_by(actor_id=user_id or group_id)
-        q = q.filter_by(target_id=tenant_id or domain_id)
+        q = q.filter_by(target_id=tenant_id or account_id)
         refs = q.all()
         if not refs:
             raise exception.MetadataNotFound()
@@ -113,17 +113,17 @@ class Assignment(keystone_assignment.Driver):
         return metadata_ref
 
     def create_grant(self, role_id, user_id=None, group_id=None,
-                     domain_id=None, project_id=None,
+                     account_id=None, project_id=None,
                      inherited_to_projects=False):
 
         assignment_type = AssignmentType.calculate_type(
-            user_id, group_id, project_id, domain_id)
+            user_id, group_id, project_id, account_id)
         try:
             with sql.transaction() as session:
                 session.add(RoleAssignment(
                     type=assignment_type,
                     actor_id=user_id or group_id,
-                    target_id=project_id or domain_id,
+                    target_id=project_id or account_id,
                     role_id=role_id,
                     inherited=inherited_to_projects))
         except sql.DBDuplicateEntry:
@@ -131,50 +131,50 @@ class Assignment(keystone_assignment.Driver):
             pass
 
     def list_grant_role_ids(self, user_id=None, group_id=None,
-                            domain_id=None, project_id=None,
+                            account_id=None, project_id=None,
                             inherited_to_projects=False):
         with sql.transaction() as session:
             q = session.query(RoleAssignment.role_id)
             q = q.filter(RoleAssignment.actor_id == (user_id or group_id))
-            q = q.filter(RoleAssignment.target_id == (project_id or domain_id))
+            q = q.filter(RoleAssignment.target_id == (project_id or account_id))
             q = q.filter(RoleAssignment.inherited == inherited_to_projects)
             return [x.role_id for x in q.all()]
 
     def _build_grant_filter(self, session, role_id, user_id, group_id,
-                            domain_id, project_id, inherited_to_projects):
+                            account_id, project_id, inherited_to_projects):
         q = session.query(RoleAssignment)
         q = q.filter_by(actor_id=user_id or group_id)
-        q = q.filter_by(target_id=project_id or domain_id)
+        q = q.filter_by(target_id=project_id or account_id)
         q = q.filter_by(role_id=role_id)
         q = q.filter_by(inherited=inherited_to_projects)
         return q
 
     def check_grant_role_id(self, role_id, user_id=None, group_id=None,
-                            domain_id=None, project_id=None,
+                            account_id=None, project_id=None,
                             inherited_to_projects=False):
         with sql.transaction() as session:
             try:
                 q = self._build_grant_filter(
-                    session, role_id, user_id, group_id, domain_id, project_id,
+                    session, role_id, user_id, group_id, account_id, project_id,
                     inherited_to_projects)
                 q.one()
             except sql.NotFound:
                 actor_id = user_id or group_id
-                target_id = domain_id or project_id
+                target_id = account_id or project_id
                 raise exception.RoleAssignmentNotFound(role_id=role_id,
                                                        actor_id=actor_id,
                                                        target_id=target_id)
 
     def delete_grant(self, role_id, user_id=None, group_id=None,
-                     domain_id=None, project_id=None,
+                     account_id=None, project_id=None,
                      inherited_to_projects=False):
         with sql.transaction() as session:
             q = self._build_grant_filter(
-                session, role_id, user_id, group_id, domain_id, project_id,
+                session, role_id, user_id, group_id, account_id, project_id,
                 inherited_to_projects)
             if not q.delete(False):
                 actor_id = user_id or group_id
-                target_id = domain_id or project_id
+                target_id = account_id or project_id
                 raise exception.RoleAssignmentNotFound(role_id=role_id,
                                                        actor_id=actor_id,
                                                        target_id=target_id)
@@ -207,7 +207,7 @@ class Assignment(keystone_assignment.Driver):
 
         return self._list_project_ids_for_actor(actor_list, hints, inherited)
 
-    def list_domain_ids_for_user(self, user_id, group_ids, hints,
+    def list_account_ids_for_user(self, user_id, group_ids, hints,
                                  inherited=False):
         with sql.transaction() as session:
             query = session.query(RoleAssignment.target_id)
@@ -217,14 +217,14 @@ class Assignment(keystone_assignment.Driver):
                 sql_constraints = sqlalchemy.and_(
                     RoleAssignment.actor_id == user_id,
                     RoleAssignment.inherited == inherited,
-                    RoleAssignment.type == AssignmentType.USER_DOMAIN)
+                    RoleAssignment.type == AssignmentType.USER_ACCOUNT)
                 filters.append(sql_constraints)
 
             if group_ids:
                 sql_constraints = sqlalchemy.and_(
                     RoleAssignment.actor_id.in_(group_ids),
                     RoleAssignment.inherited == inherited,
-                    RoleAssignment.type == AssignmentType.GROUP_DOMAIN)
+                    RoleAssignment.type == AssignmentType.GROUP_ACCOUNT)
                 filters.append(sql_constraints)
 
             if not filters:
@@ -234,14 +234,14 @@ class Assignment(keystone_assignment.Driver):
 
             return [assignment.target_id for assignment in query.all()]
 
-    def list_role_ids_for_groups_on_domain(self, group_ids, domain_id):
+    def list_role_ids_for_groups_on_account(self, group_ids, account_id):
         if not group_ids:
-            # If there's no groups then there will be no domain roles.
+            # If there's no groups then there will be no account roles.
             return []
 
         sql_constraints = sqlalchemy.and_(
-            RoleAssignment.type == AssignmentType.GROUP_DOMAIN,
-            RoleAssignment.target_id == domain_id,
+            RoleAssignment.type == AssignmentType.GROUP_ACCOUNT,
+            RoleAssignment.target_id == account_id,
             RoleAssignment.inherited == false(),
             RoleAssignment.actor_id.in_(group_ids))
 
@@ -251,7 +251,7 @@ class Assignment(keystone_assignment.Driver):
         return [role.role_id for role in query.all()]
 
     def list_role_ids_for_groups_on_project(
-            self, group_ids, project_id, project_domain_id, project_parents):
+            self, group_ids, project_id, project_account_id, project_parents):
 
         if not group_ids:
             # If there's no groups then there will be no project roles.
@@ -265,13 +265,13 @@ class Assignment(keystone_assignment.Driver):
             RoleAssignment.target_id == project_id)
 
         if CONF.os_inherit.enabled:
-            # Inherited roles from domains
+            # Inherited roles from accounts
             sql_constraints = sqlalchemy.or_(
                 sql_constraints,
                 sqlalchemy.and_(
-                    RoleAssignment.type == AssignmentType.GROUP_DOMAIN,
+                    RoleAssignment.type == AssignmentType.GROUP_ACCOUNT,
                     RoleAssignment.inherited,
-                    RoleAssignment.target_id == project_domain_id))
+                    RoleAssignment.target_id == project_account_id))
 
             # Inherited roles from projects
             if project_parents:
@@ -298,13 +298,13 @@ class Assignment(keystone_assignment.Driver):
         return self._list_project_ids_for_actor(
             group_ids, hints, inherited, group_only=True)
 
-    def list_domain_ids_for_groups(self, group_ids, inherited=False):
+    def list_account_ids_for_groups(self, group_ids, inherited=False):
         if not group_ids:
-            # If there's no groups then there will be no domains.
+            # If there's no groups then there will be no accounts.
             return []
 
         group_sql_conditions = sqlalchemy.and_(
-            RoleAssignment.type == AssignmentType.GROUP_DOMAIN,
+            RoleAssignment.type == AssignmentType.GROUP_ACCOUNT,
             RoleAssignment.inherited == inherited,
             RoleAssignment.actor_id.in_(group_ids))
 
@@ -343,15 +343,15 @@ class Assignment(keystone_assignment.Driver):
             if ref.type == AssignmentType.USER_PROJECT:
                 assignment['user_id'] = ref.actor_id
                 assignment['project_id'] = ref.target_id
-            elif ref.type == AssignmentType.USER_DOMAIN:
+            elif ref.type == AssignmentType.USER_ACCOUNT:
                 assignment['user_id'] = ref.actor_id
-                assignment['domain_id'] = ref.target_id
+                assignment['account_id'] = ref.target_id
             elif ref.type == AssignmentType.GROUP_PROJECT:
                 assignment['group_id'] = ref.actor_id
                 assignment['project_id'] = ref.target_id
-            elif ref.type == AssignmentType.GROUP_DOMAIN:
+            elif ref.type == AssignmentType.GROUP_ACCOUNT:
                 assignment['group_id'] = ref.actor_id
-                assignment['domain_id'] = ref.target_id
+                assignment['account_id'] = ref.target_id
             else:
                 raise exception.Error(message=_(
                     'Unexpected assignment type encountered, %s') %
@@ -396,7 +396,7 @@ class RoleAssignment(sql.ModelBase, sql.DictBase):
     # NOTE(henry-nash); Postgres requires a name to be defined for an Enum
     type = sql.Column(
         sql.Enum(AssignmentType.USER_PROJECT, AssignmentType.GROUP_PROJECT,
-                 AssignmentType.USER_DOMAIN, AssignmentType.GROUP_DOMAIN,
+                 AssignmentType.USER_ACCOUNT, AssignmentType.GROUP_ACCOUNT,
                  name='type'),
         nullable=False)
     actor_id = sql.Column(sql.String(64), nullable=False, index=True)

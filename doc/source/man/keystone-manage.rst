@@ -42,7 +42,7 @@ Available commands:
 
 * ``db_sync``: Sync the database.
 * ``db_version``: Print the current migration version of the database.
-* ``domain_config_upload``: Upload domain configuration file.
+* ``account_config_upload``: Upload account configuration file.
 * ``fernet_rotate``: Rotate keys in the Fernet key repository.
 * ``fernet_setup``: Setup a Fernet key repository.
 * ``mapping_purge``: Purge the identity mapping table.

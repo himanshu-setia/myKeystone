@@ -99,7 +99,7 @@ Identity Service groups objects, and hence to local role assignments.
 
 Thus, it is required to create the necessary Identity Service groups that
 correspond to the Identity Provider's groups; additionally, these groups should
-be assigned roles on one or more projects or domains.
+be assigned roles on one or more projects or accounts.
 
 You may be interested in more information on `group management
 <http://specs.openstack.org/openstack/keystone-specs/api/v3/identity-api-v3.html#create-group>`_
@@ -201,13 +201,13 @@ Determine accessible resources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By using the previously returned token, the user can issue requests to the list
-projects and domains that are accessible.
+projects and accounts that are accessible.
 
 * List projects a federated user can access: ``GET /OS-FEDERATION/projects``
-* List domains a federated user can access: ``GET /OS-FEDERATION/domains``
+* List accounts a federated user can access: ``GET /OS-FEDERATION/accounts``
 
 More information on listing resources can be found `here
-<http://specs.openstack.org/openstack/keystone-specs/api/v3/identity-api-v3-os-federation-ext.html#listing-projects-and-domains>`__.
+<http://specs.openstack.org/openstack/keystone-specs/api/v3/identity-api-v3-os-federation-ext.html#listing-projects-and-accounts>`__.
 
 ~~~~~~~~~~~~
 Example cURL
@@ -221,14 +221,14 @@ or
 
 .. code-block:: bash
 
-    $ curl -X GET -H "X-Auth-Token: <unscoped token>" http://localhost:5000/v3/OS-FEDERATION/domains
+    $ curl -X GET -H "X-Auth-Token: <unscoped token>" http://localhost:5000/v3/OS-FEDERATION/accounts
 
 Get a scoped token
 ~~~~~~~~~~~~~~~~~~
 
 A federated user may request a scoped token, by using the unscoped token. A
-project or domain may be specified by either ``id`` or ``name``. An ``id`` is
-sufficient to uniquely identify a project or domain.
+project or account may be specified by either ``id`` or ``name``. An ``id`` is
+sufficient to uniquely identify a project or account.
 
 More information on getting a scoped token can be found `here
 <http://specs.openstack.org/openstack/keystone-specs/api/v3/identity-api-v3-os-federation-ext.html#request-a-scoped-os-federation-token>`__.
@@ -239,7 +239,7 @@ Example cURL
 
 .. code-block:: bash
 
-    $ curl -X POST -H "Content-Type: application/json" -d '{"auth":{"identity":{"methods":["saml2"],"saml2":{"id":"<unscoped_token_id>"}},"scope":{"project":{"domain": {"name": "Default"},"name":"service"}}}}' -D - http://localhost:5000/v3/auth/tokens
+    $ curl -X POST -H "Content-Type: application/json" -d '{"auth":{"identity":{"methods":["saml2"],"saml2":{"id":"<unscoped_token_id>"}},"scope":{"project":{"account": {"name": "Default"},"name":"service"}}}}' -D - http://localhost:5000/v3/auth/tokens
 
 --------------------------------------
 Keystone as an Identity Provider (IdP)

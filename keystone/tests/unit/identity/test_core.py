@@ -28,61 +28,61 @@ from keystone.tests.unit.ksfixtures import database
 CONF = cfg.CONF
 
 
-class TestDomainConfigs(tests.BaseTestCase):
+class TestAccountConfigs(tests.BaseTestCase):
 
     def setUp(self):
-        super(TestDomainConfigs, self).setUp()
+        super(TestAccountConfigs, self).setUp()
         self.addCleanup(CONF.reset)
 
         self.tmp_dir = tests.dirs.tmp()
-        CONF.set_override('domain_config_dir', self.tmp_dir, 'identity')
+        CONF.set_override('account_config_dir', self.tmp_dir, 'identity')
 
-    def test_config_for_nonexistent_domain(self):
-        """Having a config for a non-existent domain will be ignored.
+    def test_config_for_nonexistent_account(self):
+        """Having a config for a non-existent account will be ignored.
 
         There are no assertions in this test because there are no side
-        effects. If there is a config file for a domain that does not
+        effects. If there is a config file for a account that does not
         exist it should be ignored.
 
         """
-        domain_id = uuid.uuid4().hex
-        domain_config_filename = os.path.join(self.tmp_dir,
-                                              'keystone.%s.conf' % domain_id)
-        self.addCleanup(lambda: os.remove(domain_config_filename))
-        with open(domain_config_filename, 'w'):
+        account_id = uuid.uuid4().hex
+        account_config_filename = os.path.join(self.tmp_dir,
+                                              'keystone.%s.conf' % account_id)
+        self.addCleanup(lambda: os.remove(account_config_filename))
+        with open(account_config_filename, 'w'):
             """Write an empty config file."""
 
-        e = exception.DomainNotFound(domain_id=domain_id)
+        e = exception.AccountNotFound(account_id=account_id)
         mock_assignment_api = mock.Mock()
-        mock_assignment_api.get_domain_by_name.side_effect = e
+        mock_assignment_api.get_account_by_name.side_effect = e
 
-        domain_config = identity.DomainConfigs()
+        account_config = identity.AccountConfigs()
         fake_standard_driver = None
-        domain_config.setup_domain_drivers(fake_standard_driver,
+        account_config.setup_account_drivers(fake_standard_driver,
                                            mock_assignment_api)
 
-    def test_config_for_dot_name_domain(self):
-        # Ensure we can get the right domain name which has dots within it
+    def test_config_for_dot_name_account(self):
+        # Ensure we can get the right account name which has dots within it
         # from filename.
-        domain_config_filename = os.path.join(self.tmp_dir,
+        account_config_filename = os.path.join(self.tmp_dir,
                                               'keystone.abc.def.com.conf')
-        with open(domain_config_filename, 'w'):
+        with open(account_config_filename, 'w'):
             """Write an empty config file."""
-        self.addCleanup(os.remove, domain_config_filename)
+        self.addCleanup(os.remove, account_config_filename)
 
-        with mock.patch.object(identity.DomainConfigs,
+        with mock.patch.object(identity.AccountConfigs,
                                '_load_config_from_file') as mock_load_config:
-            domain_config = identity.DomainConfigs()
+            account_config = identity.AccountConfigs()
             fake_assignment_api = None
             fake_standard_driver = None
-            domain_config.setup_domain_drivers(fake_standard_driver,
+            account_config.setup_account_drivers(fake_standard_driver,
                                                fake_assignment_api)
             mock_load_config.assert_called_once_with(fake_assignment_api,
-                                                     [domain_config_filename],
+                                                     [account_config_filename],
                                                      'abc.def.com')
 
     def test_config_for_multiple_sql_backend(self):
-        domains_config = identity.DomainConfigs()
+        accounts_config = identity.AccountConfigs()
 
         # Create the right sequence of is_sql in the drivers being
         # requested to expose the bug, which is that a False setting
@@ -94,72 +94,72 @@ class TestDomainConfigs(tests.BaseTestCase):
             drivers.append(drv)
             name = 'dummy.{0}'.format(idx)
             files.append(''.join((
-                identity.DOMAIN_CONF_FHEAD,
+                identity.ACCOUNT_CONF_FHEAD,
                 name,
-                identity.DOMAIN_CONF_FTAIL)))
+                identity.ACCOUNT_CONF_FTAIL)))
 
         walk_fake = lambda *a, **kwa: (
-            ('/fake/keystone/domains/config', [], files), )
+            ('/fake/keystone/accounts/config', [], files), )
 
         generic_driver = mock.Mock(is_sql=False)
 
         assignment_api = mock.Mock()
         id_factory = itertools.count()
-        assignment_api.get_domain_by_name.side_effect = (
-            lambda name: {'id': next(id_factory), '_': 'fake_domain'})
+        assignment_api.get_account_by_name.side_effect = (
+            lambda name: {'id': next(id_factory), '_': 'fake_account'})
         load_driver_mock = mock.Mock(side_effect=drivers)
 
         with mock.patch.object(os, 'walk', walk_fake):
             with mock.patch.object(identity.cfg, 'ConfigOpts'):
-                with mock.patch.object(domains_config, '_load_driver',
+                with mock.patch.object(accounts_config, '_load_driver',
                                        load_driver_mock):
                     self.assertRaises(
                         exception.MultipleSQLDriversInConfig,
-                        domains_config.setup_domain_drivers,
+                        accounts_config.setup_account_drivers,
                         generic_driver, assignment_api)
 
                     self.assertEqual(3, load_driver_mock.call_count)
 
 
-class TestDatabaseDomainConfigs(tests.TestCase):
+class TestDatabaseAccountConfigs(tests.TestCase):
 
     def setUp(self):
-        super(TestDatabaseDomainConfigs, self).setUp()
+        super(TestDatabaseAccountConfigs, self).setUp()
         self.useFixture(database.Database())
         self.load_backends()
 
-    def test_domain_config_in_database_disabled_by_default(self):
-        self.assertFalse(CONF.identity.domain_configurations_from_database)
+    def test_account_config_in_database_disabled_by_default(self):
+        self.assertFalse(CONF.identity.account_configurations_from_database)
 
     def test_loading_config_from_database(self):
-        CONF.set_override('domain_configurations_from_database', True,
+        CONF.set_override('account_configurations_from_database', True,
                           'identity')
-        domain = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(domain['id'], domain)
-        # Override two config options for our domain
+        account = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(account['id'], account)
+        # Override two config options for our account
         conf = {'ldap': {'url': uuid.uuid4().hex,
                          'suffix': uuid.uuid4().hex},
                 'identity': {
                     'driver': 'keystone.identity.backends.ldap.Identity'}}
-        self.domain_config_api.create_config(domain['id'], conf)
+        self.account_config_api.create_config(account['id'], conf)
         fake_standard_driver = None
-        domain_config = identity.DomainConfigs()
-        domain_config.setup_domain_drivers(fake_standard_driver,
+        account_config = identity.AccountConfigs()
+        account_config.setup_account_drivers(fake_standard_driver,
                                            self.resource_api)
         # Make sure our two overrides are in place, and others are not affected
-        res = domain_config.get_domain_conf(domain['id'])
+        res = account_config.get_account_conf(account['id'])
         self.assertEqual(conf['ldap']['url'], res.ldap.url)
         self.assertEqual(conf['ldap']['suffix'], res.ldap.suffix)
         self.assertEqual(CONF.ldap.query_scope, res.ldap.query_scope)
 
-        # Now turn off using database domain configuration and check that the
+        # Now turn off using database account configuration and check that the
         # default config file values are now seen instead of the overrides.
-        CONF.set_override('domain_configurations_from_database', False,
+        CONF.set_override('account_configurations_from_database', False,
                           'identity')
-        domain_config = identity.DomainConfigs()
-        domain_config.setup_domain_drivers(fake_standard_driver,
+        account_config = identity.AccountConfigs()
+        account_config.setup_account_drivers(fake_standard_driver,
                                            self.resource_api)
-        res = domain_config.get_domain_conf(domain['id'])
+        res = account_config.get_account_conf(account['id'])
         self.assertEqual(CONF.ldap.url, res.ldap.url)
         self.assertEqual(CONF.ldap.suffix, res.ldap.suffix)
         self.assertEqual(CONF.ldap.query_scope, res.ldap.query_scope)

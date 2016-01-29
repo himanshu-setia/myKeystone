@@ -86,7 +86,7 @@ class User(Model):
     Required keys:
         id
         name
-        domain_id
+        account_id
 
     Optional keys:
         password
@@ -96,7 +96,7 @@ class User(Model):
         default_project_id
     """
 
-    required_keys = ('id', 'name', 'domain_id')
+    required_keys = ('id', 'name', 'account_id')
     optional_keys = ('password', 'description', 'email', 'enabled',
                      'default_project_id')
 
@@ -107,7 +107,7 @@ class Group(Model):
     Required keys:
         id
         name
-        domain_id
+        account_id
 
     Optional keys:
 
@@ -115,7 +115,7 @@ class Group(Model):
 
     """
 
-    required_keys = ('id', 'name', 'domain_id')
+    required_keys = ('id', 'name', 'account_id')
     optional_keys = ('description',)
 
 
@@ -125,7 +125,7 @@ class Project(Model):
     Required keys:
         id
         name
-        domain_id
+        account_id
 
     Optional Keys:
         description
@@ -133,7 +133,7 @@ class Project(Model):
 
     """
 
-    required_keys = ('id', 'name', 'domain_id')
+    required_keys = ('id', 'name', 'account_id')
     optional_keys = ('description', 'enabled')
 
 
@@ -164,8 +164,8 @@ class Trust(Model):
     optional_keys = ('expires_at',)
 
 
-class Domain(Model):
-    """Domain object.
+class Account(Model):
+    """Account object.
 
     Required keys:
         id

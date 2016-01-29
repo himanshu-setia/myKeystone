@@ -59,12 +59,12 @@ def check_name(property_name, name, min_length=1, max_length=64):
     return name
 
 
-def domain_name(name):
-    return check_name('Domain', name)
+def account_name(name):
+    return check_name('Account', name)
 
 
-def domain_enabled(enabled):
-    return check_enabled('Domain', enabled)
+def account_enabled(enabled):
+    return check_enabled('Account', enabled)
 
 
 def project_name(name):

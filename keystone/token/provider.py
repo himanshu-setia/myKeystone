@@ -128,11 +128,11 @@ class Manager(manager.Manager):
             notifications.ACTIONS.deleted: [
                 ['OS-TRUST:trust', self._trust_deleted_event_callback],
                 ['user', self._delete_user_tokens_callback],
-                ['domain', self._delete_domain_tokens_callback],
+                ['account', self._delete_account_tokens_callback],
             ],
             notifications.ACTIONS.disabled: [
                 ['user', self._delete_user_tokens_callback],
-                ['domain', self._delete_domain_tokens_callback],
+                ['account', self._delete_account_tokens_callback],
                 ['project', self._delete_project_tokens_callback],
             ],
             notifications.ACTIONS.internal: [
@@ -207,7 +207,7 @@ class Manager(manager.Manager):
             raise exception.TokenNotFound(_('Failed to validate token'))
 
         token_values = self.revoke_api.model.build_token_values_v2(
-            token_data, CONF.identity.default_domain_id)
+            token_data, CONF.identity.default_account_id)
         self.revoke_api.check_token(token_values)
 
     def validate_v2_token(self, token_id, belongs_to=None):
@@ -335,11 +335,11 @@ class Manager(manager.Manager):
         return token_id, token_data
 
     def issue_v3_token(self, user_id, method_names, expires_at=None,
-                       project_id=None, domain_id=None, auth_context=None,
+                       project_id=None, account_id=None, auth_context=None,
                        trust=None, metadata_ref=None, include_catalog=True,
                        parent_audit_id=None):
         token_id, token_data = self.driver.issue_v3_token(
-            user_id, method_names, expires_at, project_id, domain_id,
+            user_id, method_names, expires_at, project_id, account_id,
             auth_context, trust, metadata_ref, include_catalog,
             parent_audit_id)
 
@@ -389,7 +389,7 @@ class Manager(manager.Manager):
     def revoke_token(self, token_id, revoke_chain=False):
         revoke_by_expires = False
         project_id = None
-        domain_id = None
+        account_id = None
 
         token_ref = token_model.KeystoneToken(
             token_id=token_id,
@@ -401,8 +401,8 @@ class Manager(manager.Manager):
         audit_chain_id = token_ref.audit_chain_id
         if token_ref.project_scoped:
             project_id = token_ref.project_id
-        if token_ref.domain_scoped:
-            domain_id = token_ref.domain_id
+        if token_ref.account_scoped:
+            account_id = token_ref.account_id
 
         if audit_id is None and not revoke_chain:
             LOG.debug('Received token with no audit_id.')
@@ -415,11 +415,11 @@ class Manager(manager.Manager):
         if revoke_by_expires:
             self.revoke_api.revoke_by_expiration(user_id, expires_at,
                                                  project_id=project_id,
-                                                 domain_id=domain_id)
+                                                 account_id=account_id)
         elif revoke_chain:
             self.revoke_api.revoke_by_audit_chain_id(audit_chain_id,
                                                      project_id=project_id,
-                                                     domain_id=domain_id)
+                                                     account_id=account_id)
         else:
             self.revoke_api.revoke_by_audit_id(audit_id)
 
@@ -443,11 +443,11 @@ class Manager(manager.Manager):
             user_id = payload['resource_info']
             self._persistence.delete_tokens_for_user(user_id)
 
-    def _delete_domain_tokens_callback(self, service, resource_type,
+    def _delete_account_tokens_callback(self, service, resource_type,
                                        operation, payload):
         if CONF.token.revoke_by_id:
-            domain_id = payload['resource_info']
-            self._persistence.delete_tokens_for_domain(domain_id=domain_id)
+            account_id = payload['resource_info']
+            self._persistence.delete_tokens_for_account(account_id=account_id)
 
     def _delete_user_project_tokens_callback(self, service, resource_type,
                                              operation, payload):
@@ -519,7 +519,7 @@ class Provider(object):
 
     @abc.abstractmethod
     def issue_v3_token(self, user_id, method_names, expires_at=None,
-                       project_id=None, domain_id=None, auth_context=None,
+                       project_id=None, account_id=None, auth_context=None,
                        trust=None, metadata_ref=None, include_catalog=True,
                        parent_audit_id=None):
         """Issue a V3 Token.
@@ -532,8 +532,8 @@ class Provider(object):
         :type expires_at: string
         :param project_id: optional project identity
         :type project_id: string
-        :param domain_id: optional domain identity
-        :type domain_id: string
+        :param account_id: optional account identity
+        :type account_id: string
         :param auth_context: optional context from the authorization plugins
         :type auth_context: dict
         :param trust: optional trust reference

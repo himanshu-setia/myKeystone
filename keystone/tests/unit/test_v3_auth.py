@@ -66,7 +66,7 @@ class TestAuthInfo(test_v3.AuthTestMixin, testcase.TestCase):
                           None,
                           auth_data)
 
-    def test_project_name_no_domain(self):
+    def test_project_name_no_account(self):
         auth_data = self.build_authentication_request(
             username='test',
             password='test',
@@ -76,12 +76,12 @@ class TestAuthInfo(test_v3.AuthTestMixin, testcase.TestCase):
                           None,
                           auth_data)
 
-    def test_both_project_and_domain_in_scope(self):
+    def test_both_project_and_account_in_scope(self):
         auth_data = self.build_authentication_request(
             user_id='test',
             password='test',
             project_name='test',
-            domain_name='test')['auth']
+            account_name='test')['auth']
         self.assertRaises(exception.ValidationError,
                           auth.controllers.AuthInfo.create,
                           None,
@@ -121,7 +121,7 @@ class TokenAPITests(object):
     def doSetUp(self):
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_id=self.domain_id,
+            user_account_id=self.account_id,
             password=self.user['password'])
         resp = self.v3_authenticate_token(auth_data)
         self.token_data = resp.result
@@ -131,7 +131,7 @@ class TokenAPITests(object):
     def test_default_fixture_scope_token(self):
         self.assertIsNotNone(self.get_scoped_token())
 
-    def test_v3_v2_intermix_non_default_domain_failed(self):
+    def test_v3_v2_intermix_non_default_account_failed(self):
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'])
@@ -144,36 +144,36 @@ class TokenAPITests(object):
                            method='GET',
                            expected_status=401)
 
-    def test_v3_v2_intermix_new_default_domain(self):
-        # If the default_domain_id config option is changed, then should be
-        # able to validate a v3 token with user in the new domain.
+    def test_v3_v2_intermix_new_default_account(self):
+        # If the default_account_id config option is changed, then should be
+        # able to validate a v3 token with user in the new account.
 
-        # 1) Create a new domain for the user.
-        new_domain_id = uuid.uuid4().hex
-        new_domain = {
+        # 1) Create a new account for the user.
+        new_account_id = uuid.uuid4().hex
+        new_account = {
             'description': uuid.uuid4().hex,
             'enabled': True,
-            'id': new_domain_id,
+            'id': new_account_id,
             'name': uuid.uuid4().hex,
         }
 
-        self.resource_api.create_domain(new_domain_id, new_domain)
+        self.resource_api.create_account(new_account_id, new_account)
 
-        # 2) Create user in new domain.
+        # 2) Create user in new account.
         new_user_password = uuid.uuid4().hex
         new_user = {
             'name': uuid.uuid4().hex,
-            'domain_id': new_domain_id,
+            'account_id': new_account_id,
             'password': new_user_password,
             'email': uuid.uuid4().hex,
         }
 
         new_user = self.identity_api.create_user(new_user)
 
-        # 3) Update the default_domain_id config option to the new domain
+        # 3) Update the default_account_id config option to the new account
 
         self.config_fixture.config(group='identity',
-                                   default_domain_id=new_domain_id)
+                                   default_account_id=new_account_id)
 
         # 4) Get a token using v3 api.
 
@@ -189,15 +189,15 @@ class TokenAPITests(object):
                            token='ADMIN',
                            method='GET')
 
-    def test_v3_v2_intermix_domain_scoped_token_failed(self):
-        # grant the domain role to user
-        path = '/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id'])
+    def test_v3_v2_intermix_account_scoped_token_failed(self):
+        # grant the account role to user
+        path = '/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id'])
         self.put(path=path)
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         token = self.get_requested_token(auth_data)
 
         # now validate the v3 token with v2 API
@@ -209,12 +209,12 @@ class TokenAPITests(object):
 
     def test_v3_v2_intermix_non_default_project_failed(self):
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
             project_id=self.project['id'])
         token = self.get_requested_token(auth_data)
 
-        # v2 cannot reference projects outside the default domain
+        # v2 cannot reference projects outside the default account
         self.admin_request(
             method='GET',
             path='/v2.0/tokens/%s' % token,
@@ -225,33 +225,33 @@ class TokenAPITests(object):
         self.assignment_api.create_grant(
             self.role['id'],
             user_id=self.user['id'],
-            project_id=self.default_domain_project['id'])
+            project_id=self.default_account_project['id'])
 
-        # self.user is in a non-default domain
+        # self.user is in a non-default account
         v3_token = self.get_requested_token(self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
-            project_id=self.default_domain_project['id']))
+            project_id=self.default_account_project['id']))
 
-        # v2 cannot reference projects outside the default domain
+        # v2 cannot reference projects outside the default account
         self.admin_request(
             method='GET',
             path='/v2.0/tokens/%s' % v3_token,
             token=CONF.admin_token,
             expected_status=401)
 
-    def test_v3_v2_intermix_domain_scope_failed(self):
+    def test_v3_v2_intermix_account_scope_failed(self):
         self.assignment_api.create_grant(
             self.role['id'],
-            user_id=self.default_domain_user['id'],
-            domain_id=self.domain['id'])
+            user_id=self.default_account_user['id'],
+            account_id=self.account['id'])
 
         v3_token = self.get_requested_token(self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
-            domain_id=self.domain['id']))
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
+            account_id=self.account['id']))
 
-        # v2 cannot reference projects outside the default domain
+        # v2 cannot reference projects outside the default account
         self.admin_request(
             path='/v2.0/tokens/%s' % v3_token,
             token=CONF.admin_token,
@@ -260,8 +260,8 @@ class TokenAPITests(object):
 
     def test_v3_v2_unscoped_token_intermix(self):
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'])
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'])
         resp = self.v3_authenticate_token(auth_data)
         token_data = resp.result
         token = resp.headers.get('X-Subject-Token')
@@ -283,9 +283,9 @@ class TokenAPITests(object):
         # FIXME(gyee): PKI tokens are not interchangeable because token
         # data is baked into the token itself.
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
-            project_id=self.default_domain_project['id'])
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
+            project_id=self.default_account_project['id'])
         resp = self.v3_authenticate_token(auth_data)
         token_data = resp.result
         token = resp.headers.get('X-Subject-Token')
@@ -309,8 +309,8 @@ class TokenAPITests(object):
         body = {
             'auth': {
                 'passwordCredentials': {
-                    'userId': self.default_domain_user['id'],
-                    'password': self.default_domain_user['password']
+                    'userId': self.default_account_user['id'],
+                    'password': self.default_account_user['password']
                 }
             }}
         resp = self.admin_request(path='/v2.0/tokens',
@@ -332,10 +332,10 @@ class TokenAPITests(object):
         body = {
             'auth': {
                 'passwordCredentials': {
-                    'userId': self.default_domain_user['id'],
-                    'password': self.default_domain_user['password']
+                    'userId': self.default_account_user['id'],
+                    'password': self.default_account_user['password']
                 },
-                'tenantId': self.default_domain_project['id']
+                'tenantId': self.default_account_project['id']
             }}
         resp = self.admin_request(path='/v2.0/tokens',
                                   method='POST',
@@ -405,10 +405,10 @@ class AllowRescopeScopedTokenDisabledTests(test_v3.RestfulTestCase):
     def _v2_token(self):
         body = {
             'auth': {
-                "tenantId": self.default_domain_project['id'],
+                "tenantId": self.default_account_project['id'],
                 'passwordCredentials': {
-                    'userId': self.default_domain_user['id'],
-                    'password': self.default_domain_user['password']
+                    'userId': self.default_account_user['id'],
+                    'password': self.default_account_user['password']
                 }
             }}
         resp = self.admin_request(path='/v2.0/tokens',
@@ -444,25 +444,25 @@ class AllowRescopeScopedTokenDisabledTests(test_v3.RestfulTestCase):
         token = self._v2_token()
         self._v2_token_from_token(token['access']['token'])
 
-    def test_rescoped_domain_token_disabled(self):
+    def test_rescoped_account_token_disabled(self):
 
-        self.domainA = self.new_domain_ref()
-        self.assignment_api.create_domain(self.domainA['id'], self.domainA)
+        self.accountA = self.new_account_ref()
+        self.assignment_api.create_account(self.accountA['id'], self.accountA)
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.user['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
         unscoped_token = self.get_requested_token(
             self.build_authentication_request(
                 user_id=self.user['id'],
                 password=self.user['password']))
-        # Get a domain-scoped token from the unscoped token
-        domain_scoped_token = self.get_requested_token(
+        # Get a account-scoped token from the unscoped token
+        account_scoped_token = self.get_requested_token(
             self.build_authentication_request(
                 token=unscoped_token,
-                domain_id=self.domainA['id']))
+                account_id=self.accountA['id']))
         self.v3_authenticate_token(
             self.build_authentication_request(
-                token=domain_scoped_token,
+                token=account_scoped_token,
                 project_id=self.project_id),
             expected_status=403)
 
@@ -506,9 +506,9 @@ class TestPKITokenAPIs(test_v3.RestfulTestCase, TokenAPITests):
 
     def test_v3_v2_hashed_pki_token_intermix(self):
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
-            project_id=self.default_domain_project['id'])
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
+            project_id=self.default_account_project['id'])
         resp = self.v3_authenticate_token(auth_data)
         token_data = resp.result
         token = resp.headers.get('X-Subject-Token')
@@ -582,30 +582,30 @@ class TestTokenRevokeSelfAndAdmin(test_v3.RestfulTestCase):
     def load_sample_data(self):
         """Load Sample Data for Test Cases.
 
-        Two domains, domainA and domainB
-        Two users in domainA, userNormalA and userAdminA
-        One user in domainB, userAdminB
+        Two accounts, accountA and accountB
+        Two users in accountA, userNormalA and userAdminA
+        One user in accountB, userAdminB
 
         """
         super(TestTokenRevokeSelfAndAdmin, self).load_sample_data()
-        # DomainA setup
-        self.domainA = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainA['id'], self.domainA)
+        # AccountA setup
+        self.accountA = self.new_account_ref()
+        self.resource_api.create_account(self.accountA['id'], self.accountA)
 
-        self.userAdminA = self.new_user_ref(domain_id=self.domainA['id'])
+        self.userAdminA = self.new_user_ref(account_id=self.accountA['id'])
         password = self.userAdminA['password']
         self.userAdminA = self.identity_api.create_user(self.userAdminA)
         self.userAdminA['password'] = password
 
         self.userNormalA = self.new_user_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         password = self.userNormalA['password']
         self.userNormalA = self.identity_api.create_user(self.userNormalA)
         self.userNormalA['password'] = password
 
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.userAdminA['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
 
     def config_overrides(self):
         super(TestTokenRevokeSelfAndAdmin, self).config_overrides()
@@ -618,7 +618,7 @@ class TestTokenRevokeSelfAndAdmin(test_v3.RestfulTestCase):
             self.build_authentication_request(
                 user_id=self.userNormalA['id'],
                 password=self.userNormalA['password'],
-                user_domain_id=self.domainA['id']))
+                user_account_id=self.accountA['id']))
         self.assertNotEmpty(user_token)
         headers = {'X-Subject-Token': user_token}
 
@@ -626,7 +626,7 @@ class TestTokenRevokeSelfAndAdmin(test_v3.RestfulTestCase):
             self.build_authentication_request(
                 user_id=self.userAdminA['id'],
                 password=self.userAdminA['password'],
-                domain_name=self.domainA['name']))
+                account_name=self.accountA['name']))
 
         self.head('/auth/tokens', headers=headers, expected_status=200,
                   token=adminA_token)
@@ -652,7 +652,7 @@ class TestTokenRevokeSelfAndAdmin(test_v3.RestfulTestCase):
             self.build_authentication_request(
                 user_id=self.userNormalA['id'],
                 password=self.userNormalA['password'],
-                user_domain_id=self.domainA['id']))
+                user_account_id=self.accountA['id']))
         self.assertNotEmpty(user_token)
         headers = {'X-Subject-Token': user_token}
 
@@ -660,7 +660,7 @@ class TestTokenRevokeSelfAndAdmin(test_v3.RestfulTestCase):
             self.build_authentication_request(
                 user_id=self.userAdminA['id'],
                 password=self.userAdminA['password'],
-                domain_name=self.domainA['name']))
+                account_name=self.accountA['name']))
 
         self.head('/auth/tokens', headers=headers, expected_status=200,
                   token=adminA_token)
@@ -679,29 +679,29 @@ class TestTokenRevokeSelfAndAdmin(test_v3.RestfulTestCase):
                   token=adminA_token)
 
     def test_adminB_fails_revoking_userA_token(self):
-        # DomainB setup
-        self.domainB = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainB['id'], self.domainB)
-        self.userAdminB = self.new_user_ref(domain_id=self.domainB['id'])
+        # AccountB setup
+        self.accountB = self.new_account_ref()
+        self.resource_api.create_account(self.accountB['id'], self.accountB)
+        self.userAdminB = self.new_user_ref(account_id=self.accountB['id'])
         password = self.userAdminB['password']
         self.userAdminB = self.identity_api.create_user(self.userAdminB)
         self.userAdminB['password'] = password
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.userAdminB['id'],
-                                         domain_id=self.domainB['id'])
+                                         account_id=self.accountB['id'])
 
         user_token = self.get_requested_token(
             self.build_authentication_request(
                 user_id=self.userNormalA['id'],
                 password=self.userNormalA['password'],
-                user_domain_id=self.domainA['id']))
+                user_account_id=self.accountA['id']))
         headers = {'X-Subject-Token': user_token}
 
         adminB_token = self.get_requested_token(
             self.build_authentication_request(
                 user_id=self.userAdminB['id'],
                 password=self.userAdminB['password'],
-                domain_name=self.domainB['name']))
+                account_name=self.accountB['name']))
 
         self.head('/auth/tokens', headers=headers, expected_status=403,
                   token=adminB_token)
@@ -725,67 +725,67 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
     def setUp(self):
         """Setup for Token Revoking Test Cases.
 
-        As well as the usual housekeeping, create a set of domains,
+        As well as the usual housekeeping, create a set of accounts,
         users, groups, roles and projects for the subsequent tests:
 
-        - Two domains: A & B
+        - Two accounts: A & B
         - Three users (1, 2 and 3)
         - Three groups (1, 2 and 3)
         - Two roles (1 and 2)
-        - DomainA owns user1, domainB owns user2 and user3
-        - DomainA owns group1 and group2, domainB owns group3
+        - AccountA owns user1, accountB owns user2 and user3
+        - AccountA owns group1 and group2, accountB owns group3
         - User1 and user2 are members of group1
         - User3 is a member of group2
-        - Two projects: A & B, both in domainA
+        - Two projects: A & B, both in accountA
         - Group1 has role1 on Project A and B, meaning that user1 and user2
           will get these roles by virtue of membership
         - User1, 2 and 3 have role1 assigned to projectA
         - Group1 has role1 on Project A and B, meaning that user1 and user2
           will get role1 (duplicated) by virtue of membership
-        - User1 has role2 assigned to domainA
+        - User1 has role2 assigned to accountA
 
         """
         super(TestTokenRevokeById, self).setUp()
 
-        # Start by creating a couple of domains and projects
-        self.domainA = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainA['id'], self.domainA)
-        self.domainB = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainB['id'], self.domainB)
-        self.projectA = self.new_project_ref(domain_id=self.domainA['id'])
+        # Start by creating a couple of accounts and projects
+        self.accountA = self.new_account_ref()
+        self.resource_api.create_account(self.accountA['id'], self.accountA)
+        self.accountB = self.new_account_ref()
+        self.resource_api.create_account(self.accountB['id'], self.accountB)
+        self.projectA = self.new_project_ref(account_id=self.accountA['id'])
         self.resource_api.create_project(self.projectA['id'], self.projectA)
-        self.projectB = self.new_project_ref(domain_id=self.domainA['id'])
+        self.projectB = self.new_project_ref(account_id=self.accountA['id'])
         self.resource_api.create_project(self.projectB['id'], self.projectB)
 
         # Now create some users
         self.user1 = self.new_user_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         password = self.user1['password']
         self.user1 = self.identity_api.create_user(self.user1)
         self.user1['password'] = password
 
         self.user2 = self.new_user_ref(
-            domain_id=self.domainB['id'])
+            account_id=self.accountB['id'])
         password = self.user2['password']
         self.user2 = self.identity_api.create_user(self.user2)
         self.user2['password'] = password
 
         self.user3 = self.new_user_ref(
-            domain_id=self.domainB['id'])
+            account_id=self.accountB['id'])
         password = self.user3['password']
         self.user3 = self.identity_api.create_user(self.user3)
         self.user3['password'] = password
 
         self.group1 = self.new_group_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         self.group1 = self.identity_api.create_group(self.group1)
 
         self.group2 = self.new_group_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         self.group2 = self.identity_api.create_group(self.group2)
 
         self.group3 = self.new_group_ref(
-            domain_id=self.domainB['id'])
+            account_id=self.accountB['id'])
         self.group3 = self.identity_api.create_group(self.group3)
 
         self.identity_api.add_user_to_group(self.user1['id'],
@@ -802,7 +802,7 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
 
         self.assignment_api.create_grant(self.role2['id'],
                                          user_id=self.user1['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
         self.assignment_api.create_grant(self.role1['id'],
                                          user_id=self.user1['id'],
                                          project_id=self.projectA['id'])
@@ -886,19 +886,19 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
                   expected_status=404)
 
     def role_data_fixtures(self):
-        self.projectC = self.new_project_ref(domain_id=self.domainA['id'])
+        self.projectC = self.new_project_ref(account_id=self.accountA['id'])
         self.resource_api.create_project(self.projectC['id'], self.projectC)
-        self.user4 = self.new_user_ref(domain_id=self.domainB['id'])
+        self.user4 = self.new_user_ref(account_id=self.accountB['id'])
         password = self.user4['password']
         self.user4 = self.identity_api.create_user(self.user4)
         self.user4['password'] = password
         self.user5 = self.new_user_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         password = self.user5['password']
         self.user5 = self.identity_api.create_user(self.user5)
         self.user5['password'] = password
         self.user6 = self.new_user_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         password = self.user6['password']
         self.user6 = self.identity_api.create_user(self.user6)
         self.user6['password'] = password
@@ -915,30 +915,30 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
                                          project_id=self.projectA['id'])
         self.assignment_api.create_grant(self.role1['id'],
                                          user_id=self.user6['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
 
     def test_deleting_role_revokes_token(self):
         """Test deleting a role revokes token.
 
             Add some additional test data, namely:
              - A third project (project C)
-             - Three additional users - user4 owned by domainB and user5 and 6
-               owned by domainA (different domain ownership should not affect
+             - Three additional users - user4 owned by accountB and user5 and 6
+               owned by accountA (different account ownership should not affect
                the test results, just provided to broaden test coverage)
              - User5 is a member of group1
              - Group1 gets an additional assignment - role1 on projectB as
                well as its existing role1 on projectA
              - User4 has role2 on Project C
-             - User6 has role1 on projectA and domainA
+             - User6 has role1 on projectA and accountA
              - This allows us to create 5 tokens by virtue of different types
                of role assignment:
                - user1, scoped to ProjectA by virtue of user role1 assignment
                - user5, scoped to ProjectB by virtue of group role1 assignment
                - user4, scoped to ProjectC by virtue of user role2 assignment
                - user6, scoped to ProjectA by virtue of user role1 assignment
-               - user6, scoped to DomainA by virtue of user role1 assignment
+               - user6, scoped to AccountA by virtue of user role1 assignment
              - role1 is then deleted
-             - Check the tokens on Project A and B, and DomainA are revoked,
+             - Check the tokens on Project A and B, and AccountA are revoked,
                but not the one for Project C
 
         """
@@ -969,7 +969,7 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
         auth_data = self.build_authentication_request(
             user_id=self.user6['id'],
             password=self.user6['password'],
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         tokenE = self.get_requested_token(auth_data)
         # Confirm tokens are valid
         self.head('/auth/tokens',
@@ -1011,13 +1011,13 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
                   headers={'X-Subject-Token': tokenC},
                   expected_status=200)
 
-    def test_domain_user_role_assignment_maintains_token(self):
-        """Test user-domain role assignment maintains existing token.
+    def test_account_user_role_assignment_maintains_token(self):
+        """Test user-account role assignment maintains existing token.
 
         Test Plan:
 
         - Get a token for user1, scoped to ProjectA
-        - Create a grant for user1 on DomainB
+        - Create a grant for user1 on AccountB
         - Check token is still valid
 
         """
@@ -1032,9 +1032,9 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
                   expected_status=200)
         # Assign a role, which should not affect the token
         grant_url = (
-            '/domains/%(domain_id)s/users/%(user_id)s/'
+            '/accounts/%(account_id)s/users/%(user_id)s/'
             'roles/%(role_id)s' % {
-                'domain_id': self.domainB['id'],
+                'account_id': self.accountB['id'],
                 'user_id': self.user1['id'],
                 'role_id': self.role1['id']})
         self.put(grant_url)
@@ -1157,13 +1157,13 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
                   headers={'X-Subject-Token': token3},
                   expected_status=404)
 
-    def test_domain_group_role_assignment_maintains_token(self):
-        """Test domain-group role assignment maintains existing token.
+    def test_account_group_role_assignment_maintains_token(self):
+        """Test account-group role assignment maintains existing token.
 
         Test Plan:
 
         - Get a token for user1, scoped to ProjectA
-        - Create a grant for group1 on DomainB
+        - Create a grant for group1 on AccountB
         - Check token is still longer valid
 
         """
@@ -1178,9 +1178,9 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
                   expected_status=200)
         # Delete the grant, which should invalidate the token
         grant_url = (
-            '/domains/%(domain_id)s/groups/%(group_id)s/'
+            '/accounts/%(account_id)s/groups/%(group_id)s/'
             'roles/%(role_id)s' % {
-                'domain_id': self.domainB['id'],
+                'account_id': self.accountB['id'],
                 'group_id': self.group1['id'],
                 'role_id': self.role1['id']})
         self.put(grant_url)
@@ -1316,8 +1316,8 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
             }
         else:
             body['auth']['passwordCredentials'] = {
-                'username': self.default_domain_user['name'],
-                'password': self.default_domain_user['password'],
+                'username': self.default_account_user['name'],
+                'password': self.default_account_user['password'],
             }
 
         if project_id:
@@ -1355,11 +1355,11 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
                 token=unscoped_token,
                 project_id=self.projectA['id']))
 
-        # Get a domain-scoped token from the unscoped token
-        domain_scoped_token = self.get_requested_token(
+        # Get a account-scoped token from the unscoped token
+        account_scoped_token = self.get_requested_token(
             self.build_authentication_request(
                 token=unscoped_token,
-                domain_id=self.domainA['id']))
+                account_id=self.accountA['id']))
 
         # revoke the project-scoped token.
         self.delete('/auth/tokens',
@@ -1376,19 +1376,19 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
                   headers={'X-Subject-Token': unscoped_token},
                   expected_status=200)
 
-        # The domain-scoped token should still be valid.
+        # The account-scoped token should still be valid.
         self.head('/auth/tokens',
-                  headers={'X-Subject-Token': domain_scoped_token},
+                  headers={'X-Subject-Token': account_scoped_token},
                   expected_status=200)
 
-        # revoke the domain-scoped token.
+        # revoke the account-scoped token.
         self.delete('/auth/tokens',
-                    headers={'X-Subject-Token': domain_scoped_token},
+                    headers={'X-Subject-Token': account_scoped_token},
                     expected_status=204)
 
-        # The domain-scoped token is invalid.
+        # The account-scoped token is invalid.
         self.head('/auth/tokens',
-                  headers={'X-Subject-Token': domain_scoped_token},
+                  headers={'X-Subject-Token': account_scoped_token},
                   expected_status=404)
 
         # The unscoped token should still be valid.
@@ -1408,7 +1408,7 @@ class TestTokenRevokeById(test_v3.RestfulTestCase):
 
         # Get a project-scoped token from the unscoped token
         project_scoped_token = self.get_v2_token(
-            token=unscoped_token, project_id=self.default_domain_project['id'])
+            token=unscoped_token, project_id=self.default_account_project['id'])
 
         # revoke the project-scoped token.
         self.delete('/auth/tokens',
@@ -1504,15 +1504,15 @@ class TestTokenRevokeApi(TestTokenRevokeById):
         expected_response = {'events': [{'project_id': project_id}]}
         self.assertEqual(expected_response, events_response)
 
-    def assertDomainInList(self, events_response, domain_id):
+    def assertAccountInList(self, events_response, account_id):
         events = events_response['events']
         self.assertEqual(1, len(events))
-        self.assertEqual(domain_id, events[0]['domain_id'])
+        self.assertEqual(account_id, events[0]['account_id'])
         self.assertIsNotNone(events[0]['issued_before'])
         self.assertIsNotNone(events_response['links'])
         del (events_response['events'][0]['issued_before'])
         del (events_response['links'])
-        expected_response = {'events': [{'domain_id': domain_id}]}
+        expected_response = {'events': [{'account_id': account_id}]}
         self.assertEqual(expected_response, events_response)
 
     def assertValidRevokedTokenResponse(self, events_response, **kwargs):
@@ -1571,19 +1571,19 @@ class TestTokenRevokeApi(TestTokenRevokeById):
         self.assertValidDeletedProjectResponse(events_response,
                                                self.projectA['id'])
 
-    def test_disable_domain_shows_in_event_list(self):
+    def test_disable_account_shows_in_event_list(self):
         events = self.get('/OS-REVOKE/events',
                           expected_status=200).json_body['events']
         self.assertEqual([], events)
-        disable_body = {'domain': {'enabled': False}}
+        disable_body = {'account': {'enabled': False}}
         self.patch(
-            '/domains/%(project_id)s' % {'project_id': self.domainA['id']},
+            '/accounts/%(project_id)s' % {'project_id': self.accountA['id']},
             body=disable_body)
 
         events = self.get('/OS-REVOKE/events',
                           expected_status=200).json_body
 
-        self.assertDomainInList(events, self.domainA['id'])
+        self.assertAccountInList(events, self.accountA['id'])
 
     def assertEventDataInList(self, events, **kwargs):
         found = False
@@ -1680,7 +1680,7 @@ class TestAuthExternalDisabled(test_v3.RestfulTestCase):
 
     def test_remote_user_disabled(self):
         api = auth.controllers.Auth()
-        remote_user = '%s@%s' % (self.user['name'], self.domain['name'])
+        remote_user = '%s@%s' % (self.user['name'], self.account['name'])
         context, auth_info, auth_context = self.build_external_auth_request(
             remote_user)
         self.assertRaises(exception.Unauthorized,
@@ -1690,14 +1690,14 @@ class TestAuthExternalDisabled(test_v3.RestfulTestCase):
                           auth_context)
 
 
-class TestAuthExternalLegacyDefaultDomain(test_v3.RestfulTestCase):
+class TestAuthExternalLegacyDefaultAccount(test_v3.RestfulTestCase):
     content_type = 'json'
 
     def config_overrides(self):
-        super(TestAuthExternalLegacyDefaultDomain, self).config_overrides()
+        super(TestAuthExternalLegacyDefaultAccount, self).config_overrides()
         self.auth_plugin_config_override(
             methods=['external', 'password', 'token'],
-            external='keystone.auth.plugins.external.LegacyDefaultDomain',
+            external='keystone.auth.plugins.external.LegacyDefaultAccount',
             password='keystone.auth.plugins.password.Password',
             token='keystone.auth.plugins.token.Token')
 
@@ -1705,12 +1705,12 @@ class TestAuthExternalLegacyDefaultDomain(test_v3.RestfulTestCase):
         self.config_fixture.config(group='auth', methods='external')
         api = auth.controllers.Auth()
         context, auth_info, auth_context = self.build_external_auth_request(
-            self.default_domain_user['name'])
+            self.default_account_user['name'])
         api.authenticate(context, auth_info, auth_context)
         self.assertEqual(auth_context['user_id'],
-                         self.default_domain_user['id'])
+                         self.default_account_user['id'])
 
-    def test_remote_user_no_domain(self):
+    def test_remote_user_no_account(self):
         api = auth.controllers.Auth()
         context, auth_info, auth_context = self.build_external_auth_request(
             self.user['name'])
@@ -1721,20 +1721,20 @@ class TestAuthExternalLegacyDefaultDomain(test_v3.RestfulTestCase):
                           auth_context)
 
 
-class TestAuthExternalLegacyDomain(test_v3.RestfulTestCase):
+class TestAuthExternalLegacyAccount(test_v3.RestfulTestCase):
     content_type = 'json'
 
     def config_overrides(self):
-        super(TestAuthExternalLegacyDomain, self).config_overrides()
+        super(TestAuthExternalLegacyAccount, self).config_overrides()
         self.auth_plugin_config_override(
             methods=['external', 'password', 'token'],
-            external='keystone.auth.plugins.external.LegacyDomain',
+            external='keystone.auth.plugins.external.LegacyAccount',
             password='keystone.auth.plugins.password.Password',
             token='keystone.auth.plugins.token.Token')
 
     def test_remote_user_with_realm(self):
         api = auth.controllers.Auth()
-        remote_user = '%s@%s' % (self.user['name'], self.domain['name'])
+        remote_user = '%s@%s' % (self.user['name'], self.account['name'])
         context, auth_info, auth_context = self.build_external_auth_request(
             remote_user)
 
@@ -1745,7 +1745,7 @@ class TestAuthExternalLegacyDomain(test_v3.RestfulTestCase):
         # '@' character.
         user = {'name': 'myname@mydivision'}
         self.identity_api.update_user(self.user['id'], user)
-        remote_user = '%s@%s' % (user['name'], self.domain['name'])
+        remote_user = '%s@%s' % (user['name'], self.account['name'])
         context, auth_info, auth_context = self.build_external_auth_request(
             remote_user)
 
@@ -1756,7 +1756,7 @@ class TestAuthExternalLegacyDomain(test_v3.RestfulTestCase):
         self.config_fixture.config(group='token', bind=['kerberos'])
         auth_data = self.build_authentication_request(
             project_id=self.project['id'])
-        remote_user = '%s@%s' % (self.user['name'], self.domain['name'])
+        remote_user = '%s@%s' % (self.user['name'], self.account['name'])
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
                                              'AUTH_TYPE': 'Negotiate'})
         r = self.v3_authenticate_token(auth_data)
@@ -1766,7 +1766,7 @@ class TestAuthExternalLegacyDomain(test_v3.RestfulTestCase):
     def test_unscoped_bind_with_remote_user(self):
         self.config_fixture.config(group='token', bind=['kerberos'])
         auth_data = self.build_authentication_request()
-        remote_user = '%s@%s' % (self.user['name'], self.domain['name'])
+        remote_user = '%s@%s' % (self.user['name'], self.account['name'])
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
                                              'AUTH_TYPE': 'Negotiate'})
         r = self.v3_authenticate_token(auth_data)
@@ -1774,24 +1774,24 @@ class TestAuthExternalLegacyDomain(test_v3.RestfulTestCase):
         self.assertEqual(token['bind']['kerberos'], self.user['name'])
 
 
-class TestAuthExternalDomain(test_v3.RestfulTestCase):
+class TestAuthExternalAccount(test_v3.RestfulTestCase):
     content_type = 'json'
 
     def config_overrides(self):
-        super(TestAuthExternalDomain, self).config_overrides()
+        super(TestAuthExternalAccount, self).config_overrides()
         self.kerberos = False
         self.auth_plugin_config_override(
             methods=['external', 'password', 'token'],
-            external='keystone.auth.plugins.external.Domain',
+            external='keystone.auth.plugins.external.Account',
             password='keystone.auth.plugins.password.Password',
             token='keystone.auth.plugins.token.Token')
 
     def test_remote_user_with_realm(self):
         api = auth.controllers.Auth()
         remote_user = self.user['name']
-        remote_domain = self.domain['name']
+        remote_account = self.account['name']
         context, auth_info, auth_context = self.build_external_auth_request(
-            remote_user, remote_domain=remote_domain, kerberos=self.kerberos)
+            remote_user, remote_account=remote_account, kerberos=self.kerberos)
 
         api.authenticate(context, auth_info, auth_context)
         self.assertEqual(auth_context['user_id'], self.user['id'])
@@ -1802,7 +1802,7 @@ class TestAuthExternalDomain(test_v3.RestfulTestCase):
         self.identity_api.update_user(self.user['id'], user)
         remote_user = user['name']
         context, auth_info, auth_context = self.build_external_auth_request(
-            remote_user, remote_domain=remote_domain, kerberos=self.kerberos)
+            remote_user, remote_account=remote_account, kerberos=self.kerberos)
 
         api.authenticate(context, auth_info, auth_context)
         self.assertEqual(auth_context['user_id'], self.user['id'])
@@ -1813,9 +1813,9 @@ class TestAuthExternalDomain(test_v3.RestfulTestCase):
             project_id=self.project['id'],
             kerberos=self.kerberos)
         remote_user = self.user['name']
-        remote_domain = self.domain['name']
+        remote_account = self.account['name']
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
-                                             'REMOTE_DOMAIN': remote_domain,
+                                             'REMOTE_ACCOUNT': remote_account,
                                              'AUTH_TYPE': 'Negotiate'})
         r = self.v3_authenticate_token(auth_data)
         token = self.assertValidProjectScopedTokenResponse(r)
@@ -1825,23 +1825,23 @@ class TestAuthExternalDomain(test_v3.RestfulTestCase):
         self.config_fixture.config(group='token', bind=['kerberos'])
         auth_data = self.build_authentication_request(kerberos=self.kerberos)
         remote_user = self.user['name']
-        remote_domain = self.domain['name']
+        remote_account = self.account['name']
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
-                                             'REMOTE_DOMAIN': remote_domain,
+                                             'REMOTE_ACCOUNT': remote_account,
                                              'AUTH_TYPE': 'Negotiate'})
         r = self.v3_authenticate_token(auth_data)
         token = self.assertValidUnscopedTokenResponse(r)
         self.assertEqual(token['bind']['kerberos'], self.user['name'])
 
 
-class TestAuthKerberos(TestAuthExternalDomain):
+class TestAuthKerberos(TestAuthExternalAccount):
 
     def config_overrides(self):
         super(TestAuthKerberos, self).config_overrides()
         self.kerberos = True
         self.auth_plugin_config_override(
             methods=['kerberos', 'password', 'token'],
-            kerberos='keystone.auth.plugins.external.KerberosDomain',
+            kerberos='keystone.auth.plugins.external.KerberosAccount',
             password='keystone.auth.plugins.password.Password',
             token='keystone.auth.plugins.token.Token')
 
@@ -1855,18 +1855,18 @@ class TestAuth(test_v3.RestfulTestCase):
         r = self.v3_authenticate_token(auth_data)
         self.assertValidUnscopedTokenResponse(r)
 
-    def test_unscoped_token_with_user_domain_id(self):
+    def test_unscoped_token_with_user_account_id(self):
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_id=self.domain['id'],
+            user_account_id=self.account['id'],
             password=self.user['password'])
         r = self.v3_authenticate_token(auth_data)
         self.assertValidUnscopedTokenResponse(r)
 
-    def test_unscoped_token_with_user_domain_name(self):
+    def test_unscoped_token_with_user_account_name(self):
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_name=self.domain['name'],
+            user_account_name=self.account['name'],
             password=self.user['password'])
         r = self.v3_authenticate_token(auth_data)
         self.assertValidUnscopedTokenResponse(r)
@@ -1880,7 +1880,7 @@ class TestAuth(test_v3.RestfulTestCase):
         self.assertValidProjectScopedTokenResponse(r)
 
     def _second_project_as_default(self):
-        ref = self.new_project_ref(domain_id=self.domain_id)
+        ref = self.new_project_ref(account_id=self.account_id)
         r = self.post('/projects', body={'project': ref})
         project = self.assertValidProjectResponse(r, ref)
 
@@ -1933,7 +1933,7 @@ class TestAuth(test_v3.RestfulTestCase):
         r = self.post('/auth/tokens', body=auth_data, noauth=True)
 
         self.assertIsNone(r.result['token'].get('project'))
-        self.assertIsNone(r.result['token'].get('domain'))
+        self.assertIsNone(r.result['token'].get('account'))
         self.assertIsNone(r.result['token'].get('scope'))
 
     def test_implicit_project_id_scoped_token_with_user_id_no_catalog(self):
@@ -2017,7 +2017,7 @@ class TestAuth(test_v3.RestfulTestCase):
                                              disabled_endpoint_id)
 
     def test_project_id_scoped_token_with_user_id_401(self):
-        project = self.new_project_ref(domain_id=self.domain_id)
+        project = self.new_project_ref(account_id=self.account_id)
         self.resource_api.create_project(project['id'], project)
 
         auth_data = self.build_authentication_request(
@@ -2031,15 +2031,15 @@ class TestAuth(test_v3.RestfulTestCase):
 
         Test Plan:
 
-        - Create a domain, with 1 project, 2 users (user1 and user2)
+        - Create a account, with 1 project, 2 users (user1 and user2)
           and 2 groups (group1 and group2)
         - Make user1 a member of group1, user2 a member of group2
         - Create 8 roles, assigning them to each of the 8 combinations
-          of users/groups on domain/project
+          of users/groups on account/project
         - Get a project scoped token for user1, checking that the right
           two roles are returned (one directly assigned, one by virtue
           of group membership)
-        - Repeat this for a domain scoped token
+        - Repeat this for a account scoped token
         - Make user1 also a member of group2
         - Get another scoped token making sure the additional role
           shows up
@@ -2049,29 +2049,29 @@ class TestAuth(test_v3.RestfulTestCase):
 
         """
 
-        domainA = self.new_domain_ref()
-        self.resource_api.create_domain(domainA['id'], domainA)
-        projectA = self.new_project_ref(domain_id=domainA['id'])
+        accountA = self.new_account_ref()
+        self.resource_api.create_account(accountA['id'], accountA)
+        projectA = self.new_project_ref(account_id=accountA['id'])
         self.resource_api.create_project(projectA['id'], projectA)
 
         user1 = self.new_user_ref(
-            domain_id=domainA['id'])
+            account_id=accountA['id'])
         password = user1['password']
         user1 = self.identity_api.create_user(user1)
         user1['password'] = password
 
         user2 = self.new_user_ref(
-            domain_id=domainA['id'])
+            account_id=accountA['id'])
         password = user2['password']
         user2 = self.identity_api.create_user(user2)
         user2['password'] = password
 
         group1 = self.new_group_ref(
-            domain_id=domainA['id'])
+            account_id=accountA['id'])
         group1 = self.identity_api.create_group(group1)
 
         group2 = self.new_group_ref(
-            domain_id=domainA['id'])
+            account_id=accountA['id'])
         group2 = self.identity_api.create_group(group2)
 
         self.identity_api.add_user_to_group(user1['id'],
@@ -2088,25 +2088,25 @@ class TestAuth(test_v3.RestfulTestCase):
 
         self.assignment_api.create_grant(role_list[0]['id'],
                                          user_id=user1['id'],
-                                         domain_id=domainA['id'])
+                                         account_id=accountA['id'])
         self.assignment_api.create_grant(role_list[1]['id'],
                                          user_id=user1['id'],
                                          project_id=projectA['id'])
         self.assignment_api.create_grant(role_list[2]['id'],
                                          user_id=user2['id'],
-                                         domain_id=domainA['id'])
+                                         account_id=accountA['id'])
         self.assignment_api.create_grant(role_list[3]['id'],
                                          user_id=user2['id'],
                                          project_id=projectA['id'])
         self.assignment_api.create_grant(role_list[4]['id'],
                                          group_id=group1['id'],
-                                         domain_id=domainA['id'])
+                                         account_id=accountA['id'])
         self.assignment_api.create_grant(role_list[5]['id'],
                                          group_id=group1['id'],
                                          project_id=projectA['id'])
         self.assignment_api.create_grant(role_list[6]['id'],
                                          group_id=group2['id'],
-                                         domain_id=domainA['id'])
+                                         account_id=accountA['id'])
         self.assignment_api.create_grant(role_list[7]['id'],
                                          group_id=group2['id'],
                                          project_id=projectA['id'])
@@ -2127,11 +2127,11 @@ class TestAuth(test_v3.RestfulTestCase):
         self.assertIn(role_list[1]['id'], roles_ids)
         self.assertIn(role_list[5]['id'], roles_ids)
 
-        # Now the same thing for a domain scoped token
+        # Now the same thing for a account scoped token
         auth_data = self.build_authentication_request(
             user_id=user1['id'],
             password=user1['password'],
-            domain_id=domainA['id'])
+            account_id=accountA['id'])
         r = self.v3_authenticate_token(auth_data)
         token = self.assertValidScopedTokenResponse(r)
         roles_ids = []
@@ -2160,15 +2160,15 @@ class TestAuth(test_v3.RestfulTestCase):
         self.assertIn(role_list[5]['id'], roles_ids)
         self.assertIn(role_list[7]['id'], roles_ids)
 
-    def test_auth_token_cross_domain_group_and_project(self):
-        """Verify getting a token in cross domain group/project roles."""
-        # create domain, project and group and grant roles to user
-        domain1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
-        self.resource_api.create_domain(domain1['id'], domain1)
+    def test_auth_token_cross_account_group_and_project(self):
+        """Verify getting a token in cross account group/project roles."""
+        # create account, project and group and grant roles to user
+        account1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
+        self.resource_api.create_account(account1['id'], account1)
         project1 = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex,
-                    'domain_id': domain1['id']}
+                    'account_id': account1['id']}
         self.resource_api.create_project(project1['id'], project1)
-        user_foo = self.new_user_ref(domain_id=test_v3.DEFAULT_DOMAIN_ID)
+        user_foo = self.new_user_ref(account_id=test_v3.DEFAULT_ACCOUNT_ID)
         password = user_foo['password']
         user_foo = self.identity_api.create_user(user_foo)
         user_foo['password'] = password
@@ -2178,15 +2178,15 @@ class TestAuth(test_v3.RestfulTestCase):
         role_admin = {'id': uuid.uuid4().hex,
                       'name': uuid.uuid4().hex}
         self.role_api.create_role(role_admin['id'], role_admin)
-        role_foo_domain1 = {'id': uuid.uuid4().hex,
+        role_foo_account1 = {'id': uuid.uuid4().hex,
                             'name': uuid.uuid4().hex}
-        self.role_api.create_role(role_foo_domain1['id'], role_foo_domain1)
-        role_group_domain1 = {'id': uuid.uuid4().hex,
+        self.role_api.create_role(role_foo_account1['id'], role_foo_account1)
+        role_group_account1 = {'id': uuid.uuid4().hex,
                               'name': uuid.uuid4().hex}
-        self.role_api.create_role(role_group_domain1['id'], role_group_domain1)
+        self.role_api.create_role(role_group_account1['id'], role_group_account1)
         self.assignment_api.add_user_to_project(project1['id'],
                                                 user_foo['id'])
-        new_group = {'domain_id': domain1['id'], 'name': uuid.uuid4().hex}
+        new_group = {'account_id': account1['id'], 'name': uuid.uuid4().hex}
         new_group = self.identity_api.create_group(new_group)
         self.identity_api.add_user_to_group(user_foo['id'],
                                             new_group['id'])
@@ -2200,20 +2200,20 @@ class TestAuth(test_v3.RestfulTestCase):
             role_id=role_admin['id'])
         self.assignment_api.create_grant(
             user_id=user_foo['id'],
-            domain_id=domain1['id'],
-            role_id=role_foo_domain1['id'])
+            account_id=account1['id'],
+            role_id=role_foo_account1['id'])
         self.assignment_api.create_grant(
             group_id=new_group['id'],
-            domain_id=domain1['id'],
-            role_id=role_group_domain1['id'])
+            account_id=account1['id'],
+            role_id=role_group_account1['id'])
 
         # Get a scoped token for the project
         auth_data = self.build_authentication_request(
             username=user_foo['name'],
-            user_domain_id=test_v3.DEFAULT_DOMAIN_ID,
+            user_account_id=test_v3.DEFAULT_ACCOUNT_ID,
             password=user_foo['password'],
             project_name=project1['name'],
-            project_domain_id=domain1['id'])
+            project_account_id=account1['id'])
 
         r = self.v3_authenticate_token(auth_data)
         scoped_token = self.assertValidScopedTokenResponse(r)
@@ -2224,142 +2224,142 @@ class TestAuth(test_v3.RestfulTestCase):
         self.assertEqual(project1['id'], project["id"])
         self.assertIn(role_member['id'], roles_ids)
         self.assertIn(role_admin['id'], roles_ids)
-        self.assertNotIn(role_foo_domain1['id'], roles_ids)
-        self.assertNotIn(role_group_domain1['id'], roles_ids)
+        self.assertNotIn(role_foo_account1['id'], roles_ids)
+        self.assertNotIn(role_group_account1['id'], roles_ids)
 
-    def test_project_id_scoped_token_with_user_domain_id(self):
+    def test_project_id_scoped_token_with_user_account_id(self):
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_id=self.domain['id'],
+            user_account_id=self.account['id'],
             password=self.user['password'],
             project_id=self.project['id'])
         r = self.v3_authenticate_token(auth_data)
         self.assertValidProjectScopedTokenResponse(r)
 
-    def test_project_id_scoped_token_with_user_domain_name(self):
+    def test_project_id_scoped_token_with_user_account_name(self):
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_name=self.domain['name'],
+            user_account_name=self.account['name'],
             password=self.user['password'],
             project_id=self.project['id'])
         r = self.v3_authenticate_token(auth_data)
         self.assertValidProjectScopedTokenResponse(r)
 
-    def test_domain_id_scoped_token_with_user_id(self):
-        path = '/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id'])
+    def test_account_id_scoped_token_with_user_id(self):
+        path = '/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id'])
         self.put(path=path)
 
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         r = self.v3_authenticate_token(auth_data)
-        self.assertValidDomainScopedTokenResponse(r)
+        self.assertValidAccountScopedTokenResponse(r)
 
-    def test_domain_id_scoped_token_with_user_domain_id(self):
-        path = '/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id'])
+    def test_account_id_scoped_token_with_user_account_id(self):
+        path = '/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id'])
         self.put(path=path)
 
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_id=self.domain['id'],
+            user_account_id=self.account['id'],
             password=self.user['password'],
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         r = self.v3_authenticate_token(auth_data)
-        self.assertValidDomainScopedTokenResponse(r)
+        self.assertValidAccountScopedTokenResponse(r)
 
-    def test_domain_id_scoped_token_with_user_domain_name(self):
-        path = '/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id'])
+    def test_account_id_scoped_token_with_user_account_name(self):
+        path = '/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id'])
         self.put(path=path)
 
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_name=self.domain['name'],
+            user_account_name=self.account['name'],
             password=self.user['password'],
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         r = self.v3_authenticate_token(auth_data)
-        self.assertValidDomainScopedTokenResponse(r)
+        self.assertValidAccountScopedTokenResponse(r)
 
-    def test_domain_name_scoped_token_with_user_id(self):
-        path = '/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id'])
+    def test_account_name_scoped_token_with_user_id(self):
+        path = '/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id'])
         self.put(path=path)
 
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
-            domain_name=self.domain['name'])
+            account_name=self.account['name'])
         r = self.v3_authenticate_token(auth_data)
-        self.assertValidDomainScopedTokenResponse(r)
+        self.assertValidAccountScopedTokenResponse(r)
 
-    def test_domain_name_scoped_token_with_user_domain_id(self):
-        path = '/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id'])
+    def test_account_name_scoped_token_with_user_account_id(self):
+        path = '/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id'])
         self.put(path=path)
 
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_id=self.domain['id'],
+            user_account_id=self.account['id'],
             password=self.user['password'],
-            domain_name=self.domain['name'])
+            account_name=self.account['name'])
         r = self.v3_authenticate_token(auth_data)
-        self.assertValidDomainScopedTokenResponse(r)
+        self.assertValidAccountScopedTokenResponse(r)
 
-    def test_domain_name_scoped_token_with_user_domain_name(self):
-        path = '/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id'])
+    def test_account_name_scoped_token_with_user_account_name(self):
+        path = '/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id'])
         self.put(path=path)
 
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_name=self.domain['name'],
+            user_account_name=self.account['name'],
             password=self.user['password'],
-            domain_name=self.domain['name'])
+            account_name=self.account['name'])
         r = self.v3_authenticate_token(auth_data)
-        self.assertValidDomainScopedTokenResponse(r)
+        self.assertValidAccountScopedTokenResponse(r)
 
-    def test_domain_scope_token_with_group_role(self):
+    def test_account_scope_token_with_group_role(self):
         group = self.new_group_ref(
-            domain_id=self.domain_id)
+            account_id=self.account_id)
         group = self.identity_api.create_group(group)
 
         # add user to group
         self.identity_api.add_user_to_group(self.user['id'], group['id'])
 
-        # grant the domain role to group
-        path = '/domains/%s/groups/%s/roles/%s' % (
-            self.domain['id'], group['id'], self.role['id'])
+        # grant the account role to group
+        path = '/accounts/%s/groups/%s/roles/%s' % (
+            self.account['id'], group['id'], self.role['id'])
         self.put(path=path)
 
-        # now get a domain-scoped token
+        # now get a account-scoped token
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         r = self.v3_authenticate_token(auth_data)
-        self.assertValidDomainScopedTokenResponse(r)
+        self.assertValidAccountScopedTokenResponse(r)
 
-    def test_domain_scope_token_with_name(self):
-        # grant the domain role to user
-        path = '/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id'])
+    def test_account_scope_token_with_name(self):
+        # grant the account role to user
+        path = '/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id'])
         self.put(path=path)
-        # now get a domain-scoped token
+        # now get a account-scoped token
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
-            domain_name=self.domain['name'])
+            account_name=self.account['name'])
         r = self.v3_authenticate_token(auth_data)
-        self.assertValidDomainScopedTokenResponse(r)
+        self.assertValidAccountScopedTokenResponse(r)
 
-    def test_domain_scope_failed(self):
+    def test_account_scope_failed(self):
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         self.v3_authenticate_token(auth_data, expected_status=401)
 
     def test_auth_with_id(self):
@@ -2380,8 +2380,8 @@ class TestAuth(test_v3.RestfulTestCase):
         body = {
             'auth': {
                 'passwordCredentials': {
-                    'username': self.default_domain_user['name'],
-                    'password': self.default_domain_user['password'],
+                    'username': self.default_account_user['name'],
+                    'password': self.default_account_user['password'],
                 },
             },
         }
@@ -2396,12 +2396,12 @@ class TestAuth(test_v3.RestfulTestCase):
 
     def test_validate_v2_scoped_token_with_v3_api(self):
         v2_response = self.get_v2_token(
-            tenant_id=self.default_domain_project['id'])
+            tenant_id=self.default_account_project['id'])
         result = v2_response.result
         v2_token = result['access']['token']['id']
         auth_data = self.build_authentication_request(
             token=v2_token,
-            project_id=self.default_domain_project['id'])
+            project_id=self.default_account_project['id'])
         r = self.v3_authenticate_token(auth_data)
         self.assertValidScopedTokenResponse(r)
 
@@ -2414,21 +2414,21 @@ class TestAuth(test_v3.RestfulTestCase):
     def test_invalid_user_name(self):
         auth_data = self.build_authentication_request(
             username=uuid.uuid4().hex,
-            user_domain_id=self.domain['id'],
+            user_account_id=self.account['id'],
             password=self.user['password'])
         self.v3_authenticate_token(auth_data, expected_status=401)
 
-    def test_invalid_domain_id(self):
+    def test_invalid_account_id(self):
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_id=uuid.uuid4().hex,
+            user_account_id=uuid.uuid4().hex,
             password=self.user['password'])
         self.v3_authenticate_token(auth_data, expected_status=401)
 
-    def test_invalid_domain_name(self):
+    def test_invalid_account_name(self):
         auth_data = self.build_authentication_request(
             username=self.user['name'],
-            user_domain_name=uuid.uuid4().hex,
+            user_account_name=uuid.uuid4().hex,
             password=self.user['password'])
         self.v3_authenticate_token(auth_data, expected_status=401)
 
@@ -2442,21 +2442,21 @@ class TestAuth(test_v3.RestfulTestCase):
         CONF.auth.methods = 'external'
         api = auth.controllers.Auth()
         context, auth_info, auth_context = self.build_external_auth_request(
-            self.default_domain_user['name'])
+            self.default_account_user['name'])
         api.authenticate(context, auth_info, auth_context)
         self.assertEqual(auth_context['user_id'],
-                         self.default_domain_user['id'])
+                         self.default_account_user['id'])
         # Now test to make sure the user name can, itself, contain the
         # '@' character.
         user = {'name': 'myname@mydivision'}
-        self.identity_api.update_user(self.default_domain_user['id'], user)
+        self.identity_api.update_user(self.default_account_user['id'], user)
         context, auth_info, auth_context = self.build_external_auth_request(
             user["name"])
         api.authenticate(context, auth_info, auth_context)
         self.assertEqual(auth_context['user_id'],
-                         self.default_domain_user['id'])
+                         self.default_account_user['id'])
 
-    def test_remote_user_no_domain(self):
+    def test_remote_user_no_account(self):
         api = auth.controllers.Auth()
         context, auth_info, auth_context = self.build_external_auth_request(
             self.user['name'])
@@ -2471,11 +2471,11 @@ class TestAuth(test_v3.RestfulTestCase):
         # note that they do not have to match
         api = auth.controllers.Auth()
         auth_data = self.build_authentication_request(
-            user_domain_id=self.default_domain_user['domain_id'],
-            username=self.default_domain_user['name'],
-            password=self.default_domain_user['password'])['auth']
+            user_account_id=self.default_account_user['account_id'],
+            username=self.default_account_user['name'],
+            password=self.default_account_user['password'])['auth']
         context, auth_info, auth_context = self.build_external_auth_request(
-            self.default_domain_user['name'], auth_data=auth_data)
+            self.default_account_user['name'], auth_data=auth_data)
 
         api.authenticate(context, auth_info, auth_context)
 
@@ -2483,7 +2483,7 @@ class TestAuth(test_v3.RestfulTestCase):
         # both REMOTE_USER and password methods must pass.
         # note that they do not have to match
         auth_data = self.build_authentication_request(
-            user_domain_id=self.domain['id'],
+            user_account_id=self.account['id'],
             username=self.user['name'],
             password=self.user['password'])['auth']
         auth_data['identity']['methods'] = ["password", "external"]
@@ -2501,11 +2501,11 @@ class TestAuth(test_v3.RestfulTestCase):
         # both REMOTE_USER and password methods must pass.
         api = auth.controllers.Auth()
         auth_data = self.build_authentication_request(
-            user_domain_id=self.domain['id'],
+            user_account_id=self.account['id'],
             username=self.user['name'],
             password='badpassword')['auth']
         context, auth_info, auth_context = self.build_external_auth_request(
-            self.default_domain_user['name'], auth_data=auth_data)
+            self.default_account_user['name'], auth_data=auth_data)
         self.assertRaises(exception.Unauthorized,
                           api.authenticate,
                           context,
@@ -2515,7 +2515,7 @@ class TestAuth(test_v3.RestfulTestCase):
     def test_bind_not_set_with_remote_user(self):
         self.config_fixture.config(group='token', bind=[])
         auth_data = self.build_authentication_request()
-        remote_user = self.default_domain_user['name']
+        remote_user = self.default_account_user['name']
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
                                              'AUTH_TYPE': 'Negotiate'})
         r = self.v3_authenticate_token(auth_data)
@@ -2527,7 +2527,7 @@ class TestAuth(test_v3.RestfulTestCase):
         self.config_fixture.config(group='token', bind='kerberos')
         auth_data = self.build_authentication_request(
             project_id=self.project['id'])
-        remote_user = self.default_domain_user['name']
+        remote_user = self.default_account_user['name']
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
                                              'AUTH_TYPE': 'Negotiate'})
 
@@ -2536,13 +2536,13 @@ class TestAuth(test_v3.RestfulTestCase):
         r = self.get('/auth/tokens', headers=headers, token=token)
         token = self.assertValidProjectScopedTokenResponse(r)
         self.assertEqual(token['bind']['kerberos'],
-                         self.default_domain_user['name'])
+                         self.default_account_user['name'])
 
     def test_auth_with_bind_token(self):
         self.config_fixture.config(group='token', bind=['kerberos'])
 
         auth_data = self.build_authentication_request()
-        remote_user = self.default_domain_user['name']
+        remote_user = self.default_account_user['name']
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
                                              'AUTH_TYPE': 'Negotiate'})
         r = self.v3_authenticate_token(auth_data)
@@ -2565,9 +2565,9 @@ class TestAuth(test_v3.RestfulTestCase):
     def test_v2_v3_bind_token_intermix(self):
         self.config_fixture.config(group='token', bind='kerberos')
 
-        # we need our own user registered to the default domain because of
+        # we need our own user registered to the default account because of
         # the way external auth works.
-        remote_user = self.default_domain_user['name']
+        remote_user = self.default_account_user['name']
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
                                              'AUTH_TYPE': 'Negotiate'})
         body = {'auth': {}}
@@ -2578,7 +2578,7 @@ class TestAuth(test_v3.RestfulTestCase):
         v2_token_data = resp.result
 
         bind = v2_token_data['access']['token']['bind']
-        self.assertEqual(bind['kerberos'], self.default_domain_user['name'])
+        self.assertEqual(bind['kerberos'], self.default_account_user['name'])
 
         v2_token_id = v2_token_data['access']['token']['id']
         # NOTE(gyee): self.get() will try to obtain an auth token if one
@@ -2595,7 +2595,7 @@ class TestAuth(test_v3.RestfulTestCase):
                              token_data['token']['bind'])
 
     def test_authenticating_a_user_with_no_password(self):
-        user = self.new_user_ref(domain_id=self.domain['id'])
+        user = self.new_user_ref(account_id=self.account['id'])
         user.pop('password', None)  # can't have a password for this test
         user = self.identity_api.create_user(user)
 
@@ -2608,7 +2608,7 @@ class TestAuth(test_v3.RestfulTestCase):
     def test_disabled_default_project_result_in_unscoped_token(self):
         # create a disabled project to work with
         project = self.create_new_default_project_for_user(
-            self.user['id'], self.domain_id, enable_project=False)
+            self.user['id'], self.account_id, enable_project=False)
 
         # assign a role to user for the new project
         self.assignment_api.add_role_to_user_and_project(self.user['id'],
@@ -2622,25 +2622,25 @@ class TestAuth(test_v3.RestfulTestCase):
         r = self.v3_authenticate_token(auth_data)
         self.assertValidUnscopedTokenResponse(r)
 
-    def test_disabled_default_project_domain_result_in_unscoped_token(self):
+    def test_disabled_default_project_account_result_in_unscoped_token(self):
         self.new_root_action()
-        domain_ref = self.new_domain_ref()
-        r = self.post('/domains', body={'domain': domain_ref})
-        domain = self.assertValidDomainResponse(r, domain_ref)
+        account_ref = self.new_account_ref()
+        r = self.post('/accounts', body={'account': account_ref})
+        account = self.assertValidAccountResponse(r, account_ref)
 
         project = self.create_new_default_project_for_user(
-            self.user['id'], domain['id'])
+            self.user['id'], account['id'])
 
         # assign a role to user for the new project
         self.assignment_api.add_role_to_user_and_project(self.user['id'],
                                                          project['id'],
                                                          self.role_id)
 
-        # now disable the project domain
-        body = {'domain': {'enabled': False}}
-        r = self.patch('/domains/%(domain_id)s' % {'domain_id': domain['id']},
+        # now disable the project account
+        body = {'account': {'enabled': False}}
+        r = self.patch('/accounts/%(account_id)s' % {'account_id': account['id']},
                        body=body)
-        self.assertValidDomainResponse(r)
+        self.assertValidAccountResponse(r)
 
         # attempt to authenticate without requesting a project
         auth_data = self.build_authentication_request(
@@ -2652,7 +2652,7 @@ class TestAuth(test_v3.RestfulTestCase):
     def test_no_access_to_default_project_result_in_unscoped_token(self):
         # create a disabled project to work with
         self.create_new_default_project_for_user(self.user['id'],
-                                                 self.domain_id)
+                                                 self.account_id)
 
         # attempt to authenticate without requesting a project
         auth_data = self.build_authentication_request(
@@ -2661,17 +2661,17 @@ class TestAuth(test_v3.RestfulTestCase):
         r = self.v3_authenticate_token(auth_data)
         self.assertValidUnscopedTokenResponse(r)
 
-    def test_disabled_scope_project_domain_result_in_401(self):
-        # create a disabled domain
-        domain = self.new_domain_ref()
-        domain['enabled'] = False
-        self.resource_api.create_domain(domain['id'], domain)
+    def test_disabled_scope_project_account_result_in_401(self):
+        # create a disabled account
+        account = self.new_account_ref()
+        account['enabled'] = False
+        self.resource_api.create_account(account['id'], account)
 
-        # create a project in the disabled domain
-        project = self.new_project_ref(domain_id=domain['id'])
+        # create a project in the disabled account
+        project = self.new_project_ref(account_id=account['id'])
         self.resource_api.create_project(project['id'], project)
 
-        # assign some role to self.user for the project in the disabled domain
+        # assign some role to self.user for the project in the disabled account
         self.assignment_api.add_role_to_user_and_project(
             self.user['id'],
             project['id'],
@@ -2684,24 +2684,24 @@ class TestAuth(test_v3.RestfulTestCase):
             project_id=project['id'])
         self.v3_authenticate_token(auth_data, expected_status=401)
 
-        # user should not be able to auth with project_name & domain
+        # user should not be able to auth with project_name & account
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
             project_name=project['name'],
-            project_domain_id=domain['id'])
+            project_account_id=account['id'])
         self.v3_authenticate_token(auth_data, expected_status=401)
 
     def test_auth_methods_with_different_identities_fails(self):
         # get the token for a user. This is self.user which is different from
-        # self.default_domain_user.
+        # self.default_account_user.
         token = self.get_scoped_token()
         # try both password and token methods with different identities and it
         # should fail
         auth_data = self.build_authentication_request(
             token=token,
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'])
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'])
         self.v3_authenticate_token(auth_data, expected_status=401)
 
 
@@ -2718,7 +2718,7 @@ class TestAuthJSONExternal(test_v3.RestfulTestCase):
     def test_remote_user_no_method(self):
         api = auth.controllers.Auth()
         context, auth_info, auth_context = self.build_external_auth_request(
-            self.default_domain_user['name'])
+            self.default_account_user['name'])
         self.assertRaises(exception.Unauthorized,
                           api.authenticate,
                           context,
@@ -2781,7 +2781,7 @@ class TestTrustRedelegation(test_v3.RestfulTestCase):
     def setUp(self):
         super(TestTrustRedelegation, self).setUp()
         # Create a trustee to delegate stuff to
-        trustee_user_ref = self.new_user_ref(domain_id=self.domain_id)
+        trustee_user_ref = self.new_user_ref(account_id=self.account_id)
         self.trustee_user = self.identity_api.create_user(trustee_user_ref)
         self.trustee_user['password'] = trustee_user_ref['password']
 
@@ -3017,7 +3017,7 @@ class TestTrustChain(test_v3.RestfulTestCase):
         self.user_chain = list()
         self.trust_chain = list()
         for _ in xrange(3):
-            user_ref = self.new_user_ref(domain_id=self.domain_id)
+            user_ref = self.new_user_ref(account_id=self.account_id)
             user = self.identity_api.create_user(user_ref)
             user['password'] = user_ref['password']
             self.user_chain.append(user)
@@ -3175,7 +3175,7 @@ class TestTrustAuth(test_v3.RestfulTestCase):
         super(TestTrustAuth, self).setUp()
 
         # create a trustee to delegate stuff to
-        self.trustee_user = self.new_user_ref(domain_id=self.domain_id)
+        self.trustee_user = self.new_user_ref(account_id=self.account_id)
         password = self.trustee_user['password']
         self.trustee_user = self.identity_api.create_user(self.trustee_user)
         self.trustee_user['password'] = password
@@ -3435,10 +3435,10 @@ class TestTrustAuth(test_v3.RestfulTestCase):
             trust_id=trust['id'])
         self.v3_authenticate_token(auth_data, expected_status=401)
 
-    def test_v3_v2_intermix_trustor_not_in_default_domain_failed(self):
+    def test_v3_v2_intermix_trustor_not_in_default_account_failed(self):
         ref = self.new_trust_ref(
             trustor_user_id=self.user_id,
-            trustee_user_id=self.default_domain_user_id,
+            trustee_user_id=self.default_account_user_id,
             project_id=self.project_id,
             impersonation=False,
             expires=dict(minutes=1),
@@ -3448,12 +3448,12 @@ class TestTrustAuth(test_v3.RestfulTestCase):
         trust = self.assertValidTrustResponse(r)
 
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
             trust_id=trust['id'])
         r = self.v3_authenticate_token(auth_data)
         self.assertValidProjectTrustScopedTokenResponse(
-            r, self.default_domain_user)
+            r, self.default_account_user)
 
         token = r.headers.get('X-Subject-Token')
 
@@ -3462,19 +3462,19 @@ class TestTrustAuth(test_v3.RestfulTestCase):
         self.admin_request(
             path=path, token='ADMIN', method='GET', expected_status=401)
 
-    def test_v3_v2_intermix_trustor_not_in_default_domaini_failed(self):
+    def test_v3_v2_intermix_trustor_not_in_default_accounti_failed(self):
         ref = self.new_trust_ref(
-            trustor_user_id=self.default_domain_user_id,
+            trustor_user_id=self.default_account_user_id,
             trustee_user_id=self.trustee_user_id,
-            project_id=self.default_domain_project_id,
+            project_id=self.default_account_project_id,
             impersonation=False,
             expires=dict(minutes=1),
             role_ids=[self.role_id])
 
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
-            project_id=self.default_domain_project_id)
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
+            project_id=self.default_account_project_id)
         token = self.get_requested_token(auth_data)
 
         r = self.post('/OS-TRUST/trusts', body={'trust': ref}, token=token)
@@ -3494,16 +3494,16 @@ class TestTrustAuth(test_v3.RestfulTestCase):
         self.admin_request(
             path=path, token='ADMIN', method='GET', expected_status=401)
 
-    def test_v3_v2_intermix_project_not_in_default_domaini_failed(self):
-        # create a trustee in default domain to delegate stuff to
-        trustee_user = self.new_user_ref(domain_id=test_v3.DEFAULT_DOMAIN_ID)
+    def test_v3_v2_intermix_project_not_in_default_accounti_failed(self):
+        # create a trustee in default account to delegate stuff to
+        trustee_user = self.new_user_ref(account_id=test_v3.DEFAULT_ACCOUNT_ID)
         password = trustee_user['password']
         trustee_user = self.identity_api.create_user(trustee_user)
         trustee_user['password'] = password
         trustee_user_id = trustee_user['id']
 
         ref = self.new_trust_ref(
-            trustor_user_id=self.default_domain_user_id,
+            trustor_user_id=self.default_account_user_id,
             trustee_user_id=trustee_user_id,
             project_id=self.project_id,
             impersonation=False,
@@ -3511,9 +3511,9 @@ class TestTrustAuth(test_v3.RestfulTestCase):
             role_ids=[self.role_id])
 
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
-            project_id=self.default_domain_project_id)
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
+            project_id=self.default_account_project_id)
         token = self.get_requested_token(auth_data)
 
         r = self.post('/OS-TRUST/trusts', body={'trust': ref}, token=token)
@@ -3534,24 +3534,24 @@ class TestTrustAuth(test_v3.RestfulTestCase):
             path=path, token='ADMIN', method='GET', expected_status=401)
 
     def test_v3_v2_intermix(self):
-        # create a trustee in default domain to delegate stuff to
-        trustee_user = self.new_user_ref(domain_id=test_v3.DEFAULT_DOMAIN_ID)
+        # create a trustee in default account to delegate stuff to
+        trustee_user = self.new_user_ref(account_id=test_v3.DEFAULT_ACCOUNT_ID)
         password = trustee_user['password']
         trustee_user = self.identity_api.create_user(trustee_user)
         trustee_user['password'] = password
         trustee_user_id = trustee_user['id']
 
         ref = self.new_trust_ref(
-            trustor_user_id=self.default_domain_user_id,
+            trustor_user_id=self.default_account_user_id,
             trustee_user_id=trustee_user_id,
-            project_id=self.default_domain_project_id,
+            project_id=self.default_account_project_id,
             impersonation=False,
             expires=dict(minutes=1),
             role_ids=[self.role_id])
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
-            project_id=self.default_domain_project_id)
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
+            project_id=self.default_account_project_id)
         token = self.get_requested_token(auth_data)
 
         r = self.post('/OS-TRUST/trusts', body={'trust': ref}, token=token)
@@ -3593,10 +3593,10 @@ class TestTrustAuth(test_v3.RestfulTestCase):
                          self.trustee_user['id'])
         self.assertEqual(r.result['token']['user']['name'],
                          self.trustee_user['name'])
-        self.assertEqual(r.result['token']['user']['domain']['id'],
-                         self.domain['id'])
-        self.assertEqual(r.result['token']['user']['domain']['name'],
-                         self.domain['name'])
+        self.assertEqual(r.result['token']['user']['account']['id'],
+                         self.account['id'])
+        self.assertEqual(r.result['token']['user']['account']['name'],
+                         self.account['name'])
         self.assertEqual(r.result['token']['project']['id'],
                          self.project['id'])
         self.assertEqual(r.result['token']['project']['name'],
@@ -3622,10 +3622,10 @@ class TestTrustAuth(test_v3.RestfulTestCase):
         self.assertValidProjectTrustScopedTokenResponse(r, self.user)
         self.assertEqual(r.result['token']['user']['id'], self.user['id'])
         self.assertEqual(r.result['token']['user']['name'], self.user['name'])
-        self.assertEqual(r.result['token']['user']['domain']['id'],
-                         self.domain['id'])
-        self.assertEqual(r.result['token']['user']['domain']['name'],
-                         self.domain['name'])
+        self.assertEqual(r.result['token']['user']['account']['id'],
+                         self.account['id'])
+        self.assertEqual(r.result['token']['user']['account']['name'],
+                         self.account['name'])
         self.assertEqual(r.result['token']['project']['id'],
                          self.project['id'])
         self.assertEqual(r.result['token']['project']['name'],
@@ -3711,7 +3711,7 @@ class TestTrustAuth(test_v3.RestfulTestCase):
         """
         # create a sub-trustee user
         sub_trustee_user = self.new_user_ref(
-            domain_id=test_v3.DEFAULT_DOMAIN_ID)
+            account_id=test_v3.DEFAULT_ACCOUNT_ID)
         password = sub_trustee_user['password']
         sub_trustee_user = self.identity_api.create_user(sub_trustee_user)
         sub_trustee_user['password'] = password
@@ -4012,8 +4012,8 @@ class TestTrustAuth(test_v3.RestfulTestCase):
         # token authenticate and the remaining_uses of the trust should not be
         # decremented.
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
             trust_id=trust_id)
         self.v3_authenticate_token(auth_data, expected_status=403)
 
@@ -4024,8 +4024,8 @@ class TestTrustAuth(test_v3.RestfulTestCase):
 class TestAPIProtectionWithoutAuthContextMiddleware(test_v3.RestfulTestCase):
     def test_api_protection_with_no_auth_context_in_env(self):
         auth_data = self.build_authentication_request(
-            user_id=self.default_domain_user['id'],
-            password=self.default_domain_user['password'],
+            user_id=self.default_account_user['id'],
+            password=self.default_account_user['password'],
             project_id=self.project['id'])
         token = self.get_requested_token(auth_data)
         auth_controller = auth.controllers.Auth()
@@ -4101,18 +4101,18 @@ class TestAuthSpecificData(test_v3.RestfulTestCase):
             expected_status=200)
         self.assertValidCatalogResponse(r)
 
-    def test_get_catalog_domain_scoped_token(self):
-        """Call ``GET /auth/catalog`` with a domain-scoped token."""
-        # grant a domain role to a user
-        self.put(path='/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id']))
+    def test_get_catalog_account_scoped_token(self):
+        """Call ``GET /auth/catalog`` with a account-scoped token."""
+        # grant a account role to a user
+        self.put(path='/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id']))
 
         self.get(
             '/auth/catalog',
             auth=self.build_authentication_request(
                 user_id=self.user['id'],
                 password=self.user['password'],
-                domain_id=self.domain['id']),
+                account_id=self.account['id']),
             expected_status=403)
 
     def test_get_catalog_unscoped_token(self):
@@ -4120,8 +4120,8 @@ class TestAuthSpecificData(test_v3.RestfulTestCase):
         self.get(
             '/auth/catalog',
             auth=self.build_authentication_request(
-                user_id=self.default_domain_user['id'],
-                password=self.default_domain_user['password']),
+                user_id=self.default_account_user['id'],
+                password=self.default_account_user['password']),
             expected_status=403)
 
     def test_get_catalog_no_token(self):
@@ -4136,13 +4136,13 @@ class TestAuthSpecificData(test_v3.RestfulTestCase):
         self.assertThat(r.json['projects'], matchers.HasLength(1))
         self.assertValidProjectListResponse(r)
 
-    def test_get_domains_project_scoped_token(self):
-        self.put(path='/domains/%s/users/%s/roles/%s' % (
-            self.domain['id'], self.user['id'], self.role['id']))
+    def test_get_accounts_project_scoped_token(self):
+        self.put(path='/accounts/%s/users/%s/roles/%s' % (
+            self.account['id'], self.user['id'], self.role['id']))
 
-        r = self.get('/auth/domains', expected_status=200)
-        self.assertThat(r.json['domains'], matchers.HasLength(1))
-        self.assertValidDomainListResponse(r)
+        r = self.get('/auth/accounts', expected_status=200)
+        self.assertThat(r.json['accounts'], matchers.HasLength(1))
+        self.assertValidAccountListResponse(r)
 
 
 class TestFernetTokenProvider(test_v3.RestfulTestCase):
@@ -4169,11 +4169,11 @@ class TestFernetTokenProvider(test_v3.RestfulTestCase):
             project_id=self.project_id)
         return self._make_auth_request(auth_data)
 
-    def _get_domain_scoped_token(self):
+    def _get_account_scoped_token(self):
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
-            domain_id=self.domain_id)
+            account_id=self.account_id)
         return self._make_auth_request(auth_data)
 
     def _get_trust_scoped_token(self, trustee_user, trust):
@@ -4201,7 +4201,7 @@ class TestFernetTokenProvider(test_v3.RestfulTestCase):
 
     def _create_trust(self):
         # Create a trustee user
-        trustee_user_ref = self.new_user_ref(domain_id=self.domain_id)
+        trustee_user_ref = self.new_user_ref(account_id=self.account_id)
         trustee_user = self.identity_api.create_user(trustee_user_ref)
         trustee_user['password'] = trustee_user_ref['password']
         ref = self.new_trust_ref(
@@ -4266,13 +4266,13 @@ class TestFernetTokenProvider(test_v3.RestfulTestCase):
                           self.token_provider_api.validate_token,
                           unscoped_token)
 
-    def test_unscoped_token_is_invalid_after_disabling_user_domain(self):
+    def test_unscoped_token_is_invalid_after_disabling_user_account(self):
         unscoped_token = self._get_unscoped_token()
         # Make sure the token is valid
         self._validate_token(unscoped_token)
-        # Disable the user's domain
-        self.domain['enabled'] = False
-        self.resource_api.update_domain(self.domain['id'], self.domain)
+        # Disable the user's account
+        self.account['enabled'] = False
+        self.resource_api.update_account(self.account['id'], self.account)
         # Ensure validating a token for a disabled user fails
         self.assertRaises(exception.TokenNotFound,
                           self.token_provider_api.validate_token,
@@ -4294,17 +4294,17 @@ class TestFernetTokenProvider(test_v3.RestfulTestCase):
         project_scoped_token = self._get_project_scoped_token()
         self._validate_token(project_scoped_token)
 
-    def test_validate_domain_scoped_token(self):
-        # Grant user access to domain
+    def test_validate_account_scoped_token(self):
+        # Grant user access to account
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.user['id'],
-                                         domain_id=self.domain['id'])
-        domain_scoped_token = self._get_domain_scoped_token()
-        resp = self._validate_token(domain_scoped_token)
+                                         account_id=self.account['id'])
+        account_scoped_token = self._get_account_scoped_token()
+        resp = self._validate_token(account_scoped_token)
         resp_json = json.loads(resp.body)
         self.assertIsNotNone(resp_json['token']['catalog'])
         self.assertIsNotNone(resp_json['token']['roles'])
-        self.assertIsNotNone(resp_json['token']['domain'])
+        self.assertIsNotNone(resp_json['token']['account'])
 
     def test_validate_tampered_project_scoped_token_fails(self):
         project_scoped_token = self._get_project_scoped_token()
@@ -4329,37 +4329,37 @@ class TestFernetTokenProvider(test_v3.RestfulTestCase):
                           self.token_provider_api.validate_token,
                           project_scoped_token)
 
-    def test_domain_scoped_token_is_invalid_after_disabling_user(self):
-        # Grant user access to domain
+    def test_account_scoped_token_is_invalid_after_disabling_user(self):
+        # Grant user access to account
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.user['id'],
-                                         domain_id=self.domain['id'])
-        domain_scoped_token = self._get_domain_scoped_token()
+                                         account_id=self.account['id'])
+        account_scoped_token = self._get_account_scoped_token()
         # Make sure the token is valid
-        self._validate_token(domain_scoped_token)
+        self._validate_token(account_scoped_token)
         # Disable user
         self._set_user_enabled(self.user, enabled=False)
         # Ensure validating a token for a disabled user fails
         self.assertRaises(exception.TokenNotFound,
                           self.token_provider_api.validate_token,
-                          domain_scoped_token)
+                          account_scoped_token)
 
-    def test_domain_scoped_token_is_invalid_after_deleting_grant(self):
-        # Grant user access to domain
+    def test_account_scoped_token_is_invalid_after_deleting_grant(self):
+        # Grant user access to account
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.user['id'],
-                                         domain_id=self.domain['id'])
-        domain_scoped_token = self._get_domain_scoped_token()
+                                         account_id=self.account['id'])
+        account_scoped_token = self._get_account_scoped_token()
         # Make sure the token is valid
-        self._validate_token(domain_scoped_token)
-        # Delete access to domain
+        self._validate_token(account_scoped_token)
+        # Delete access to account
         self.assignment_api.delete_grant(self.role['id'],
                                          user_id=self.user['id'],
-                                         domain_id=self.domain['id'])
+                                         account_id=self.account['id'])
         # Ensure validating a token for a disabled user fails
         self.assertRaises(exception.TokenNotFound,
                           self.token_provider_api.validate_token,
-                          domain_scoped_token)
+                          account_scoped_token)
 
     def test_project_scoped_token_invalid_after_changing_user_password(self):
         project_scoped_token = self._get_project_scoped_token()
@@ -4385,21 +4385,21 @@ class TestFernetTokenProvider(test_v3.RestfulTestCase):
                           self.token_provider_api.validate_token,
                           project_scoped_token)
 
-    def test_domain_scoped_token_invalid_after_disabling_domain(self):
-        # Grant user access to domain
+    def test_account_scoped_token_invalid_after_disabling_account(self):
+        # Grant user access to account
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.user['id'],
-                                         domain_id=self.domain['id'])
-        domain_scoped_token = self._get_domain_scoped_token()
+                                         account_id=self.account['id'])
+        account_scoped_token = self._get_account_scoped_token()
         # Make sure the token is valid
-        self._validate_token(domain_scoped_token)
-        # Disable domain
-        self.domain['enabled'] = False
-        self.resource_api.update_domain(self.domain['id'], self.domain)
-        # Ensure validating a token for a disabled domain fails
+        self._validate_token(account_scoped_token)
+        # Disable account
+        self.account['enabled'] = False
+        self.resource_api.update_account(self.account['id'], self.account)
+        # Ensure validating a token for a disabled account fails
         self.assertRaises(exception.TokenNotFound,
                           self.token_provider_api.validate_token,
-                          domain_scoped_token)
+                          account_scoped_token)
 
     def test_rescope_unscoped_token_with_trust(self):
         trustee_user, trust = self._create_trust()
@@ -4483,15 +4483,15 @@ class TestFernetTokenProvider(test_v3.RestfulTestCase):
                           self.token_provider_api.validate_token,
                           trust_scoped_token)
 
-    def test_trust_scoped_token_invalid_after_disabled_trustor_domain(self):
+    def test_trust_scoped_token_invalid_after_disabled_trustor_account(self):
         trustee_user, trust = self._create_trust()
         trust_scoped_token = self._get_trust_scoped_token(trustee_user, trust)
         # Validate a trust scoped token
         self._validate_token(trust_scoped_token)
 
-        # Disable trustor's domain
-        self.domain['enabled'] = False
-        self.resource_api.update_domain(self.domain['id'], self.domain)
+        # Disable trustor's account
+        self.account['enabled'] = False
+        self.resource_api.update_account(self.account['id'], self.account)
 
         trustor_update_ref = dict(password='Password1')
         self.identity_api.update_user(self.user['id'], trustor_update_ref)
@@ -4504,26 +4504,26 @@ class TestFernetTokenProvider(test_v3.RestfulTestCase):
         """Test raised exception when validating unscoped token.
 
         Test that validating an unscoped token in v2.0 of a v3 user of a
-        non-default domain returns unauthorized.
+        non-default account returns unauthorized.
         """
         unscoped_token = self._get_unscoped_token()
         self.assertRaises(exception.Unauthorized,
                           self.token_provider_api.validate_v2_token,
                           unscoped_token)
 
-    def test_v2_validate_domain_scoped_token_returns_401(self):
-        """Test raised exception when validating a domain scoped token.
+    def test_v2_validate_account_scoped_token_returns_401(self):
+        """Test raised exception when validating a account scoped token.
 
-        Test that validating an domain scoped token in v2.0
+        Test that validating an account scoped token in v2.0
         returns unauthorized.
         """
 
-        # Grant user access to domain
+        # Grant user access to account
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.user['id'],
-                                         domain_id=self.domain['id'])
+                                         account_id=self.account['id'])
 
-        scoped_token = self._get_domain_scoped_token()
+        scoped_token = self._get_account_scoped_token()
         self.assertRaises(exception.Unauthorized,
                           self.token_provider_api.validate_v2_token,
                           scoped_token)
@@ -4557,7 +4557,7 @@ class TestAuthFernetTokenProvider(TestAuth):
         self.config_fixture.config(group='token', bind='kerberos')
         auth_data = self.build_authentication_request(
             project_id=self.project['id'])
-        remote_user = self.default_domain_user['name']
+        remote_user = self.default_account_user['name']
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
                                              'AUTH_TYPE': 'Negotiate'})
         # Bind not current supported by Fernet, see bug 1433311.
@@ -4566,9 +4566,9 @@ class TestAuthFernetTokenProvider(TestAuth):
     def test_v2_v3_bind_token_intermix(self):
         self.config_fixture.config(group='token', bind='kerberos')
 
-        # we need our own user registered to the default domain because of
+        # we need our own user registered to the default account because of
         # the way external auth works.
-        remote_user = self.default_domain_user['name']
+        remote_user = self.default_account_user['name']
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
                                              'AUTH_TYPE': 'Negotiate'})
         body = {'auth': {}}
@@ -4582,7 +4582,7 @@ class TestAuthFernetTokenProvider(TestAuth):
         self.config_fixture.config(group='token', bind=['kerberos'])
 
         auth_data = self.build_authentication_request()
-        remote_user = self.default_domain_user['name']
+        remote_user = self.default_account_user['name']
         self.admin_app.extra_environ.update({'REMOTE_USER': remote_user,
                                              'AUTH_TYPE': 'Negotiate'})
         # Bind not current supported by Fernet, see bug 1433311.

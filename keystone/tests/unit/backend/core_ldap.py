@@ -49,20 +49,20 @@ class BaseBackendLdapCommon(object):
         self.addCleanup(common_ldap_core._HANDLERS.clear)
         self.addCleanup(self.clear_database)
 
-    def _get_domain_fixture(self):
-        """Domains in LDAP are read-only, so just return the static one."""
-        return self.resource_api.get_domain(CONF.identity.default_domain_id)
+    def _get_account_fixture(self):
+        """Accounts in LDAP are read-only, so just return the static one."""
+        return self.resource_api.get_account(CONF.identity.default_account_id)
 
     def clear_database(self):
         for shelf in fakeldap.FakeShelves:
             fakeldap.FakeShelves[shelf].clear()
 
-    def reload_backends(self, domain_id):
-        # Only one backend unless we are using separate domain backends
+    def reload_backends(self, account_id):
+        # Only one backend unless we are using separate account backends
         self.load_backends()
 
-    def get_config(self, domain_id):
-        # Only one conf structure unless we are using separate domain backends
+    def get_config(self, account_id):
+        # Only one conf structure unless we are using separate account backends
         return CONF
 
     def config_overrides(self):

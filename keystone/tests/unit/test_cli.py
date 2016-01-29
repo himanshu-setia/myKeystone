@@ -40,22 +40,22 @@ class CliTestCase(tests.SQLDriverOverrides, tests.TestCase):
         cli.TokenFlush.main()
 
 
-class CliDomainConfigAllTestCase(tests.SQLDriverOverrides, tests.TestCase):
+class CliAccountConfigAllTestCase(tests.SQLDriverOverrides, tests.TestCase):
 
     def setUp(self):
         self.useFixture(database.Database())
-        super(CliDomainConfigAllTestCase, self).setUp()
+        super(CliAccountConfigAllTestCase, self).setUp()
         self.load_backends()
         self.config_fixture.config(
             group='identity',
-            domain_config_dir=tests.TESTCONF + '/domain_configs_multi_ldap')
-        self.domain_count = 3
-        self.setup_initial_domains()
+            account_config_dir=tests.TESTCONF + '/account_configs_multi_ldap')
+        self.account_count = 3
+        self.setup_initial_accounts()
 
     def config_files(self):
         self.config_fixture.register_cli_opt(cli.command_opt)
         self.addCleanup(self.cleanup)
-        config_files = super(CliDomainConfigAllTestCase, self).config_files()
+        config_files = super(CliAccountConfigAllTestCase, self).config_files()
         config_files.append(tests.dirs.tests_conf('backend_sql.conf'))
         return config_files
 
@@ -63,40 +63,40 @@ class CliDomainConfigAllTestCase(tests.SQLDriverOverrides, tests.TestCase):
         CONF.reset()
         CONF.unregister_opt(cli.command_opt)
 
-    def cleanup_domains(self):
-        for domain in self.domains:
-            if domain == 'domain_default':
-                # Not allowed to delete the default domain, but should at least
-                # delete any domain-specific config for it.
-                self.domain_config_api.delete_config(
-                    CONF.identity.default_domain_id)
+    def cleanup_accounts(self):
+        for account in self.accounts:
+            if account == 'account_default':
+                # Not allowed to delete the default account, but should at least
+                # delete any account-specific config for it.
+                self.account_config_api.delete_config(
+                    CONF.identity.default_account_id)
                 continue
-            this_domain = self.domains[domain]
-            this_domain['enabled'] = False
-            self.resource_api.update_domain(this_domain['id'], this_domain)
-            self.resource_api.delete_domain(this_domain['id'])
-        self.domains = {}
+            this_account = self.accounts[account]
+            this_account['enabled'] = False
+            self.resource_api.update_account(this_account['id'], this_account)
+            self.resource_api.delete_account(this_account['id'])
+        self.accounts = {}
 
     def config(self, config_files):
-        CONF(args=['domain_config_upload', '--all'], project='keystone',
+        CONF(args=['account_config_upload', '--all'], project='keystone',
              default_config_files=config_files)
 
-    def setup_initial_domains(self):
+    def setup_initial_accounts(self):
 
-        def create_domain(domain):
-            return self.resource_api.create_domain(domain['id'], domain)
+        def create_account(account):
+            return self.resource_api.create_account(account['id'], account)
 
-        self.domains = {}
-        self.addCleanup(self.cleanup_domains)
-        for x in range(1, self.domain_count):
-            domain = 'domain%s' % x
-            self.domains[domain] = create_domain(
-                {'id': uuid.uuid4().hex, 'name': domain})
-        self.domains['domain_default'] = create_domain(
-            resource.calc_default_domain())
+        self.accounts = {}
+        self.addCleanup(self.cleanup_accounts)
+        for x in range(1, self.account_count):
+            account = 'account%s' % x
+            self.accounts[account] = create_account(
+                {'id': uuid.uuid4().hex, 'name': account})
+        self.accounts['account_default'] = create_account(
+            resource.calc_default_account())
 
     def test_config_upload(self):
-        # The values below are the same as in the domain_configs_multi_ldap
+        # The values below are the same as in the account_configs_multi_ldap
         # directory of test config_files.
         default_config = {
             'ldap': {'url': 'fake://memory',
@@ -105,14 +105,14 @@ class CliDomainConfigAllTestCase(tests.SQLDriverOverrides, tests.TestCase):
                      'suffix': 'cn=example,cn=com'},
             'identity': {'driver': 'keystone.identity.backends.ldap.Identity'}
         }
-        domain1_config = {
+        account1_config = {
             'ldap': {'url': 'fake://memory1',
                      'user': 'cn=Admin',
                      'password': 'password',
                      'suffix': 'cn=example,cn=com'},
             'identity': {'driver': 'keystone.identity.backends.ldap.Identity'}
         }
-        domain2_config = {
+        account2_config = {
             'ldap': {'url': 'fake://memory',
                      'user': 'cn=Admin',
                      'password': 'password',
@@ -124,27 +124,27 @@ class CliDomainConfigAllTestCase(tests.SQLDriverOverrides, tests.TestCase):
 
         # Clear backend dependencies, since cli loads these manually
         dependency.reset()
-        cli.DomainConfigUpload.main()
+        cli.AccountConfigUpload.main()
 
-        res = self.domain_config_api.get_config_with_sensitive_info(
-            CONF.identity.default_domain_id)
+        res = self.account_config_api.get_config_with_sensitive_info(
+            CONF.identity.default_account_id)
         self.assertEqual(default_config, res)
-        res = self.domain_config_api.get_config_with_sensitive_info(
-            self.domains['domain1']['id'])
-        self.assertEqual(domain1_config, res)
-        res = self.domain_config_api.get_config_with_sensitive_info(
-            self.domains['domain2']['id'])
-        self.assertEqual(domain2_config, res)
+        res = self.account_config_api.get_config_with_sensitive_info(
+            self.accounts['account1']['id'])
+        self.assertEqual(account1_config, res)
+        res = self.account_config_api.get_config_with_sensitive_info(
+            self.accounts['account2']['id'])
+        self.assertEqual(account2_config, res)
 
 
-class CliDomainConfigSingleDomainTestCase(CliDomainConfigAllTestCase):
+class CliAccountConfigSingleAccountTestCase(CliAccountConfigAllTestCase):
 
     def config(self, config_files):
-        CONF(args=['domain_config_upload', '--domain-name', 'Default'],
+        CONF(args=['account_config_upload', '--account-name', 'Default'],
              project='keystone', default_config_files=config_files)
 
     def test_config_upload(self):
-        # The values below are the same as in the domain_configs_multi_ldap
+        # The values below are the same as in the account_configs_multi_ldap
         # directory of test config_files.
         default_config = {
             'ldap': {'url': 'fake://memory',
@@ -156,97 +156,97 @@ class CliDomainConfigSingleDomainTestCase(CliDomainConfigAllTestCase):
 
         # Clear backend dependencies, since cli loads these manually
         dependency.reset()
-        cli.DomainConfigUpload.main()
+        cli.AccountConfigUpload.main()
 
-        res = self.domain_config_api.get_config_with_sensitive_info(
-            CONF.identity.default_domain_id)
+        res = self.account_config_api.get_config_with_sensitive_info(
+            CONF.identity.default_account_id)
         self.assertEqual(default_config, res)
-        res = self.domain_config_api.get_config_with_sensitive_info(
-            self.domains['domain1']['id'])
+        res = self.account_config_api.get_config_with_sensitive_info(
+            self.accounts['account1']['id'])
         self.assertEqual({}, res)
-        res = self.domain_config_api.get_config_with_sensitive_info(
-            self.domains['domain2']['id'])
+        res = self.account_config_api.get_config_with_sensitive_info(
+            self.accounts['account2']['id'])
         self.assertEqual({}, res)
 
     def test_no_overwrite_config(self):
-        # Create a config for the default domain
+        # Create a config for the default account
         default_config = {
             'ldap': {'url': uuid.uuid4().hex},
             'identity': {'driver': 'keystone.identity.backends.ldap.Identity'}
         }
-        self.domain_config_api.create_config(
-            CONF.identity.default_domain_id, default_config)
+        self.account_config_api.create_config(
+            CONF.identity.default_account_id, default_config)
 
         # Now try and upload the settings in the configuration file for the
-        # default domain
+        # default account
         dependency.reset()
         with mock.patch('__builtin__.print') as mock_print:
-            self.assertRaises(SystemExit, cli.DomainConfigUpload.main)
+            self.assertRaises(SystemExit, cli.AccountConfigUpload.main)
             file_name = ('keystone.%s.conf' %
-                         resource.calc_default_domain()['name'])
+                         resource.calc_default_account()['name'])
             error_msg = _(
-                'Domain: %(domain)s already has a configuration defined - '
+                'Account: %(account)s already has a configuration defined - '
                 'ignoring file: %(file)s.') % {
-                    'domain': resource.calc_default_domain()['name'],
-                    'file': os.path.join(CONF.identity.domain_config_dir,
+                    'account': resource.calc_default_account()['name'],
+                    'file': os.path.join(CONF.identity.account_config_dir,
                                          file_name)}
             mock_print.assert_has_calls([mock.call(error_msg)])
 
-        res = self.domain_config_api.get_config(
-            CONF.identity.default_domain_id)
+        res = self.account_config_api.get_config(
+            CONF.identity.default_account_id)
         # The initial config should not have been overwritten
         self.assertEqual(default_config, res)
 
 
-class CliDomainConfigNoOptionsTestCase(CliDomainConfigAllTestCase):
+class CliAccountConfigNoOptionsTestCase(CliAccountConfigAllTestCase):
 
     def config(self, config_files):
-        CONF(args=['domain_config_upload'],
+        CONF(args=['account_config_upload'],
              project='keystone', default_config_files=config_files)
 
     def test_config_upload(self):
         dependency.reset()
         with mock.patch('__builtin__.print') as mock_print:
-            self.assertRaises(SystemExit, cli.DomainConfigUpload.main)
+            self.assertRaises(SystemExit, cli.AccountConfigUpload.main)
             mock_print.assert_has_calls(
                 [mock.call(
                     _('At least one option must be provided, use either '
-                      '--all or --domain-name'))])
+                      '--all or --account-name'))])
 
 
-class CliDomainConfigTooManyOptionsTestCase(CliDomainConfigAllTestCase):
+class CliAccountConfigTooManyOptionsTestCase(CliAccountConfigAllTestCase):
 
     def config(self, config_files):
-        CONF(args=['domain_config_upload', '--all', '--domain-name',
+        CONF(args=['account_config_upload', '--all', '--account-name',
                    'Default'],
              project='keystone', default_config_files=config_files)
 
     def test_config_upload(self):
         dependency.reset()
         with mock.patch('__builtin__.print') as mock_print:
-            self.assertRaises(SystemExit, cli.DomainConfigUpload.main)
+            self.assertRaises(SystemExit, cli.AccountConfigUpload.main)
             mock_print.assert_has_calls(
                 [mock.call(_('The --all option cannot be used with '
-                             'the --domain-name option'))])
+                             'the --account-name option'))])
 
 
-class CliDomainConfigInvalidDomainTestCase(CliDomainConfigAllTestCase):
+class CliAccountConfigInvalidAccountTestCase(CliAccountConfigAllTestCase):
 
     def config(self, config_files):
-        self.invalid_domain_name = uuid.uuid4().hex
-        CONF(args=['domain_config_upload', '--domain-name',
-                   self.invalid_domain_name],
+        self.invalid_account_name = uuid.uuid4().hex
+        CONF(args=['account_config_upload', '--account-name',
+                   self.invalid_account_name],
              project='keystone', default_config_files=config_files)
 
     def test_config_upload(self):
         dependency.reset()
         with mock.patch('__builtin__.print') as mock_print:
-            self.assertRaises(SystemExit, cli.DomainConfigUpload.main)
-            file_name = 'keystone.%s.conf' % self.invalid_domain_name
+            self.assertRaises(SystemExit, cli.AccountConfigUpload.main)
+            file_name = 'keystone.%s.conf' % self.invalid_account_name
             error_msg = (_(
-                'Invalid domain name: %(domain)s found in config file name: '
+                'Invalid account name: %(account)s found in config file name: '
                 '%(file)s - ignoring this file.') % {
-                    'domain': self.invalid_domain_name,
-                    'file': os.path.join(CONF.identity.domain_config_dir,
+                    'account': self.invalid_account_name,
+                    'file': os.path.join(CONF.identity.account_config_dir,
                                          file_name)})
             mock_print.assert_has_calls([mock.call(error_msg)])

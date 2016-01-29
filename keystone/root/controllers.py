@@ -46,8 +46,8 @@ class RootV3(controller.V3Controller):
                 user['default_project_id'] = query_string['DefaultProjectId']
             if 'Description' in query_string:
                 user['description'] = query_string['Description']
-            if 'DomainId' in query_string:
-                user['domain_id'] = query_string['DomainId']
+            if 'AccountId' in query_string:
+                user['account_id'] = query_string['AccountId']
             if 'Email' in query_string:
                 user['email'] = query_string['Email']
             if 'Enabled' in query_string:
@@ -87,8 +87,8 @@ class RootV3(controller.V3Controller):
             group = {}
             if 'Description' in query_string:
                 group['description'] = query_string['Description']
-            if 'DomainId' in query_string:
-                group['domain_id'] = query_string['DomainId']
+            if 'AccountId' in query_string:
+                group['account_id'] = query_string['AccountId']
             if 'Name' in query_string:
                 group['name'] = query_string['Name']
 

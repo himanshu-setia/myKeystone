@@ -233,7 +233,7 @@ class TestCredentialTrustScoped(test_v3.RestfulTestCase):
     def setUp(self):
         super(TestCredentialTrustScoped, self).setUp()
 
-        self.trustee_user = self.new_user_ref(domain_id=self.domain_id)
+        self.trustee_user = self.new_user_ref(account_id=self.account_id)
         password = self.trustee_user['password']
         self.trustee_user = self.identity_api.create_user(self.trustee_user)
         self.trustee_user['password'] = password

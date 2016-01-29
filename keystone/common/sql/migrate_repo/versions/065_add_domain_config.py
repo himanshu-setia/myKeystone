@@ -25,7 +25,7 @@ def upgrade(migrate_engine):
     whitelist_table = sql.Table(
         WHITELIST_TABLE,
         meta,
-        sql.Column('domain_id', sql.String(64), primary_key=True),
+        sql.Column('account_id', sql.String(64), primary_key=True),
         sql.Column('group', sql.String(255), primary_key=True),
         sql.Column('option', sql.String(255), primary_key=True),
         sql.Column('value', ks_sql.JsonBlob.impl, nullable=False),
@@ -36,7 +36,7 @@ def upgrade(migrate_engine):
     sensitive_table = sql.Table(
         SENSITIVE_TABLE,
         meta,
-        sql.Column('domain_id', sql.String(64), primary_key=True),
+        sql.Column('account_id', sql.String(64), primary_key=True),
         sql.Column('group', sql.String(255), primary_key=True),
         sql.Column('option', sql.String(255), primary_key=True),
         sql.Column('value', ks_sql.JsonBlob.impl, nullable=False),

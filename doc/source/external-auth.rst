@@ -29,13 +29,13 @@ in the ``auth`` section. There are two external authentication method plugins
 provided by Keystone:
 
 * ``keystone.auth.plugins.external.Default``: This plugin won't take into
-  account the domain information that the external authentication method may
-  pass down to Keystone and will always use the configured default domain. The
+  account the account information that the external authentication method may
+  pass down to Keystone and will always use the configured default account. The
   ``REMOTE_USER`` variable is the username.
 
-* ``keystone.auth.plugins.external.Domain``: This plugin expects that the
-  ``REMOTE_DOMAIN`` variable contains the domain for the user. If this variable
-  is not present, the configured default domain will be used. The
+* ``keystone.auth.plugins.external.Account``: This plugin expects that the
+  ``REMOTE_ACCOUNT`` variable contains the account for the user. If this variable
+  is not present, the configured default account will be used. The
   ``REMOTE_USER`` variable is the username.
 
 Using HTTPD authentication

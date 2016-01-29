@@ -113,7 +113,7 @@ class LiveLDAPPoolIdentity(test_backend_ldap_pool.LdapPoolCommonTestMixin,
 
     def _create_user_and_authenticate(self, password):
         user_dict = {
-            'domain_id': CONF.identity.default_domain_id,
+            'account_id': CONF.identity.default_account_id,
             'name': uuid.uuid4().hex,
             'password': password}
         user = self.identity_api.create_user(user_dict)

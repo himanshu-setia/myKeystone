@@ -26,11 +26,11 @@ CONF = cfg.CONF
 
 class User(sql.ModelBase, sql.DictBase):
     __tablename__ = 'user'
-    attributes = ['id', 'name', 'domain_id', 'password', 'enabled',
+    attributes = ['id', 'name', 'account_id', 'password', 'enabled',
                   'default_project_id', 'expiry']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
-    domain_id = sql.Column(sql.String(64), nullable=False)
+    account_id = sql.Column(sql.String(64), nullable=False)
     password = sql.Column(sql.String(128))
     enabled = sql.Column(sql.Boolean)
     extra = sql.Column(sql.JsonBlob())
@@ -38,7 +38,7 @@ class User(sql.ModelBase, sql.DictBase):
     expiry = sql.Column(sql.DateTime)
     # Unique constraint across two columns to create the separation
     # rather than just only 'name' being unique
-    __table_args__ = (sql.UniqueConstraint('domain_id', 'name'), {})
+    __table_args__ = (sql.UniqueConstraint('account_id', 'name'), {})
 
     def to_dict(self, include_extra_dict=False):
         d = super(User, self).to_dict(include_extra_dict=include_extra_dict)
@@ -59,15 +59,15 @@ class UserHistory(sql.ModelBase, sql.DictBase):
 
 class Group(sql.ModelBase, sql.DictBase):
     __tablename__ = 'group'
-    attributes = ['id', 'name', 'domain_id', 'description']
+    attributes = ['id', 'name', 'account_id', 'description']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(64), nullable=False)
-    domain_id = sql.Column(sql.String(64), nullable=False)
+    account_id = sql.Column(sql.String(64), nullable=False)
     description = sql.Column(sql.Text())
     extra = sql.Column(sql.JsonBlob())
     # Unique constraint across two columns to create the separation
     # rather than just only 'name' being unique
-    __table_args__ = (sql.UniqueConstraint('domain_id', 'name'), {})
+    __table_args__ = (sql.UniqueConstraint('account_id', 'name'), {})
 
 
 class UserGroupMembership(sql.ModelBase, sql.DictBase):
@@ -83,7 +83,7 @@ class UserGroupMembership(sql.ModelBase, sql.DictBase):
 
 class Identity(identity.Driver):
     # NOTE(henry-nash): Override the __init__() method so as to take a
-    # config parameter to enable sql to be used as a domain-specific driver.
+    # config parameter to enable sql to be used as a account-specific driver.
     def __init__(self, conf=None):
         super(Identity, self).__init__()
 
@@ -157,7 +157,7 @@ class Identity(identity.Driver):
         query = query.filter(UserGroupMembership.group_id == group_id)
 
         ref_list = {}
-        ref_list['Group JRN'] = 'jrn:jcs:iam:' + group.domain_id + ':group:' + group.name
+        ref_list['Group JRN'] = 'jrn:jcs:iam:' + group.account_id + ':group:' + group.name
         ref_list['Attached Users'] = query.count()
 
         dict_list = []
@@ -178,7 +178,7 @@ class Identity(identity.Driver):
         query = query.filter(UserGroupMembership.user_id == user_id)
 
         ref_list = {}
-        ref_list['User JRN'] = 'jrn:jcs:iam:' + user.domain_id + ':user:' + user.name
+        ref_list['User JRN'] = 'jrn:jcs:iam:' + user.account_id + ':user:' + user.name
         ref_list['Has Password'] = ('No','Yes')[user.password is not None]
         ref_list['Attached Groups'] = query.count()
 
@@ -202,11 +202,11 @@ class Identity(identity.Driver):
         session = sql.get_session()
         return identity.filter_user(self._get_user(session, user_id).to_dict())
 
-    def get_user_by_name(self, user_name, domain_id):
+    def get_user_by_name(self, user_name, account_id):
         session = sql.get_session()
         query = session.query(User)
         query = query.filter_by(name=user_name)
-        query = query.filter_by(domain_id=domain_id)
+        query = query.filter_by(account_id=account_id)
         try:
             user_ref = query.one()
         except sql.NotFound:
@@ -413,11 +413,11 @@ class Identity(identity.Driver):
         session = sql.get_session()
         return self._get_group(session, group_id).to_dict()
 
-    def get_group_by_name(self, group_name, domain_id):
+    def get_group_by_name(self, group_name, account_id):
         session = sql.get_session()
         query = session.query(Group)
         query = query.filter_by(name=group_name)
-        query = query.filter_by(domain_id=domain_id)
+        query = query.filter_by(account_id=account_id)
         try:
             group_ref = query.one()
         except sql.NotFound:

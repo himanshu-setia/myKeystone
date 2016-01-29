@@ -50,8 +50,8 @@ def upgrade(migrate_engine):
         mysql_engine='InnoDB',
         mysql_charset='utf8')
 
-    domain = sql.Table(
-        'domain', meta,
+    account = sql.Table(
+        'account', meta,
         sql.Column('id', sql.String(length=64), primary_key=True),
         sql.Column('name', sql.String(length=64), nullable=False),
         sql.Column('enabled', sql.Boolean, default=True, nullable=False),
@@ -76,7 +76,7 @@ def upgrade(migrate_engine):
     group = sql.Table(
         'group', meta,
         sql.Column('id', sql.String(length=64), primary_key=True),
-        sql.Column('domain_id', sql.String(length=64), nullable=False),
+        sql.Column('account_id', sql.String(length=64), nullable=False),
         sql.Column('name', sql.String(length=64), nullable=False),
         sql.Column('description', sql.Text),
         sql.Column('extra', ks_sql.JsonBlob.impl),
@@ -99,7 +99,7 @@ def upgrade(migrate_engine):
         sql.Column('extra', ks_sql.JsonBlob.impl),
         sql.Column('description', sql.Text),
         sql.Column('enabled', sql.Boolean),
-        sql.Column('domain_id', sql.String(length=64), nullable=False),
+        sql.Column('account_id', sql.String(length=64), nullable=False),
         mysql_engine='InnoDB',
         mysql_charset='utf8')
 
@@ -162,7 +162,7 @@ def upgrade(migrate_engine):
         sql.Column('extra', ks_sql.JsonBlob.impl),
         sql.Column('password', sql.String(length=128)),
         sql.Column('enabled', sql.Boolean),
-        sql.Column('domain_id', sql.String(length=64), nullable=False),
+        sql.Column('account_id', sql.String(length=64), nullable=False),
         sql.Column('default_project_id', sql.String(length=64)),
         sql.Column('expiry', sql.DateTime),
         mysql_engine='InnoDB',
@@ -201,8 +201,8 @@ def upgrade(migrate_engine):
         sql.Column('type', sql.Enum(
             assignment_sql.AssignmentType.USER_PROJECT,
             assignment_sql.AssignmentType.GROUP_PROJECT,
-            assignment_sql.AssignmentType.USER_DOMAIN,
-            assignment_sql.AssignmentType.GROUP_DOMAIN,
+            assignment_sql.AssignmentType.USER_ACCOUNT,
+            assignment_sql.AssignmentType.GROUP_ACCOUNT,
             name='type'),
             nullable=False),
         sql.Column('actor_id', sql.String(64), nullable=False),
@@ -214,7 +214,7 @@ def upgrade(migrate_engine):
         mysql_charset='utf8')
 
     # create all tables
-    tables = [credential, domain, endpoint, group,
+    tables = [credential, account, endpoint, group,
               policy, project, role, service,
               token, trust, trust_role, user, user_history,
               user_group_membership, region, assignment]
@@ -227,19 +227,19 @@ def upgrade(migrate_engine):
             raise
 
     # Unique Constraints
-    migrate.UniqueConstraint(user.c.domain_id,
+    migrate.UniqueConstraint(user.c.account_id,
                              user.c.name,
-                             name='ixu_user_name_domain_id').create()
-    migrate.UniqueConstraint(group.c.domain_id,
+                             name='ixu_user_name_account_id').create()
+    migrate.UniqueConstraint(group.c.account_id,
                              group.c.name,
-                             name='ixu_group_name_domain_id').create()
+                             name='ixu_group_name_account_id').create()
     migrate.UniqueConstraint(role.c.name,
                              name='ixu_role_name').create()
-    migrate.UniqueConstraint(project.c.domain_id,
+    migrate.UniqueConstraint(project.c.account_id,
                              project.c.name,
-                             name='ixu_project_name_domain_id').create()
-    migrate.UniqueConstraint(domain.c.name,
-                             name='ixu_domain_name').create()
+                             name='ixu_project_name_account_id').create()
+    migrate.UniqueConstraint(account.c.name,
+                             name='ixu_account_name').create()
 
     # Indexes
     sql.Index('ix_token_expires', token.c.expires).create()
@@ -258,17 +258,17 @@ def upgrade(migrate_engine):
          'references':[user.c.id],
          'name': 'fk_user_group_membership_user_id'},
 
-        {'columns': [user.c.domain_id],
-         'references': [domain.c.id],
-         'name': 'fk_user_domain_id'},
+        {'columns': [user.c.account_id],
+         'references': [account.c.id],
+         'name': 'fk_user_account_id'},
 
-        {'columns': [group.c.domain_id],
-         'references': [domain.c.id],
-         'name': 'fk_group_domain_id'},
+        {'columns': [group.c.account_id],
+         'references': [account.c.id],
+         'name': 'fk_group_account_id'},
 
-        {'columns': [project.c.domain_id],
-         'references': [domain.c.id],
-         'name': 'fk_project_domain_id'},
+        {'columns': [project.c.account_id],
+         'references': [account.c.id],
+         'name': 'fk_project_account_id'},
 
         {'columns': [assignment.c.role_id],
          'references': [role.c.id]}
@@ -279,9 +279,9 @@ def upgrade(migrate_engine):
                                      refcolumns=fkey['references'],
                                      name=fkey.get('name')).create()
 
-    # Create the default domain.
+    # Create the default account.
     session = orm.sessionmaker(bind=migrate_engine)()
-    domain.insert(migration_helpers.get_default_domain()).execute()
+    account.insert(migration_helpers.get_default_account()).execute()
     session.commit()
 
 

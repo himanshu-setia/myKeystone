@@ -132,7 +132,7 @@ msgstr "在项目树-%(project_id)s 中发现循环引用或重复项。"
 #: keystone/resource/core.py:934
 #, python-format
 msgid ""
-"Unexpected results in response for domain config - %(count)s responses, "
+"Unexpected results in response for account config - %(count)s responses, "
 "first option is %(option)s, expected option %(expected)s"
 msgstr ""
 "针对域配置- %(count)s 结果，响应中出现不是预期结果，第一参数是%(option)s，期"

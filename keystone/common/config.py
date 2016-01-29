@@ -90,12 +90,12 @@ FILE_OPTIONS = {
                         'default. This global limit may be then overridden '
                         'for a specific driver, by specifying a list_limit '
                         'in the appropriate section (e.g. [assignment]).'),
-        cfg.BoolOpt('domain_id_immutable', default=True,
+        cfg.BoolOpt('account_id_immutable', default=True,
                     help='Set this to false if you want to enable the '
                          'ability for user, group and project entities '
-                         'to be moved between domains by updating their '
-                         'domain_id. Allowing such movement is not '
-                         'recommended if the scope of a domain admin is being '
+                         'to be moved between accounts by updating their '
+                         'account_id. Allowing such movement is not '
+                         'recommended if the scope of a account admin is being '
                          'restricted by use of an appropriate policy file '
                          '(see policy.v3cloudsample as an example).'),
         cfg.BoolOpt('strict_password_check', default=False,
@@ -112,42 +112,42 @@ FILE_OPTIONS = {
                         '"HTTP_X_FORWARDED_PROTO".'),
     ],
     'identity': [
-        cfg.StrOpt('default_domain_id', default='default',
-                   help='This references the domain to use for all '
+        cfg.StrOpt('default_account_id', default='default',
+                   help='This references the account to use for all '
                         'Identity API v2 requests (which are not aware of '
-                        'domains). A domain with this ID will be created '
+                        'accounts). A account with this ID will be created '
                         'for you by keystone-manage db_sync in migration '
-                        '008. The domain referenced by this ID cannot be '
+                        '008. The account referenced by this ID cannot be '
                         'deleted on the v3 API, to prevent accidentally '
                         'breaking the v2 API. There is nothing special about '
-                        'this domain, other than the fact that it must '
+                        'this account, other than the fact that it must '
                         'exist to order to maintain support for your v2 '
                         'clients.'),
-        cfg.BoolOpt('domain_specific_drivers_enabled',
+        cfg.BoolOpt('account_specific_drivers_enabled',
                     default=False,
-                    help='A subset (or all) of domains can have their own '
+                    help='A subset (or all) of accounts can have their own '
                          'identity driver, each with their own partial '
                          'configuration options, stored in either the '
-                         'resource backend or in a file in a domain '
+                         'resource backend or in a file in a account '
                          'configuration directory (depending on the setting '
-                         'of domain_configurations_from_database). Only '
-                         'values specific to the domain need to be specified '
+                         'of account_configurations_from_database). Only '
+                         'values specific to the account need to be specified '
                          'in this manner. This feature is disabled by '
                          'default; set to true to enable.'),
-        cfg.BoolOpt('domain_configurations_from_database',
+        cfg.BoolOpt('account_configurations_from_database',
                     default=False,
-                    help='Extract the domain specific configuration options '
+                    help='Extract the account specific configuration options '
                          'from the resource backend where they have been '
-                         'stored with the domain data. This feature is '
-                         'disabled by default (in which case the domain '
+                         'stored with the account data. This feature is '
+                         'disabled by default (in which case the account '
                          'specific options will be loaded from files in the '
-                         'domain configuration directory); set to true to '
+                         'account configuration directory); set to true to '
                          'enable.'),
-        cfg.StrOpt('domain_config_dir',
-                   default='/etc/keystone/domains',
-                   help='Path for Keystone to locate the domain specific '
+        cfg.StrOpt('account_config_dir',
+                   default='/etc/keystone/accounts',
+                   help='Path for Keystone to locate the account specific '
                         'identity configuration files if '
-                        'domain_specific_drivers_enabled is set to true.'),
+                        'account_specific_drivers_enabled is set to true.'),
         cfg.StrOpt('driver',
                    default=('keystone.identity.backends'
                             '.sql.Identity'),
@@ -185,15 +185,15 @@ FILE_OPTIONS = {
                          'to the underlying attribute in LDAP. By default '
                          'this mapping is disabled, which ensures that '
                          'existing IDs will not change. Even when the '
-                         'mapping is enabled by using domain specific '
+                         'mapping is enabled by using account specific '
                          'drivers, any users and groups from the default '
-                         'domain being handled by LDAP will still not be '
+                         'account being handled by LDAP will still not be '
                          'mapped to ensure their IDs remain backward '
                          'compatible. Setting this value to False will '
                          'enable the mapping for even the default LDAP '
                          'driver. It is only safe to do this if you do not '
                          'already have assignments for users and '
-                         'groups from the default LDAP domain, and it is '
+                         'groups from the default LDAP account, and it is '
                          'acceptable for Keystone to provide the different '
                          'IDs to clients than it did previously.  Typically '
                          'this means that the only time you can set this '
@@ -214,7 +214,7 @@ FILE_OPTIONS = {
     'os_inherit': [
         cfg.BoolOpt('enabled', default=False,
                     help='role-assignment inheritance to projects from '
-                         'owning domain or from projects higher in the '
+                         'owning account or from projects higher in the '
                          'hierarchy can be optionally enabled.'),
     ],
     'fernet_tokens': [
@@ -446,17 +446,17 @@ FILE_OPTIONS = {
                    help='Maximum number of entities that will be returned '
                         'in a resource collection.'),
     ],
-    'domain_config': [
+    'account_config': [
         cfg.StrOpt('driver',
                    default='keystone.resource.config_backends.sql.'
-                           'DomainConfig',
-                   help='Domain config backend driver.'),
+                           'AccountConfig',
+                   help='Account config backend driver.'),
         cfg.BoolOpt('caching', default=True,
-                    help='Toggle for domain config caching. This has no '
+                    help='Toggle for account config caching. This has no '
                          'effect unless global caching is enabled.'),
         cfg.IntOpt('cache_time', default=300,
-                   help='TTL (in seconds) to cache domain config data. This '
-                        'has no effect unless domain config caching is '
+                   help='TTL (in seconds) to cache account config data. This '
+                        'has no effect unless account config caching is '
                         'enabled.'),
     ],
     'role': [
@@ -503,11 +503,11 @@ FILE_OPTIONS = {
                         'Identity Provider from the environment (e.g. if '
                         'using the mod_shib plugin this value is '
                         '`Shib-Identity-Provider`).'),
-        cfg.StrOpt('federated_domain_name', default='Federated',
-                   help='A domain name that is reserved to allow federated '
-                        'ephemeral users to have a domain concept. Note that '
-                        'an admin will not be able to create a domain with '
-                        'this name or update an existing domain to this '
+        cfg.StrOpt('federated_account_name', default='Federated',
+                   help='A account name that is reserved to allow federated '
+                        'ephemeral users to have a account concept. Note that '
+                        'an admin will not be able to create a account with '
+                        'this name or update an existing account to this '
                         'name. You are not advised to change this value '
                         'unless you really have to. Changing this option '
                         'to empty string or None will not have any impact and '
@@ -690,11 +690,11 @@ FILE_OPTIONS = {
                    deprecated_opts=[cfg.DeprecatedOpt(
                        'tenant_enabled_attribute', group='ldap')],
                    help='LDAP attribute mapped to project enabled.'),
-        cfg.StrOpt('project_domain_id_attribute',
+        cfg.StrOpt('project_account_id_attribute',
                    deprecated_opts=[cfg.DeprecatedOpt(
-                       'tenant_domain_id_attribute', group='ldap')],
+                       'tenant_account_id_attribute', group='ldap')],
                    default='businessCategory',
-                   help='LDAP attribute mapped to project domain_id.'),
+                   help='LDAP attribute mapped to project account_id.'),
         cfg.ListOpt('project_attribute_ignore', default=[],
                     deprecated_opts=[cfg.DeprecatedOpt(
                         'tenant_attribute_ignore', group='ldap')],
@@ -837,7 +837,7 @@ FILE_OPTIONS = {
                    help='The token auth plugin module.'),
         # deals with REMOTE_USER authentication
         cfg.StrOpt('external',
-                   default='keystone.auth.plugins.external.DefaultDomain',
+                   default='keystone.auth.plugins.external.DefaultAccount',
                    help='The external (REMOTE_USER) auth plugin module.'),
         cfg.StrOpt('oauth1',
                    default='keystone.auth.plugins.oauth1.OAuth',

@@ -68,7 +68,7 @@ def token_authenticate(context, auth_payload, user_context, token_ref):
 
         if not CONF.token.allow_rescope_scoped_token:
             # Do not allow conversion from scoped tokens.
-            if token_ref.project_scoped or token_ref.domain_scoped:
+            if token_ref.project_scoped or token_ref.account_scoped:
                 raise exception.Forbidden(action=_("rescope a scoped token"))
 
         wsgi.validate_token_bind(context, token_ref)

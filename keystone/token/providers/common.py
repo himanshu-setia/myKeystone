@@ -48,40 +48,40 @@ class V2TokenDataHelper(object):
         token['issued_at'] = v3_token.get('issued_at')
         token['audit_ids'] = v3_token.get('audit_ids')
 
-        # Bail immediately if this is a domain-scoped token, which is not
+        # Bail immediately if this is a account-scoped token, which is not
         # supported by the v2 API at all.
-        if 'domain' in v3_token:
+        if 'account' in v3_token:
             raise exception.Unauthorized(_(
-                'Domains are not supported by the v2 API. Please use the v3 '
+                'Accounts are not supported by the v2 API. Please use the v3 '
                 'API instead.'))
 
-        # Bail if this is a project-scoped token outside the default domain,
+        # Bail if this is a project-scoped token outside the default account,
         # which may result in a namespace collision with a project inside the
-        # default domain.
+        # default account.
         if 'project' in v3_token:
-            if (v3_token['project']['domain']['id'] !=
-                    CONF.identity.default_domain_id):
+            if (v3_token['project']['account']['id'] !=
+                    CONF.identity.default_account_id):
                 raise exception.Unauthorized(_(
-                    'Project not found in the default domain (please use the '
+                    'Project not found in the default account (please use the '
                     'v3 API instead): %s') % v3_token['project']['id'])
 
             # v3 token_data does not contain all tenant attributes
             tenant = self.resource_api.get_project(
                 v3_token['project']['id'])
-            token['tenant'] = common_controller.V2Controller.filter_domain_id(
+            token['tenant'] = common_controller.V2Controller.filter_account_id(
                 tenant)
         token_data['token'] = token
 
         # Build v2 user
         v3_user = v3_token['user']
 
-        # Bail if this is a token outside the default domain,
+        # Bail if this is a token outside the default account,
         # which may result in a namespace collision with a project inside the
-        # default domain.
-        if ('domain' in v3_user and v3_user['domain']['id'] !=
-                CONF.identity.default_domain_id):
+        # default account.
+        if ('account' in v3_user and v3_user['account']['id'] !=
+                CONF.identity.default_account_id):
             raise exception.Unauthorized(_(
-                'User not found in the default domain (please use the v3 API '
+                'User not found in the default account (please use the v3 API '
                 'instead): %s') % v3_user['id'])
 
         user = common_controller.V2Controller.v3_to_v2_user(v3_user)
@@ -232,43 +232,43 @@ class V3TokenDataHelper(object):
         # Keep __init__ around to ensure dependency injection works.
         super(V3TokenDataHelper, self).__init__()
 
-    def _get_filtered_domain(self, domain_id):
-        domain_ref = self.resource_api.get_domain(domain_id)
-        return {'id': domain_ref['id'], 'name': domain_ref['name']}
+    def _get_filtered_account(self, account_id):
+        account_ref = self.resource_api.get_account(account_id)
+        return {'id': account_ref['id'], 'name': account_ref['name']}
 
     def _get_filtered_project(self, project_id):
         project_ref = self.resource_api.get_project(project_id)
         filtered_project = {
             'id': project_ref['id'],
             'name': project_ref['name']}
-        filtered_project['domain'] = self._get_filtered_domain(
-            project_ref['domain_id'])
+        filtered_project['account'] = self._get_filtered_account(
+            project_ref['account_id'])
         return filtered_project
 
-    def _populate_scope(self, token_data, domain_id, project_id):
-        if 'domain' in token_data or 'project' in token_data:
+    def _populate_scope(self, token_data, account_id, project_id):
+        if 'account' in token_data or 'project' in token_data:
             # scope already exist, no need to populate it again
             return
 
-        if domain_id:
-            token_data['domain'] = self._get_filtered_domain(domain_id)
+        if account_id:
+            token_data['account'] = self._get_filtered_account(account_id)
         if project_id:
             token_data['project'] = self._get_filtered_project(project_id)
 
-    def _get_roles_for_user(self, user_id, domain_id, project_id):
+    def _get_roles_for_user(self, user_id, account_id, project_id):
         roles = []
-        if domain_id:
-            roles = self.assignment_api.get_roles_for_user_and_domain(
-                user_id, domain_id)
+        if account_id:
+            roles = self.assignment_api.get_roles_for_user_and_account(
+                user_id, account_id)
         if project_id:
             roles = self.assignment_api.get_roles_for_user_and_project(
                 user_id, project_id)
         return [self.role_api.get_role(role_id) for role_id in roles]
 
     def _populate_roles_for_groups(self, group_ids,
-                                   project_id=None, domain_id=None,
+                                   project_id=None, account_id=None,
                                    user_id=None):
-        def _check_roles(roles, user_id, project_id, domain_id):
+        def _check_roles(roles, user_id, project_id, account_id):
             # User was granted roles so simply exit this function.
             return
             if roles:
@@ -278,11 +278,11 @@ class V3TokenDataHelper(object):
                         'to project %(project_id)s') % {
                             'user_id': user_id,
                             'project_id': project_id}
-            elif domain_id:
+            elif account_id:
                 msg = _('User %(user_id)s has no access '
-                        'to domain %(domain_id)s') % {
+                        'to account %(account_id)s') % {
                             'user_id': user_id,
-                            'domain_id': domain_id}
+                            'account_id': account_id}
             # Since no roles were found a user is not authorized to
             # perform any operations. Raise an exception with
             # appropriate error message.
@@ -290,8 +290,8 @@ class V3TokenDataHelper(object):
 
         roles = self.assignment_api.get_roles_for_groups(group_ids,
                                                          project_id,
-                                                         domain_id)
-        _check_roles(roles, user_id, project_id, domain_id)
+                                                         account_id)
+        _check_roles(roles, user_id, project_id, account_id)
         return roles
 
     def _populate_user(self, token_data, user_id, trust):
@@ -319,7 +319,7 @@ class V3TokenDataHelper(object):
         filtered_user = {
             'id': user_ref['id'],
             'name': user_ref['name'],
-            'domain': self._get_filtered_domain(user_ref['domain_id'])}
+            'account': self._get_filtered_account(user_ref['account_id'])}
         token_data['user'] = filtered_user
 
     def _populate_oauth_section(self, token_data, access_token):
@@ -329,7 +329,7 @@ class V3TokenDataHelper(object):
             token_data['OS-OAUTH1'] = ({'access_token_id': access_token_id,
                                         'consumer_id': consumer_id})
 
-    def _populate_roles(self, token_data, user_id, domain_id, project_id,
+    def _populate_roles(self, token_data, user_id, account_id, project_id,
                         trust, access_token):
         if 'roles' in token_data:
             # no need to repopulate roles
@@ -350,16 +350,16 @@ class V3TokenDataHelper(object):
         if CONF.trust.enabled and trust:
             token_user_id = trust['trustor_user_id']
             token_project_id = trust['project_id']
-            # trusts do not support domains yet
-            token_domain_id = None
+            # trusts do not support accounts yet
+            token_account_id = None
         else:
             token_user_id = user_id
             token_project_id = project_id
-            token_domain_id = domain_id
+            token_account_id = account_id
 
-        if token_domain_id or token_project_id:
+        if token_account_id or token_project_id:
             roles = self._get_roles_for_user(token_user_id,
-                                             token_domain_id,
+                                             token_account_id,
                                              token_project_id)
             filtered_roles = []
             if CONF.trust.enabled and trust:
@@ -378,14 +378,14 @@ class V3TokenDataHelper(object):
             token_data['roles'] = filtered_roles
 
     def _populate_service_catalog(self, token_data, user_id,
-                                  domain_id, project_id, trust):
+                                  account_id, project_id, trust):
         if 'catalog' in token_data:
             # no need to repopulate service catalog
             return
 
         if CONF.trust.enabled and trust:
             user_id = trust['trustor_user_id']
-        if project_id or domain_id:
+        if project_id or account_id:
             service_catalog = self.catalog_api.get_v3_catalog(
                 user_id, project_id)
             # TODO(ayoung): Enforce Endpoints for trust
@@ -421,7 +421,7 @@ class V3TokenDataHelper(object):
             raise exception.UnexpectedError(msg)
 
     def get_token_data(self, user_id, method_names, extras=None,
-                       domain_id=None, project_id=None, expires=None,
+                       account_id=None, project_id=None, expires=None,
                        trust=None, token=None, include_catalog=True,
                        bind=None, access_token=None, issued_at=None,
                        audit_info=None):
@@ -437,7 +437,7 @@ class V3TokenDataHelper(object):
 
         # We've probably already written these to the token
         if token:
-            for x in ('roles', 'user', 'catalog', 'project', 'domain'):
+            for x in ('roles', 'user', 'catalog', 'project', 'account'):
                 if x in token:
                     token_data[x] = token[x]
 
@@ -448,9 +448,9 @@ class V3TokenDataHelper(object):
         if bind:
             token_data['bind'] = bind
 
-        self._populate_scope(token_data, domain_id, project_id)
+        self._populate_scope(token_data, account_id, project_id)
         self._populate_user(token_data, user_id, trust)
-        self._populate_roles(token_data, user_id, domain_id, project_id, trust,
+        self._populate_roles(token_data, user_id, account_id, project_id, trust,
                              access_token)
         self._populate_audit_info(token_data, audit_info)
         self._populate_token_dates(token_data, expires=expires, trust=trust,
@@ -499,7 +499,7 @@ class BaseProvider(provider.Provider):
                 federation.PROTOCOL in auth_context)
 
     def issue_v3_token(self, user_id, method_names, expires_at=None,
-                       project_id=None, domain_id=None, auth_context=None,
+                       project_id=None, account_id=None, auth_context=None,
                        trust=None, metadata_ref=None, include_catalog=True,
                        parent_audit_id=None):
         # for V2, trust is stashed in metadata_ref
@@ -510,7 +510,7 @@ class BaseProvider(provider.Provider):
         token_ref = None
         if auth_context and self._is_mapped_token(auth_context):
             token_ref = self._handle_mapped_tokens(
-                auth_context, project_id, domain_id)
+                auth_context, project_id, account_id)
 
         access_token = None
         if 'oauth1' in method_names:
@@ -521,7 +521,7 @@ class BaseProvider(provider.Provider):
             user_id,
             method_names,
             auth_context.get('extras') if auth_context else None,
-            domain_id=domain_id,
+            account_id=account_id,
             project_id=project_id,
             expires=expires_at,
             trust=trust,
@@ -534,12 +534,12 @@ class BaseProvider(provider.Provider):
         token_id = self._get_token_id(token_data)
         return token_id, token_data
 
-    def _handle_mapped_tokens(self, auth_context, project_id, domain_id):
-        def get_federated_domain():
-            return (CONF.federation.federated_domain_name or
-                    federation.FEDERATED_DOMAIN_KEYWORD)
+    def _handle_mapped_tokens(self, auth_context, project_id, account_id):
+        def get_federated_account():
+            return (CONF.federation.federated_account_name or
+                    federation.FEDERATED_ACCOUNT_KEYWORD)
 
-        federated_domain = get_federated_domain()
+        federated_account = get_federated_account()
         user_id = auth_context['user_id']
         group_ids = auth_context['group_ids']
         idp = auth_context[federation.IDENTITY_PROVIDER]
@@ -552,16 +552,16 @@ class BaseProvider(provider.Provider):
                     'identity_provider': {'id': idp},
                     'protocol': {'id': protocol}
                 },
-                'domain': {
-                    'id': federated_domain,
-                    'name': federated_domain
+                'account': {
+                    'id': federated_account,
+                    'name': federated_account
                 }
             }
         }
 
-        if project_id or domain_id:
+        if project_id or account_id:
             roles = self.v3_token_data_helper._populate_roles_for_groups(
-                group_ids, project_id, domain_id, user_id)
+                group_ids, project_id, account_id, user_id)
             token_data.update({'roles': roles})
         else:
             token_data['user'][federation.FEDERATION].update({
@@ -585,57 +585,57 @@ class BaseProvider(provider.Provider):
                         'Identity Service, use V3 Authentication')
                 raise exception.Unauthorized(msg)
 
-    def _assert_default_domain(self, token_ref):
-        """Make sure we are operating on default domain only."""
+    def _assert_default_account(self, token_ref):
+        """Make sure we are operating on default account only."""
         if (token_ref.get('token_data') and
                 self.get_token_version(token_ref.get('token_data')) ==
                 token.provider.V3):
             # this is a V3 token
-            msg = _('Non-default domain is not supported')
+            msg = _('Non-default account is not supported')
             # user in a non-default is prohibited
-            if (token_ref['token_data']['token']['user']['domain']['id'] !=
-                    CONF.identity.default_domain_id):
+            if (token_ref['token_data']['token']['user']['account']['id'] !=
+                    CONF.identity.default_account_id):
                 raise exception.Unauthorized(msg)
-            # domain scoping is prohibited
-            if token_ref['token_data']['token'].get('domain'):
+            # account scoping is prohibited
+            if token_ref['token_data']['token'].get('account'):
                 raise exception.Unauthorized(
-                    _('Domain scoped token is not supported'))
-            # project in non-default domain is prohibited
+                    _('Account scoped token is not supported'))
+            # project in non-default account is prohibited
             if token_ref['token_data']['token'].get('project'):
                 project = token_ref['token_data']['token']['project']
-                project_domain_id = project['domain']['id']
-                # scoped to project in non-default domain is prohibited
-                if project_domain_id != CONF.identity.default_domain_id:
+                project_account_id = project['account']['id']
+                # scoped to project in non-default account is prohibited
+                if project_account_id != CONF.identity.default_account_id:
                     raise exception.Unauthorized(msg)
             # if token is scoped to trust, both trustor and trustee must
-            # be in the default domain. Furthermore, the delegated project
-            # must also be in the default domain
+            # be in the default account. Furthermore, the delegated project
+            # must also be in the default account
             metadata_ref = token_ref['metadata']
             if CONF.trust.enabled and 'trust_id' in metadata_ref:
                 trust_ref = self.trust_api.get_trust(metadata_ref['trust_id'])
                 trustee_user_ref = self.identity_api.get_user(
                     trust_ref['trustee_user_id'])
-                if (trustee_user_ref['domain_id'] !=
-                        CONF.identity.default_domain_id):
+                if (trustee_user_ref['account_id'] !=
+                        CONF.identity.default_account_id):
                     raise exception.Unauthorized(msg)
                 trustor_user_ref = self.identity_api.get_user(
                     trust_ref['trustor_user_id'])
-                if (trustor_user_ref['domain_id'] !=
-                        CONF.identity.default_domain_id):
+                if (trustor_user_ref['account_id'] !=
+                        CONF.identity.default_account_id):
                     raise exception.Unauthorized(msg)
                 project_ref = self.resource_api.get_project(
                     trust_ref['project_id'])
-                if (project_ref['domain_id'] !=
-                        CONF.identity.default_domain_id):
+                if (project_ref['account_id'] !=
+                        CONF.identity.default_account_id):
                     raise exception.Unauthorized(msg)
 
     def validate_v2_token(self, token_ref):
         try:
             self._assert_is_not_federation_token(token_ref)
-            self._assert_default_domain(token_ref)
+            self._assert_default_account(token_ref)
             # FIXME(gyee): performance or correctness? Should we return the
             # cached token or reconstruct it? Obviously if we are going with
-            # the cached token, any role, project, or domain name changes
+            # the cached token, any role, project, or account name changes
             # will not be reflected. One may argue that with PKI tokens,
             # we are essentially doing cached token validation anyway.
             # Lets go with the cached token strategy. Since token
@@ -680,7 +680,7 @@ class BaseProvider(provider.Provider):
     def validate_v3_token(self, token_ref):
         # FIXME(gyee): performance or correctness? Should we return the
         # cached token or reconstruct it? Obviously if we are going with
-        # the cached token, any role, project, or domain name changes
+        # the cached token, any role, project, or account name changes
         # will not be reflected. One may argue that with PKI tokens,
         # we are essentially doing cached token validation anyway.
         # Lets go with the cached token strategy. Since token

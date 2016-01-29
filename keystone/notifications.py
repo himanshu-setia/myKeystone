@@ -62,7 +62,7 @@ CADF_TYPE_MAP = {
     'project': taxonomy.SECURITY_PROJECT,
     'role': taxonomy.SECURITY_ROLE,
     'user': taxonomy.SECURITY_ACCOUNT_USER,
-    'domain': taxonomy.SECURITY_DOMAIN,
+    'account': taxonomy.SECURITY_ACCOUNT,
     'region': taxonomy.SECURITY_REGION,
     'endpoint': taxonomy.SECURITY_ENDPOINT,
     'service': taxonomy.SECURITY_SERVICE,
@@ -437,7 +437,7 @@ def _get_request_audit_info(context, user_id=None):
     remote_addr = None
     http_user_agent = None
     project_id = None
-    domain_id = None
+    account_id = None
 
     if context and 'environment' in context and context['environment']:
         environment = context['environment']
@@ -448,16 +448,16 @@ def _get_request_audit_info(context, user_id=None):
                                       {}).get('user_id')
         project_id = environment.get('KEYSTONE_AUTH_CONTEXT',
                                      {}).get('project_id')
-        domain_id = environment.get('KEYSTONE_AUTH_CONTEXT',
-                                    {}).get('domain_id')
+        account_id = environment.get('KEYSTONE_AUTH_CONTEXT',
+                                    {}).get('account_id')
 
     host = pycadf.host.Host(address=remote_addr, agent=http_user_agent)
     initiator = resource.Resource(typeURI=taxonomy.ACCOUNT_USER,
                                   id=user_id, host=host)
     if project_id:
         initiator.project_id = project_id
-    if domain_id:
-        initiator.domain_id = domain_id
+    if account_id:
+        initiator.account_id = account_id
 
     return initiator
 
@@ -539,23 +539,23 @@ class CadfRoleAssignmentNotificationWrapper(object):
             create_grant() (and delete_grant()) method are called
             differently in various tests.
             Using named arguments, i.e.:
-                create_grant(user_id=user['id'], domain_id=domain['id'],
+                create_grant(user_id=user['id'], account_id=account['id'],
                              role_id=role['id'])
 
             Or, using positional arguments, i.e.:
                 create_grant(role_id['id'], user['id'], None,
-                             domain_id=domain['id'], None)
+                             account_id=account['id'], None)
 
             Or, both, i.e.:
                 create_grant(role_id['id'], user_id=user['id'],
-                             domain_id=domain['id'])
+                             account_id=account['id'])
 
             Checking the values for kwargs is easy enough, since it comes
             in as a dictionary
 
             The actual method signature is
                 create_grant(role_id, user_id=None, group_id=None,
-                             domain_id=None, project_id=None,
+                             account_id=None, project_id=None,
                              inherited_to_projects=False)
 
             So, if the values of actor or target are still None after
@@ -573,8 +573,8 @@ class CadfRoleAssignmentNotificationWrapper(object):
             audit_kwargs = {}
             if call_args['project_id']:
                 audit_kwargs['project'] = call_args['project_id']
-            elif call_args['domain_id']:
-                audit_kwargs['domain'] = call_args['domain_id']
+            elif call_args['account_id']:
+                audit_kwargs['account'] = call_args['account_id']
 
             if call_args['user_id']:
                 audit_kwargs['user'] = call_args['user_id']

@@ -85,9 +85,9 @@ class FederatedSetupMixin(object):
         }
     }
 
-    def _check_domains_are_valid(self, token):
-        self.assertEqual('Federated', token['user']['domain']['id'])
-        self.assertEqual('Federated', token['user']['domain']['name'])
+    def _check_accounts_are_valid(self, token):
+        self.assertEqual('Federated', token['user']['account']['id'])
+        self.assertEqual('Federated', token['user']['account']['name'])
 
     def _project(self, project):
         return (project['id'], project['name'])
@@ -112,16 +112,16 @@ class FederatedSetupMixin(object):
         self.assertEqual(token_projects, projects_ref)
 
     def _check_scoped_token_attributes(self, token):
-        def xor_project_domain(iterable):
-            return sum(('project' in iterable, 'domain' in iterable)) % 2
+        def xor_project_account(iterable):
+            return sum(('project' in iterable, 'account' in iterable)) % 2
 
         for obj in ('user', 'catalog', 'expires_at', 'issued_at',
                     'methods', 'roles'):
             self.assertIn(obj, token)
-        # Check for either project or domain
-        if not xor_project_domain(token.keys()):
+        # Check for either project or account
+        if not xor_project_account(token.keys()):
             raise AssertionError("You must specify either"
-                                 "project or domain.")
+                                 "project or account.")
 
         self.assertIn('OS-FEDERATION', token['user'])
         os_federation = token['user']['OS-FEDERATION']
@@ -188,56 +188,56 @@ class FederatedSetupMixin(object):
     def load_federation_sample_data(self):
         """Inject additional data."""
 
-        # Create and add domains
-        self.domainA = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainA['id'],
-                                        self.domainA)
+        # Create and add accounts
+        self.accountA = self.new_account_ref()
+        self.resource_api.create_account(self.accountA['id'],
+                                        self.accountA)
 
-        self.domainB = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainB['id'],
-                                        self.domainB)
+        self.accountB = self.new_account_ref()
+        self.resource_api.create_account(self.accountB['id'],
+                                        self.accountB)
 
-        self.domainC = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainC['id'],
-                                        self.domainC)
+        self.accountC = self.new_account_ref()
+        self.resource_api.create_account(self.accountC['id'],
+                                        self.accountC)
 
-        self.domainD = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainD['id'],
-                                        self.domainD)
+        self.accountD = self.new_account_ref()
+        self.resource_api.create_account(self.accountD['id'],
+                                        self.accountD)
 
         # Create and add projects
         self.proj_employees = self.new_project_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         self.resource_api.create_project(self.proj_employees['id'],
                                          self.proj_employees)
         self.proj_customers = self.new_project_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         self.resource_api.create_project(self.proj_customers['id'],
                                          self.proj_customers)
 
         self.project_all = self.new_project_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         self.resource_api.create_project(self.project_all['id'],
                                          self.project_all)
 
         self.project_inherited = self.new_project_ref(
-            domain_id=self.domainD['id'])
+            account_id=self.accountD['id'])
         self.resource_api.create_project(self.project_inherited['id'],
                                          self.project_inherited)
 
         # Create and add groups
         self.group_employees = self.new_group_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         self.group_employees = (
             self.identity_api.create_group(self.group_employees))
 
         self.group_customers = self.new_group_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         self.group_customers = (
             self.identity_api.create_group(self.group_customers))
 
         self.group_admins = self.new_group_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         self.group_admins = self.identity_api.create_group(self.group_admins)
 
         # Create and add roles
@@ -280,46 +280,46 @@ class FederatedSetupMixin(object):
 
         self.assignment_api.create_grant(self.role_customer['id'],
                                          group_id=self.group_customers['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
 
         # Customers can access:
-        # * domain A
+        # * account A
         self.assignment_api.create_grant(self.role_customer['id'],
                                          group_id=self.group_customers['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
 
         # Customers can access projects via inheritance:
-        # * domain D
+        # * account D
         self.assignment_api.create_grant(self.role_customer['id'],
                                          group_id=self.group_customers['id'],
-                                         domain_id=self.domainD['id'],
+                                         account_id=self.accountD['id'],
                                          inherited_to_projects=True)
 
         # Employees can access:
-        # * domain A
-        # * domain B
+        # * account A
+        # * account B
 
         self.assignment_api.create_grant(self.role_employee['id'],
                                          group_id=self.group_employees['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
         self.assignment_api.create_grant(self.role_employee['id'],
                                          group_id=self.group_employees['id'],
-                                         domain_id=self.domainB['id'])
+                                         account_id=self.accountB['id'])
 
         # Admins can access:
-        # * domain A
-        # * domain B
-        # * domain C
+        # * account A
+        # * account B
+        # * account C
         self.assignment_api.create_grant(self.role_admin['id'],
                                          group_id=self.group_admins['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
         self.assignment_api.create_grant(self.role_admin['id'],
                                          group_id=self.group_admins['id'],
-                                         domain_id=self.domainB['id'])
+                                         account_id=self.accountB['id'])
 
         self.assignment_api.create_grant(self.role_admin['id'],
                                          group_id=self.group_admins['id'],
-                                         domain_id=self.domainC['id'])
+                                         account_id=self.accountC['id'])
         self.rules = {
             'rules': [
                 {
@@ -512,8 +512,8 @@ class FederatedSetupMixin(object):
                         {
                             "group": {
                                 "name": self.group_customers['name'],
-                                "domain": {
-                                    "name": self.domainA['name']
+                                "account": {
+                                    "name": self.accountA['name']
                                 }
                             }
                         }
@@ -541,8 +541,8 @@ class FederatedSetupMixin(object):
                         {
                             "group": {
                                 "name": self.group_admins['name'],
-                                "domain": {
-                                    "id": self.domainA['id']
+                                "account": {
+                                    "id": self.accountA['id']
                                 }
                             }
                         }
@@ -569,8 +569,8 @@ class FederatedSetupMixin(object):
                         {
                             "group": {
                                 "name": "NON_EXISTING",
-                                "domain": {
-                                    "id": self.domainA['id']
+                                "account": {
+                                    "id": self.accountA['id']
                                 }
                             }
                         }
@@ -593,8 +593,8 @@ class FederatedSetupMixin(object):
                             "user": {
                                 "type": "local",
                                 "name": self.user['name'],
-                                "domain": {
-                                    "id": self.user['domain_id']
+                                "account": {
+                                    "id": self.user['account_id']
                                 }
                             }
                         },
@@ -619,7 +619,7 @@ class FederatedSetupMixin(object):
                             "user": {
                                 "type": "local",
                                 "name": self.user['name'],
-                                "domain": {
+                                "account": {
                                     "id": uuid.uuid4().hex
                                 }
                             }
@@ -695,25 +695,25 @@ class FederatedSetupMixin(object):
             self.tokens['CUSTOMER_ASSERTION'], 'project',
             self.project_inherited['id'])
 
-        self.TOKEN_SCOPE_DOMAIN_A_FROM_CUSTOMER = self._scope_request(
-            self.tokens['CUSTOMER_ASSERTION'], 'domain', self.domainA['id'])
+        self.TOKEN_SCOPE_ACCOUNT_A_FROM_CUSTOMER = self._scope_request(
+            self.tokens['CUSTOMER_ASSERTION'], 'account', self.accountA['id'])
 
-        self.TOKEN_SCOPE_DOMAIN_B_FROM_CUSTOMER = self._scope_request(
-            self.tokens['CUSTOMER_ASSERTION'], 'domain',
-            self.domainB['id'])
+        self.TOKEN_SCOPE_ACCOUNT_B_FROM_CUSTOMER = self._scope_request(
+            self.tokens['CUSTOMER_ASSERTION'], 'account',
+            self.accountB['id'])
 
-        self.TOKEN_SCOPE_DOMAIN_D_FROM_CUSTOMER = self._scope_request(
-            self.tokens['CUSTOMER_ASSERTION'], 'domain', self.domainD['id'])
+        self.TOKEN_SCOPE_ACCOUNT_D_FROM_CUSTOMER = self._scope_request(
+            self.tokens['CUSTOMER_ASSERTION'], 'account', self.accountD['id'])
 
-        self.TOKEN_SCOPE_DOMAIN_A_FROM_ADMIN = self._scope_request(
-            self.tokens['ADMIN_ASSERTION'], 'domain', self.domainA['id'])
+        self.TOKEN_SCOPE_ACCOUNT_A_FROM_ADMIN = self._scope_request(
+            self.tokens['ADMIN_ASSERTION'], 'account', self.accountA['id'])
 
-        self.TOKEN_SCOPE_DOMAIN_B_FROM_ADMIN = self._scope_request(
-            self.tokens['ADMIN_ASSERTION'], 'domain', self.domainB['id'])
+        self.TOKEN_SCOPE_ACCOUNT_B_FROM_ADMIN = self._scope_request(
+            self.tokens['ADMIN_ASSERTION'], 'account', self.accountB['id'])
 
-        self.TOKEN_SCOPE_DOMAIN_C_FROM_ADMIN = self._scope_request(
-            self.tokens['ADMIN_ASSERTION'], 'domain',
-            self.domainC['id'])
+        self.TOKEN_SCOPE_ACCOUNT_C_FROM_ADMIN = self._scope_request(
+            self.tokens['ADMIN_ASSERTION'], 'account',
+            self.accountC['id'])
 
 
 class FederatedIdentityProviderTests(FederationTests):
@@ -1388,23 +1388,23 @@ class MappingRuleEngineTests(FederationTests):
 
     def assertValidMappedUserObject(self, mapped_properties,
                                     user_type='ephemeral',
-                                    domain_id=None):
+                                    account_id=None):
         """Check whether mapped properties object has 'user' within.
 
         According to today's rules, RuleProcessor does not have to issue user's
         id or name. What's actually required is user's type and for ephemeral
-        users that would be service domain named 'Federated'.
+        users that would be service account named 'Federated'.
         """
         self.assertIn('user', mapped_properties,
                       message='Missing user object in mapped properties')
         user = mapped_properties['user']
         self.assertIn('type', user)
         self.assertEqual(user_type, user['type'])
-        self.assertIn('domain', user)
-        domain = user['domain']
-        domain_name_or_id = domain.get('id') or domain.get('name')
-        domain_ref = domain_id or federation.FEDERATED_DOMAIN_KEYWORD
-        self.assertEqual(domain_ref, domain_name_or_id)
+        self.assertIn('account', user)
+        account = user['account']
+        account_name_or_id = account.get('id') or account.get('name')
+        account_ref = account_id or federation.FEDERATED_ACCOUNT_KEYWORD
+        self.assertEqual(account_ref, account_name_or_id)
 
     def test_rule_engine_any_one_of_and_direct_mapping(self):
         """Should return user's name and group id EMPLOYEE_GROUP_ID.
@@ -1641,11 +1641,11 @@ class MappingRuleEngineTests(FederationTests):
         self.assertListEqual(list(), mapped_properties['group_ids'])
 
     def test_rule_engine_returns_group_names(self):
-        """Check whether RuleProcessor returns group names with their domains.
+        """Check whether RuleProcessor returns group names with their accounts.
 
         RuleProcessor should return 'group_names' entry with a list of
-        dictionaries with two entries 'name' and 'domain' identifying group by
-        its name and domain.
+        dictionaries with two entries 'name' and 'account' identifying group by
+        its name and account.
 
         """
         mapping = mapping_fixtures.MAPPING_GROUP_NAMES
@@ -1658,15 +1658,15 @@ class MappingRuleEngineTests(FederationTests):
             mapping_fixtures.DEVELOPER_GROUP_NAME:
             {
                 "name": mapping_fixtures.DEVELOPER_GROUP_NAME,
-                "domain": {
-                    "name": mapping_fixtures.DEVELOPER_GROUP_DOMAIN_NAME
+                "account": {
+                    "name": mapping_fixtures.DEVELOPER_GROUP_ACCOUNT_NAME
                 }
             },
             mapping_fixtures.TESTER_GROUP_NAME:
             {
                 "name": mapping_fixtures.TESTER_GROUP_NAME,
-                "domain": {
-                    "id": mapping_fixtures.DEVELOPER_GROUP_DOMAIN_ID
+                "account": {
+                    "id": mapping_fixtures.DEVELOPER_GROUP_ACCOUNT_ID
                 }
             }
         }
@@ -1692,15 +1692,15 @@ class MappingRuleEngineTests(FederationTests):
             mapping_fixtures.DEVELOPER_GROUP_NAME:
             {
                 "name": mapping_fixtures.DEVELOPER_GROUP_NAME,
-                "domain": {
-                    "id": mapping_fixtures.DEVELOPER_GROUP_DOMAIN_ID
+                "account": {
+                    "id": mapping_fixtures.DEVELOPER_GROUP_ACCOUNT_ID
                 }
             },
             mapping_fixtures.CONTRACTOR_GROUP_NAME:
             {
                 "name": mapping_fixtures.CONTRACTOR_GROUP_NAME,
-                "domain": {
-                    "id": mapping_fixtures.DEVELOPER_GROUP_DOMAIN_ID
+                "account": {
+                    "id": mapping_fixtures.DEVELOPER_GROUP_ACCOUNT_ID
                 }
             }
         }
@@ -1729,8 +1729,8 @@ class MappingRuleEngineTests(FederationTests):
             mapping_fixtures.CONTRACTOR_GROUP_NAME:
             {
                 "name": mapping_fixtures.CONTRACTOR_GROUP_NAME,
-                "domain": {
-                    "id": mapping_fixtures.DEVELOPER_GROUP_DOMAIN_ID
+                "account": {
+                    "id": mapping_fixtures.DEVELOPER_GROUP_ACCOUNT_ID
                 }
             }
         }
@@ -1758,8 +1758,8 @@ class MappingRuleEngineTests(FederationTests):
             mapping_fixtures.CONTRACTOR_GROUP_NAME:
             {
                 "name": mapping_fixtures.CONTRACTOR_GROUP_NAME,
-                "domain": {
-                    "id": mapping_fixtures.DEVELOPER_GROUP_DOMAIN_ID
+                "account": {
+                    "id": mapping_fixtures.DEVELOPER_GROUP_ACCOUNT_ID
                 }
             }
         }
@@ -1768,24 +1768,24 @@ class MappingRuleEngineTests(FederationTests):
         self.assertEqual('tbo', mapped_properties['user']['name'])
         self.assertEqual([], mapped_properties['group_ids'])
 
-    def test_rule_engine_whitelist_direct_group_mapping_missing_domain(self):
-        """Test if the local rule is rejected upon missing domain value
+    def test_rule_engine_whitelist_direct_group_mapping_missing_account(self):
+        """Test if the local rule is rejected upon missing account value
 
         This is a variation with a ``whitelist`` filter.
 
         """
-        mapping = mapping_fixtures.MAPPING_GROUPS_WHITELIST_MISSING_DOMAIN
+        mapping = mapping_fixtures.MAPPING_GROUPS_WHITELIST_MISSING_ACCOUNT
         assertion = mapping_fixtures.EMPLOYEE_ASSERTION_MULTIPLE_GROUPS
         rp = mapping_utils.RuleProcessor(mapping['rules'])
         self.assertRaises(exception.ValidationError, rp.process, assertion)
 
-    def test_rule_engine_blacklist_direct_group_mapping_missing_domain(self):
-        """Test if the local rule is rejected upon missing domain value
+    def test_rule_engine_blacklist_direct_group_mapping_missing_account(self):
+        """Test if the local rule is rejected upon missing account value
 
         This is a variation with a ``blacklist`` filter.
 
         """
-        mapping = mapping_fixtures.MAPPING_GROUPS_BLACKLIST_MISSING_DOMAIN
+        mapping = mapping_fixtures.MAPPING_GROUPS_BLACKLIST_MISSING_ACCOUNT
         assertion = mapping_fixtures.EMPLOYEE_ASSERTION_MULTIPLE_GROUPS
         rp = mapping_utils.RuleProcessor(mapping['rules'])
         self.assertRaises(exception.ValidationError, rp.process, assertion)
@@ -1807,8 +1807,8 @@ class MappingRuleEngineTests(FederationTests):
         self.assertListEqual(mapped_properties['group_ids'], [])
         self.assertEqual('tbo', mapped_properties['user']['name'])
 
-    def test_mapping_federated_domain_specified(self):
-        """Test mapping engine when domain 'ephemeral' is explicitely set.
+    def test_mapping_federated_account_specified(self):
+        """Test mapping engine when account 'ephemeral' is explicitely set.
 
         For that, we use mapping rule MAPPING_EPHEMERAL_USER and assertion
         EMPLOYEE_ASSERTION
@@ -1843,31 +1843,31 @@ class MappingRuleEngineTests(FederationTests):
         self.assertNotIn('id', mapped_properties['user'])
         self.assertNotIn('name', mapped_properties['user'])
 
-    def test_set_ephemeral_domain_to_ephemeral_users(self):
-        """Test auto assigning service domain to ephemeral users.
+    def test_set_ephemeral_account_to_ephemeral_users(self):
+        """Test auto assigning service account to ephemeral users.
 
         Test that ephemeral users will always become members of federated
-        service domain. The check depends on ``type`` value which must be set
+        service account. The check depends on ``type`` value which must be set
         to ``ephemeral`` in case of ephemeral user.
 
         """
-        mapping = mapping_fixtures.MAPPING_EPHEMERAL_USER_LOCAL_DOMAIN
+        mapping = mapping_fixtures.MAPPING_EPHEMERAL_USER_LOCAL_ACCOUNT
         rp = mapping_utils.RuleProcessor(mapping['rules'])
         assertion = mapping_fixtures.CONTRACTOR_ASSERTION
         mapped_properties = rp.process(assertion)
         self.assertIsNotNone(mapped_properties)
         self.assertValidMappedUserObject(mapped_properties)
 
-    def test_local_user_local_domain(self):
-        """Test that local users can have non-service domains assigned."""
-        mapping = mapping_fixtures.MAPPING_LOCAL_USER_LOCAL_DOMAIN
+    def test_local_user_local_account(self):
+        """Test that local users can have non-service accounts assigned."""
+        mapping = mapping_fixtures.MAPPING_LOCAL_USER_LOCAL_ACCOUNT
         rp = mapping_utils.RuleProcessor(mapping['rules'])
         assertion = mapping_fixtures.CONTRACTOR_ASSERTION
         mapped_properties = rp.process(assertion)
         self.assertIsNotNone(mapped_properties)
         self.assertValidMappedUserObject(
             mapped_properties, user_type='local',
-            domain_id=mapping_fixtures.LOCAL_DOMAIN)
+            account_id=mapping_fixtures.LOCAL_ACCOUNT)
 
     def test_user_identifications_name(self):
         """Test varius mapping options and how users are identified.
@@ -1875,7 +1875,7 @@ class MappingRuleEngineTests(FederationTests):
         This test calls mapped.setup_username() for propagating user object.
 
         Test plan:
-        - Check if the user has proper domain ('federated') set
+        - Check if the user has proper account ('federated') set
         - Check if the user has property type set ('ephemeral')
         - Check if user's name is properly mapped from the assertion
         - Check if user's id is properly set and equal to name, as it was not
@@ -1892,13 +1892,13 @@ class MappingRuleEngineTests(FederationTests):
         self.assertEqual('jsmith', mapped_properties['user']['id'])
         self.assertEqual('jsmith', mapped_properties['user']['name'])
 
-    def test_user_identifications_name_and_federated_domain(self):
+    def test_user_identifications_name_and_federated_account(self):
         """Test varius mapping options and how users are identified.
 
         This test calls mapped.setup_username() for propagating user object.
 
         Test plan:
-        - Check if the user has proper domain ('federated') set
+        - Check if the user has proper account ('federated') set
         - Check if the user has propert type set ('ephemeral')
         - Check if user's name is properly mapped from the assertion
         - Check if user's id is properly set and equal to name, as it was not
@@ -1921,7 +1921,7 @@ class MappingRuleEngineTests(FederationTests):
         This test calls mapped.setup_username() for propagating user object.
 
         Test plan:
-        - Check if the user has proper domain ('federated') set
+        - Check if the user has proper account ('federated') set
         - Check if the user has propert type set ('ephemeral')
         - Check if user's id is properly mapped from the assertion
         - Check if user's name is properly set and equal to id, as it was not
@@ -1945,7 +1945,7 @@ class MappingRuleEngineTests(FederationTests):
         This test calls mapped.setup_username() for propagating user object.
 
         Test plan:
-        - Check if the user has proper domain ('federated') set
+        - Check if the user has proper account ('federated') set
         - Check if the user has proper type set ('ephemeral')
         - Check if user's name is properly mapped from the assertion
         - Check if user's id is properly set and and equal to value hardcoded
@@ -2268,41 +2268,41 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
                           self._issue_unscoped_token,
                           assertion='CONTRACTOR_ASSERTION')
 
-    def test_scope_to_domain_once(self):
-        r = self.v3_authenticate_token(self.TOKEN_SCOPE_DOMAIN_A_FROM_CUSTOMER)
+    def test_scope_to_account_once(self):
+        r = self.v3_authenticate_token(self.TOKEN_SCOPE_ACCOUNT_A_FROM_CUSTOMER)
         token_resp = r.result['token']
-        domain_id = token_resp['domain']['id']
-        self.assertEqual(self.domainA['id'], domain_id)
+        account_id = token_resp['account']['id']
+        self.assertEqual(self.accountA['id'], account_id)
         self._check_scoped_token_attributes(token_resp)
 
-    def test_scope_to_domain_multiple_tokens(self):
-        """Issue multiple tokens scoping to different domains.
+    def test_scope_to_account_multiple_tokens(self):
+        """Issue multiple tokens scoping to different accounts.
 
         The new tokens should be scoped to:
 
-        * domainA
-        * domainB
-        * domainC
+        * accountA
+        * accountB
+        * accountC
 
         """
-        bodies = (self.TOKEN_SCOPE_DOMAIN_A_FROM_ADMIN,
-                  self.TOKEN_SCOPE_DOMAIN_B_FROM_ADMIN,
-                  self.TOKEN_SCOPE_DOMAIN_C_FROM_ADMIN)
-        domain_ids = (self.domainA['id'],
-                      self.domainB['id'],
-                      self.domainC['id'])
+        bodies = (self.TOKEN_SCOPE_ACCOUNT_A_FROM_ADMIN,
+                  self.TOKEN_SCOPE_ACCOUNT_B_FROM_ADMIN,
+                  self.TOKEN_SCOPE_ACCOUNT_C_FROM_ADMIN)
+        account_ids = (self.accountA['id'],
+                      self.accountB['id'],
+                      self.accountC['id'])
 
-        for body, domain_id_ref in zip(bodies, domain_ids):
+        for body, account_id_ref in zip(bodies, account_ids):
             r = self.v3_authenticate_token(body)
             token_resp = r.result['token']
-            domain_id = token_resp['domain']['id']
-            self.assertEqual(domain_id_ref, domain_id)
+            account_id = token_resp['account']['id']
+            self.assertEqual(account_id_ref, account_id)
             self._check_scoped_token_attributes(token_resp)
 
-    def test_scope_to_domain_with_only_inherited_roles_fails(self):
-        """Try to scope to a domain that has no direct roles."""
+    def test_scope_to_account_with_only_inherited_roles_fails(self):
+        """Try to scope to a account that has no direct roles."""
         self.v3_authenticate_token(
-            self.TOKEN_SCOPE_DOMAIN_D_FROM_CUSTOMER,
+            self.TOKEN_SCOPE_ACCOUNT_D_FROM_CUSTOMER,
             expected_status=401)
 
     def test_list_projects(self):
@@ -2340,7 +2340,7 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
 
         # Create a subproject
         subproject_inherited = self.new_project_ref(
-            domain_id=self.domainD['id'],
+            account_id=self.accountD['id'],
             parent_id=self.project_inherited['id'])
         self.resource_api.create_project(subproject_inherited['id'],
                                          subproject_inherited)
@@ -2368,30 +2368,30 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
                 self.assertIn(expected_project_id, project_ids,
                               'Projects match failed for url %s' % url)
 
-    def test_list_domains(self):
-        urls = ('/OS-FEDERATION/domains', '/auth/domains')
+    def test_list_accounts(self):
+        urls = ('/OS-FEDERATION/accounts', '/auth/accounts')
 
         tokens = (self.tokens['CUSTOMER_ASSERTION'],
                   self.tokens['EMPLOYEE_ASSERTION'],
                   self.tokens['ADMIN_ASSERTION'])
 
-        # NOTE(henry-nash): domain D does not appear in the expected results
+        # NOTE(henry-nash): account D does not appear in the expected results
         # since it only had inherited roles (which only apply to projects
-        # within the domain)
+        # within the account)
 
-        domain_refs = (set([self.domainA['id']]),
-                       set([self.domainA['id'],
-                            self.domainB['id']]),
-                       set([self.domainA['id'],
-                            self.domainB['id'],
-                            self.domainC['id']]))
+        account_refs = (set([self.accountA['id']]),
+                       set([self.accountA['id'],
+                            self.accountB['id']]),
+                       set([self.accountA['id'],
+                            self.accountB['id'],
+                            self.accountC['id']]))
 
-        for token, domains_ref in zip(tokens, domain_refs):
+        for token, accounts_ref in zip(tokens, account_refs):
             for url in urls:
                 r = self.get(url, token=token)
-                domains_resp = r.result['domains']
-                domains = set(p['id'] for p in domains_resp)
-                self.assertEqual(domains_ref, domains,
+                accounts_resp = r.result['accounts']
+                accounts = set(p['id'] for p in accounts_resp)
+                self.assertEqual(accounts_ref, accounts,
                                  'match failed for url %s' % url)
 
     def test_full_workflow(self):
@@ -2435,7 +2435,7 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
         """
         # create group and role
         group = self.new_group_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         group = self.identity_api.create_group(group)
         role = self.new_role_ref()
         self.role_api.create_role(role['id'], role)
@@ -2505,9 +2505,9 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
          - Issue unscoped token with on group  ``EXISTS`` id in it
 
         """
-        domain_id = self.domainA['id']
-        domain_name = self.domainA['name']
-        group = self.new_group_ref(domain_id=domain_id)
+        account_id = self.accountA['id']
+        account_name = self.accountA['name']
+        group = self.new_group_ref(account_id=account_id)
         group['name'] = 'EXISTS'
         group = self.identity_api.create_group(group)
         rules = {
@@ -2531,7 +2531,7 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
                     "local": [
                         {
                             "groups": "{0}",
-                            "domain": {"name": domain_name}
+                            "account": {"name": account_name}
                         }
                     ],
                     "remote": [
@@ -2565,16 +2565,16 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
 
         """
 
-        domain_id = self.domainA['id']
-        domain_name = self.domainA['name']
+        account_id = self.accountA['id']
+        account_name = self.accountA['name']
 
         # Add a group "EXISTS"
-        group_exists = self.new_group_ref(domain_id=domain_id)
+        group_exists = self.new_group_ref(account_id=account_id)
         group_exists['name'] = 'EXISTS'
         group_exists = self.identity_api.create_group(group_exists)
 
         # Add a group "NO_EXISTS"
-        group_no_exists = self.new_group_ref(domain_id=domain_id)
+        group_no_exists = self.new_group_ref(account_id=account_id)
         group_no_exists['name'] = 'NO_EXISTS'
         group_no_exists = self.identity_api.create_group(group_no_exists)
 
@@ -2601,7 +2601,7 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
                     "local": [
                         {
                             "groups": "{0}",
-                            "domain": {"name": domain_name}
+                            "account": {"name": account_name}
                         }
                     ],
                     "remote": [
@@ -2640,16 +2640,16 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
 
         """
 
-        domain_id = self.domainA['id']
-        domain_name = self.domainA['name']
+        account_id = self.accountA['id']
+        account_name = self.accountA['name']
 
         # Add a group "EXISTS"
-        group_exists = self.new_group_ref(domain_id=domain_id)
+        group_exists = self.new_group_ref(account_id=account_id)
         group_exists['name'] = 'EXISTS'
         group_exists = self.identity_api.create_group(group_exists)
 
         # Add a group "NO_EXISTS"
-        group_no_exists = self.new_group_ref(domain_id=domain_id)
+        group_no_exists = self.new_group_ref(account_id=account_id)
         group_no_exists['name'] = 'NO_EXISTS'
         group_no_exists = self.identity_api.create_group(group_no_exists)
 
@@ -2676,7 +2676,7 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
                     "local": [
                         {
                             "groups": "{0}",
-                            "domain": {"name": domain_name}
+                            "account": {"name": account_name}
                         }
                     ],
                     "remote": [
@@ -2713,9 +2713,9 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
            user does not have any group assigned.
 
         """
-        domain_id = self.domainA['id']
-        domain_name = self.domainA['name']
-        group = self.new_group_ref(domain_id=domain_id)
+        account_id = self.accountA['id']
+        account_name = self.accountA['name']
+        group = self.new_group_ref(account_id=account_id)
         group['name'] = 'EXISTS'
         group = self.identity_api.create_group(group)
         rules = {
@@ -2739,7 +2739,7 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
                     "local": [
                         {
                             "groups": "{0}",
-                            "domain": {"name": domain_name}
+                            "account": {"name": account_name}
                         }
                     ],
                     "remote": [
@@ -2775,16 +2775,16 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
            two groups.
 
         """
-        domain_id = self.domainA['id']
-        domain_name = self.domainA['name']
+        account_id = self.accountA['id']
+        account_name = self.accountA['name']
 
         # Add a group "EXISTS"
-        group_exists = self.new_group_ref(domain_id=domain_id)
+        group_exists = self.new_group_ref(account_id=account_id)
         group_exists['name'] = 'EXISTS'
         group_exists = self.identity_api.create_group(group_exists)
 
         # Add a group "NO_EXISTS"
-        group_no_exists = self.new_group_ref(domain_id=domain_id)
+        group_no_exists = self.new_group_ref(account_id=account_id)
         group_no_exists['name'] = 'NO_EXISTS'
         group_no_exists = self.identity_api.create_group(group_no_exists)
 
@@ -2811,7 +2811,7 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
                     "local": [
                         {
                             "groups": "{0}",
-                            "domain": {"name": domain_name}
+                            "account": {"name": account_name}
                         }
                     ],
                     "remote": [
@@ -2874,14 +2874,14 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
                           self.token_provider_api.validate_v2_token,
                           token_id=token_id)
 
-    def test_unscoped_token_has_user_domain(self):
+    def test_unscoped_token_has_user_account(self):
         r = self._issue_unscoped_token()
-        self._check_domains_are_valid(r.json_body['token'])
+        self._check_accounts_are_valid(r.json_body['token'])
 
-    def test_scoped_token_has_user_domain(self):
+    def test_scoped_token_has_user_account(self):
         r = self.v3_authenticate_token(
             self.TOKEN_SCOPE_PROJECT_EMPLOYEE_FROM_EMPLOYEE)
-        self._check_domains_are_valid(r.result['token'])
+        self._check_accounts_are_valid(r.result['token'])
 
     def test_issue_unscoped_token_for_local_user(self):
         r = self._issue_unscoped_token(assertion='LOCAL_USER_ASSERTION')
@@ -2889,10 +2889,10 @@ class FederatedTokenTests(FederationTests, FederatedSetupMixin):
         self.assertListEqual(['saml2'], token_resp['methods'])
         self.assertEqual(self.user['id'], token_resp['user']['id'])
         self.assertEqual(self.user['name'], token_resp['user']['name'])
-        self.assertEqual(self.domain['id'], token_resp['user']['domain']['id'])
+        self.assertEqual(self.account['id'], token_resp['user']['account']['id'])
         # Make sure the token is not scoped
         self.assertNotIn('project', token_resp)
-        self.assertNotIn('domain', token_resp)
+        self.assertNotIn('account', token_resp)
 
     def test_issue_token_for_local_user_user_not_found(self):
         self.assertRaises(exception.Unauthorized,
@@ -3019,10 +3019,10 @@ class SAMLGenerationTests(FederationTests):
     ISSUER = 'https://acme.com/FIM/sps/openstack/saml20'
     RECIPIENT = 'http://beta.com/Shibboleth.sso/SAML2/POST'
     SUBJECT = 'test_user'
-    SUBJECT_DOMAIN = 'user_domain'
+    SUBJECT_ACCOUNT = 'user_account'
     ROLES = ['admin', 'member']
     PROJECT = 'development'
-    PROJECT_DOMAIN = 'project_domain'
+    PROJECT_ACCOUNT = 'project_account'
     SAML_GENERATION_ROUTE = '/auth/OS-FEDERATION/saml2'
     ECP_GENERATION_ROUTE = '/auth/OS-FEDERATION/saml2/ecp'
     ASSERTION_VERSION = "2.0"
@@ -3061,9 +3061,9 @@ class SAMLGenerationTests(FederationTests):
             generator = keystone_idp.SAMLGenerator()
             response = generator.samlize_token(self.ISSUER, self.RECIPIENT,
                                                self.SUBJECT,
-                                               self.SUBJECT_DOMAIN,
+                                               self.SUBJECT_ACCOUNT,
                                                self.ROLES, self.PROJECT,
-                                               self.PROJECT_DOMAIN)
+                                               self.PROJECT_ACCOUNT)
 
         assertion = response.assertion
         self.assertIsNotNone(assertion)
@@ -3075,10 +3075,10 @@ class SAMLGenerationTests(FederationTests):
         user_attribute = assertion.attribute_statement[0].attribute[0]
         self.assertEqual(self.SUBJECT, user_attribute.attribute_value[0].text)
 
-        user_domain_attribute = (
+        user_account_attribute = (
             assertion.attribute_statement[0].attribute[1])
-        self.assertEqual(self.SUBJECT_DOMAIN,
-                         user_domain_attribute.attribute_value[0].text)
+        self.assertEqual(self.SUBJECT_ACCOUNT,
+                         user_account_attribute.attribute_value[0].text)
 
         role_attribute = assertion.attribute_statement[0].attribute[2]
         for attribute_value in role_attribute.attribute_value:
@@ -3088,10 +3088,10 @@ class SAMLGenerationTests(FederationTests):
         self.assertEqual(self.PROJECT,
                          project_attribute.attribute_value[0].text)
 
-        project_domain_attribute = (
+        project_account_attribute = (
             assertion.attribute_statement[0].attribute[4])
-        self.assertEqual(self.PROJECT_DOMAIN,
-                         project_domain_attribute.attribute_value[0].text)
+        self.assertEqual(self.PROJECT_ACCOUNT,
+                         project_account_attribute.attribute_value[0].text)
 
     def test_verify_assertion_object(self):
         """Test that the Assertion object is built properly.
@@ -3105,9 +3105,9 @@ class SAMLGenerationTests(FederationTests):
             generator = keystone_idp.SAMLGenerator()
             response = generator.samlize_token(self.ISSUER, self.RECIPIENT,
                                                self.SUBJECT,
-                                               self.SUBJECT_DOMAIN,
+                                               self.SUBJECT_ACCOUNT,
                                                self.ROLES, self.PROJECT,
-                                               self.PROJECT_DOMAIN)
+                                               self.PROJECT_ACCOUNT)
         assertion = response.assertion
         self.assertEqual(self.ASSERTION_VERSION, assertion.version)
 
@@ -3124,9 +3124,9 @@ class SAMLGenerationTests(FederationTests):
             generator = keystone_idp.SAMLGenerator()
             response = generator.samlize_token(self.ISSUER, self.RECIPIENT,
                                                self.SUBJECT,
-                                               self.SUBJECT_DOMAIN,
+                                               self.SUBJECT_ACCOUNT,
                                                self.ROLES, self.PROJECT,
-                                               self.PROJECT_DOMAIN)
+                                               self.PROJECT_ACCOUNT)
 
         saml_str = response.to_string()
         response = etree.fromstring(saml_str)
@@ -3139,8 +3139,8 @@ class SAMLGenerationTests(FederationTests):
         user_attribute = assertion[4][0]
         self.assertEqual(self.SUBJECT, user_attribute[0].text)
 
-        user_domain_attribute = assertion[4][1]
-        self.assertEqual(self.SUBJECT_DOMAIN, user_domain_attribute[0].text)
+        user_account_attribute = assertion[4][1]
+        self.assertEqual(self.SUBJECT_ACCOUNT, user_account_attribute[0].text)
 
         role_attribute = assertion[4][2]
         for attribute_value in role_attribute:
@@ -3149,8 +3149,8 @@ class SAMLGenerationTests(FederationTests):
         project_attribute = assertion[4][3]
         self.assertEqual(self.PROJECT, project_attribute[0].text)
 
-        project_domain_attribute = assertion[4][4]
-        self.assertEqual(self.PROJECT_DOMAIN, project_domain_attribute[0].text)
+        project_account_attribute = assertion[4][4]
+        self.assertEqual(self.PROJECT_ACCOUNT, project_account_attribute[0].text)
 
     def test_assertion_using_explicit_namespace_prefixes(self):
         def mocked_subprocess_check_output(*popenargs, **kwargs):
@@ -3167,9 +3167,9 @@ class SAMLGenerationTests(FederationTests):
             generator = keystone_idp.SAMLGenerator()
             response = generator.samlize_token(self.ISSUER, self.RECIPIENT,
                                                self.SUBJECT,
-                                               self.SUBJECT_DOMAIN,
+                                               self.SUBJECT_ACCOUNT,
                                                self.ROLES, self.PROJECT,
-                                               self.PROJECT_DOMAIN)
+                                               self.PROJECT_ACCOUNT)
             assertion_xml = response.assertion.to_string()
             # make sure we have the proper tag and prefix for the assertion
             # namespace
@@ -3192,9 +3192,9 @@ class SAMLGenerationTests(FederationTests):
 
         generator = keystone_idp.SAMLGenerator()
         response = generator.samlize_token(self.ISSUER, self.RECIPIENT,
-                                           self.SUBJECT, self.SUBJECT_DOMAIN,
+                                           self.SUBJECT, self.SUBJECT_ACCOUNT,
                                            self.ROLES, self.PROJECT,
-                                           self.PROJECT_DOMAIN)
+                                           self.PROJECT_ACCOUNT)
 
         signature = response.assertion.signature
         self.assertIsNotNone(signature)
@@ -3236,23 +3236,23 @@ class SAMLGenerationTests(FederationTests):
         token_id = resp.headers.get('X-Subject-Token')
         return token_id
 
-    def _fetch_domain_scoped_token(self):
+    def _fetch_account_scoped_token(self):
         auth_data = self.build_authentication_request(
             user_id=self.user['id'],
             password=self.user['password'],
-            user_domain_id=self.domain['id'])
+            user_account_id=self.account['id'])
         resp = self.v3_authenticate_token(auth_data)
         token_id = resp.headers.get('X-Subject-Token')
         return token_id
 
     def test_not_project_scoped_token(self):
-        """Ensure SAML generation fails when passing domain-scoped tokens.
+        """Ensure SAML generation fails when passing account-scoped tokens.
 
         The server should return a 403 Forbidden Action.
 
         """
         self.config_fixture.config(group='saml', idp_entity_id=self.ISSUER)
-        token_id = self._fetch_domain_scoped_token()
+        token_id = self._fetch_account_scoped_token()
         body = self._create_generate_saml_request(token_id,
                                                   self.SERVICE_PROVDIER_ID)
         with mock.patch.object(keystone_idp, '_sign_assertion',
@@ -3297,8 +3297,8 @@ class SAMLGenerationTests(FederationTests):
         user_attribute = assertion[4][0]
         self.assertIsInstance(user_attribute[0].text, str)
 
-        user_domain_attribute = assertion[4][1]
-        self.assertIsInstance(user_domain_attribute[0].text, str)
+        user_account_attribute = assertion[4][1]
+        self.assertIsInstance(user_account_attribute[0].text, str)
 
         role_attribute = assertion[4][2]
         self.assertIsInstance(role_attribute[0].text, str)
@@ -3306,8 +3306,8 @@ class SAMLGenerationTests(FederationTests):
         project_attribute = assertion[4][3]
         self.assertIsInstance(project_attribute[0].text, str)
 
-        project_domain_attribute = assertion[4][4]
-        self.assertIsInstance(project_domain_attribute[0].text, str)
+        project_account_attribute = assertion[4][4]
+        self.assertIsInstance(project_account_attribute[0].text, str)
 
     def test_invalid_scope_body(self):
         """Test that missing the scope in request body raises an exception.
@@ -3412,8 +3412,8 @@ class SAMLGenerationTests(FederationTests):
         user_attribute = assertion[4][0]
         self.assertIsInstance(user_attribute[0].text, str)
 
-        user_domain_attribute = assertion[4][1]
-        self.assertIsInstance(user_domain_attribute[0].text, str)
+        user_account_attribute = assertion[4][1]
+        self.assertIsInstance(user_account_attribute[0].text, str)
 
         role_attribute = assertion[4][2]
         self.assertIsInstance(role_attribute[0].text, str)
@@ -3421,8 +3421,8 @@ class SAMLGenerationTests(FederationTests):
         project_attribute = assertion[4][3]
         self.assertIsInstance(project_attribute[0].text, str)
 
-        project_domain_attribute = assertion[4][4]
-        self.assertIsInstance(project_domain_attribute[0].text, str)
+        project_account_attribute = assertion[4][4]
+        self.assertIsInstance(project_account_attribute[0].text, str)
 
 
 class IdPMetadataGenerationTests(FederationTests):

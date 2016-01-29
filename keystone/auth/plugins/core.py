@@ -113,11 +113,11 @@ class UserAuthInfo(object):
         self.user_ref = None
         self.METHOD_NAME = None
 
-    def _assert_domain_is_enabled(self, domain_ref):
+    def _assert_account_is_enabled(self, account_ref):
         try:
-            self.resource_api.assert_domain_enabled(
-                domain_id=domain_ref['id'],
-                domain=domain_ref)
+            self.resource_api.assert_account_enabled(
+                account_id=account_ref['id'],
+                account=account_ref)
         except AssertionError as e:
             LOG.warning(six.text_type(e))
             six.reraise(exception.Unauthorized, exception.Unauthorized(e),
@@ -133,24 +133,24 @@ class UserAuthInfo(object):
             six.reraise(exception.Unauthorized, exception.Unauthorized(e),
                         sys.exc_info()[2])
 
-    def _lookup_domain(self, domain_info):
-        domain_id = domain_info.get('id')
-        domain_name = domain_info.get('name')
-        domain_ref = None
-        if not domain_id and not domain_name:
+    def _lookup_account(self, account_info):
+        account_id = account_info.get('id')
+        account_name = account_info.get('name')
+        account_ref = None
+        if not account_id and not account_name:
             raise exception.ValidationError(attribute='id or name',
-                                            target='domain')
+                                            target='account')
         try:
-            if domain_name:
-                domain_ref = self.resource_api.get_domain_by_name(
-                    domain_name)
+            if account_name:
+                account_ref = self.resource_api.get_account_by_name(
+                    account_name)
             else:
-                domain_ref = self.resource_api.get_domain(domain_id)
-        except exception.DomainNotFound as e:
+                account_ref = self.resource_api.get_account(account_id)
+        except exception.AccountNotFound as e:
             LOG.exception(six.text_type(e))
             raise exception.Unauthorized(e)
-        self._assert_domain_is_enabled(domain_ref)
-        return domain_ref
+        self._assert_account_is_enabled(account_ref)
+        return account_ref
 
     def _validate_and_normalize_auth_data(self, auth_payload):
         if 'user' not in auth_payload:
@@ -166,21 +166,21 @@ class UserAuthInfo(object):
         self.password = user_info.get('password')
         try:
             if user_name:
-                if 'domain' not in user_info:
-                    raise exception.ValidationError(attribute='domain',
+                if 'account' not in user_info:
+                    raise exception.ValidationError(attribute='account',
                                                     target='user')
-                domain_ref = self._lookup_domain(user_info['domain'])
+                account_ref = self._lookup_account(user_info['account'])
                 user_ref = self.identity_api.get_user_by_name(
-                    user_name, domain_ref['id'])
+                    user_name, account_ref['id'])
             else:
                 user_ref = self.identity_api.get_user(user_id)
-                domain_ref = self.resource_api.get_domain(
-                    user_ref['domain_id'])
-                self._assert_domain_is_enabled(domain_ref)
+                account_ref = self.resource_api.get_account(
+                    user_ref['account_id'])
+                self._assert_account_is_enabled(account_ref)
         except exception.UserNotFound as e:
             LOG.exception(six.text_type(e))
             raise exception.Unauthorized(e)
         self._assert_user_is_enabled(user_ref)
         self.user_ref = user_ref
         self.user_id = user_ref['id']
-        self.domain_id = domain_ref['id']
+        self.account_id = account_ref['id']

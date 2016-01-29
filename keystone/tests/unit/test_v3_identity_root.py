@@ -35,7 +35,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         super(IdentityTestCase, self).setUp()
 
         self.group = self.new_group_ref(
-            domain_id=self.domain_id)
+            account_id=self.account_id)
         self.group = self.identity_api.create_group(self.group)
         self.group_id = self.group['id']
 
@@ -52,8 +52,8 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_create_user(self):
         """Call ``POST /users``."""
-        ref = self.new_user_ref(domain_id=self.domain_id)
-	user = '/?Action=CreateUser' + '&Name=' + ref['name'] + '&Description=' + ref['description'] + '&Password='+ ref['password']+'&Email='+ ref['email'] + '&DomainId=' + ref['domain_id'] 
+        ref = self.new_user_ref(account_id=self.account_id)
+	user = '/?Action=CreateUser' + '&Name=' + ref['name'] + '&Description=' + ref['description'] + '&Password='+ ref['password']+'&Email='+ ref['email'] + '&AccountId=' + ref['account_id'] 
 	r = self.get(
             user)
 	return self.assertValidUserResponse(r, ref)
@@ -71,16 +71,16 @@ class IdentityTestCase(test_v3.RestfulTestCase):
                                          resource_url=resource_url)
 
     def test_list_users_with_static_admin_token_and_multiple_backends(self):
-        # domain-specific operations with the bootstrap ADMIN token is
-        # disallowed when domain-specific drivers are enabled
+        # account-specific operations with the bootstrap ADMIN token is
+        # disallowed when account-specific drivers are enabled
         self.config_fixture.config(group='identity',
-                                   domain_specific_drivers_enabled=True)
+                                   account_specific_drivers_enabled=True)
         self.get('/?Action=ListUsers', token=CONF.admin_token,
                  expected_status=exception.Unauthorized.code)
 
     def test_list_users_no_default_project(self):
         """Call ``GET /users`` making sure no default_project_id."""
-        user = self.new_user_ref(self.domain_id)
+        user = self.new_user_ref(self.account_id)
         user = self.identity_api.create_user(user)
         resource_url = '/?Action=ListUsers'
         r = self.get(resource_url)
@@ -95,7 +95,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_get_user_with_default_project(self):
         """Call ``GET /users/{user_id}`` making sure of default_project_id."""
-        user = self.new_user_ref(domain_id=self.domain_id,
+        user = self.new_user_ref(account_id=self.account_id,
                                  project_id=self.project_id)
         user = self.identity_api.create_user(user)
         ref = '/?Action=GetUser' + '&Id=' + user['id']
@@ -148,9 +148,9 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_update_user(self):
         """Call ``PATCH /users/{user_id}``."""
-        ref = self.new_user_ref(domain_id=self.domain_id)
+        ref = self.new_user_ref(account_id=self.account_id)
         del ref['id']
-        user = '/?Action=UpdateUser' + '&Name=' + ref['name'] + '&Id=' + self.user['id'] + '&Description=' + ref['description'] +'&Email='+ ref['email'] + '&DomainId=' + ref['domain_id']
+        user = '/?Action=UpdateUser' + '&Name=' + ref['name'] + '&Id=' + self.user['id'] + '&Description=' + ref['description'] +'&Email='+ ref['email'] + '&AccountId=' + ref['account_id']
         r = self.get(user)
         print r
         self.assertValidUserResponse(r, ref)
@@ -170,7 +170,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         self.assertDictEqual(r, self.credential)
         # Create a second credential with a different user
         self.user2 = self.new_user_ref(
-            domain_id=self.domain['id'],
+            account_id=self.account['id'],
             project_id=self.project['id'])
         self.user2 = self.identity_api.create_user(self.user2)
         self.credential2 = self.new_credential_ref(
@@ -212,8 +212,8 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_create_group(self):
         """Call ``POST /groups``."""
-        ref = self.new_group_ref(domain_id=self.domain_id)
-        group = '/?Action=CreateGroup' + '&Name=' + ref['name'] + '&Description=' + ref['description'] +'&DomainId=' + ref['domain_id'] 
+        ref = self.new_group_ref(account_id=self.account_id)
+        group = '/?Action=CreateGroup' + '&Name=' + ref['name'] + '&Description=' + ref['description'] +'&AccountId=' + ref['account_id'] 
         self.get(group, expected_status=200)
     
     def test_create_group_400(self):
@@ -239,7 +239,7 @@ class IdentityTestCase(test_v3.RestfulTestCase):
 
     def test_update_group(self):
         """Call ``PATCH /groups/{group_id}``."""
-        ref = self.new_group_ref(domain_id=self.domain_id)
+        ref = self.new_group_ref(account_id=self.account_id)
         del ref['id']
         group = '/?Action=UpdateGroup' + '&Name=' + ref['name'] + '&Id=' + self.group_id + '&Description=' + ref['description']
         r = self.get(group)

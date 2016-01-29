@@ -42,11 +42,11 @@ DEFAULT_EXTENSIONS = ['endpoint_filter',
                       ]
 
 
-def get_default_domain():
-    # Return the reference used for the default domain structure during
+def get_default_account():
+    # Return the reference used for the default account structure during
     # sql migrations.
     return {
-        'id': CONF.identity.default_domain_id,
+        'id': CONF.identity.default_account_id,
         'name': 'Default',
         'enabled': True,
         'extra': jsonutils.dumps({'description': 'Owns users and tenants '

@@ -224,8 +224,8 @@ class InvalidPolicyAssociation(Forbidden):
                        "Service: %(service_id)s, Region: %(region_id)s")
 
 
-class InvalidDomainConfig(Forbidden):
-    message_format = _("Invalid domain specific configuration: %(reason)s")
+class InvalidAccountConfig(Forbidden):
+    message_format = _("Invalid account specific configuration: %(reason)s")
 
 
 class NotFound(Error):
@@ -268,7 +268,7 @@ class RoleNotFound(NotFound):
 class RoleAssignmentNotFound(NotFound):
     message_format = _("Could not find role assignment with role: "
                        "%(role_id)s, user or group: %(actor_id)s, "
-                       "project or domain: %(target_id)s")
+                       "project or account: %(target_id)s")
 
 
 class RegionNotFound(NotFound):
@@ -279,8 +279,8 @@ class ServiceNotFound(NotFound):
     message_format = _("Could not find service: %(service_id)s")
 
 
-class DomainNotFound(NotFound):
-    message_format = _("Could not find domain: %(domain_id)s")
+class AccountNotFound(NotFound):
+    message_format = _("Could not find account: %(account_id)s")
 
 
 class ProjectNotFound(NotFound):
@@ -346,9 +346,9 @@ class PublicIDNotFound(NotFound):
     message_format = "%(id)s"
 
 
-class DomainConfigNotFound(NotFound):
-    message_format = _('Could not find %(group_or_option)s in domain '
-                       'configuration for domain %(domain_id)s')
+class AccountConfigNotFound(NotFound):
+    message_format = _('Could not find %(group_or_option)s in account '
+                       'configuration for account %(account_id)s')
 
 
 class Conflict(Error):
@@ -414,7 +414,7 @@ class AssignmentTypeCalculationError(UnexpectedError):
     message_format = _(
         'Unexpected combination of grant attributes - '
         'User: %(user_id)s, Group: %(group_id)s, Project: %(project_id)s, '
-        'Domain: %(domain_id)s')
+        'Account: %(account_id)s')
 
 
 class NotImplemented(Error):
@@ -442,7 +442,7 @@ class KeysNotFound(UnexpectedError):
 
 
 class MultipleSQLDriversInConfig(UnexpectedError):
-    message_format = _('The Keystone domain-specific configuration has '
+    message_format = _('The Keystone account-specific configuration has '
                        'specified more than one SQL driver (only one is '
                        'permitted): %(source)s.')
 

@@ -26,7 +26,7 @@ from keystone.tests.unit import test_v3
 
 
 CONF = cfg.CONF
-DEFAULT_DOMAIN_ID = CONF.identity.default_domain_id
+DEFAULT_ACCOUNT_ID = CONF.identity.default_account_id
 
 
 class IdentityTestProtectedCase(test_v3.RestfulTestCase):
@@ -35,17 +35,17 @@ class IdentityTestProtectedCase(test_v3.RestfulTestCase):
     def setUp(self):
         """Setup for Identity Protection Test Cases.
 
-        As well as the usual housekeeping, create a set of domains,
+        As well as the usual housekeeping, create a set of accounts,
         users, roles and projects for the subsequent tests:
 
-        - Three domains: A,B & C.  C is disabled.
-        - DomainA has user1, DomainB has user2 and user3
-        - DomainA has group1 and group2, DomainB has group3
-        - User1 has two roles on DomainA
-        - User2 has one role on DomainA
+        - Three accounts: A,B & C.  C is disabled.
+        - AccountA has user1, AccountB has user2 and user3
+        - AccountA has group1 and group2, AccountB has group3
+        - User1 has two roles on AccountA
+        - User2 has one role on AccountA
 
-        Remember that there will also be a fourth domain in existence,
-        the default domain.
+        Remember that there will also be a fourth account in existence,
+        the default account.
 
         """
         # Ensure that test_v3.RestfulTestCase doesn't load its own
@@ -63,42 +63,42 @@ class IdentityTestProtectedCase(test_v3.RestfulTestCase):
             password=self.user1['password'])
 
     def load_sample_data(self):
-        self._populate_default_domain()
-        # Start by creating a couple of domains
-        self.domainA = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainA['id'], self.domainA)
-        self.domainB = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainB['id'], self.domainB)
-        self.domainC = self.new_domain_ref()
-        self.domainC['enabled'] = False
-        self.resource_api.create_domain(self.domainC['id'], self.domainC)
+        self._populate_default_account()
+        # Start by creating a couple of accounts
+        self.accountA = self.new_account_ref()
+        self.resource_api.create_account(self.accountA['id'], self.accountA)
+        self.accountB = self.new_account_ref()
+        self.resource_api.create_account(self.accountB['id'], self.accountB)
+        self.accountC = self.new_account_ref()
+        self.accountC['enabled'] = False
+        self.resource_api.create_account(self.accountC['id'], self.accountC)
 
-        # Now create some users, one in domainA and two of them in domainB
-        self.user1 = self.new_user_ref(domain_id=self.domainA['id'])
+        # Now create some users, one in accountA and two of them in accountB
+        self.user1 = self.new_user_ref(account_id=self.accountA['id'])
         password = uuid.uuid4().hex
         self.user1['password'] = password
         self.user1 = self.identity_api.create_user(self.user1)
         self.user1['password'] = password
 
-        self.user2 = self.new_user_ref(domain_id=self.domainB['id'])
+        self.user2 = self.new_user_ref(account_id=self.accountB['id'])
         password = uuid.uuid4().hex
         self.user2['password'] = password
         self.user2 = self.identity_api.create_user(self.user2)
         self.user2['password'] = password
 
-        self.user3 = self.new_user_ref(domain_id=self.domainB['id'])
+        self.user3 = self.new_user_ref(account_id=self.accountB['id'])
         password = uuid.uuid4().hex
         self.user3['password'] = password
         self.user3 = self.identity_api.create_user(self.user3)
         self.user3['password'] = password
 
-        self.group1 = self.new_group_ref(domain_id=self.domainA['id'])
+        self.group1 = self.new_group_ref(account_id=self.accountA['id'])
         self.group1 = self.identity_api.create_group(self.group1)
 
-        self.group2 = self.new_group_ref(domain_id=self.domainA['id'])
+        self.group2 = self.new_group_ref(account_id=self.accountA['id'])
         self.group2 = self.identity_api.create_group(self.group2)
 
-        self.group3 = self.new_group_ref(domain_id=self.domainB['id'])
+        self.group3 = self.new_group_ref(account_id=self.accountB['id'])
         self.group3 = self.identity_api.create_group(self.group3)
 
         self.role = self.new_role_ref()
@@ -107,13 +107,13 @@ class IdentityTestProtectedCase(test_v3.RestfulTestCase):
         self.role_api.create_role(self.role1['id'], self.role1)
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.user1['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.user2['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
         self.assignment_api.create_grant(self.role1['id'],
                                          user_id=self.user1['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
 
     def _get_id_list_from_ref_list(self, ref_list):
         result_list = []
@@ -132,7 +132,7 @@ class IdentityTestProtectedCase(test_v3.RestfulTestCase):
 
         - Update policy so api is unprotected
         - Use an un-scoped token to make sure we can get back all
-          the users independent of domain
+          the users independent of account
 
         """
         self._set_policy({"identity:list_users": []})
@@ -142,20 +142,20 @@ class IdentityTestProtectedCase(test_v3.RestfulTestCase):
         self.assertIn(self.user2['id'], id_list)
         self.assertIn(self.user3['id'], id_list)
 
-    def test_list_users_filtered_by_domain(self):
-        """GET /users?domain_id=mydomain (filtered)
+    def test_list_users_filtered_by_account(self):
+        """GET /users?account_id=myaccount (filtered)
 
         Test Plan:
 
         - Update policy so api is unprotected
         - Use an un-scoped token to make sure we can filter the
-          users by domainB, getting back the 2 users in that domain
+          users by accountB, getting back the 2 users in that account
 
         """
         self._set_policy({"identity:list_users": []})
-        url_by_name = '/users?domain_id=%s' % self.domainB['id']
+        url_by_name = '/users?account_id=%s' % self.accountB['id']
         r = self.get(url_by_name, auth=self.auth)
-        # We should  get back two users, those in DomainB
+        # We should  get back two users, those in AccountB
         id_list = self._get_id_list_from_ref_list(r.result.get('users'))
         self.assertIn(self.user2['id'], id_list)
         self.assertIn(self.user3['id'], id_list)
@@ -185,21 +185,21 @@ class IdentityTestProtectedCase(test_v3.RestfulTestCase):
 
         Test Plan:
 
-        - Update policy to protect api by domain_id
-        - Try and read a user who is in DomainB with a token scoped
-          to Domain A - this should fail
-        - Retry this for a user who is in Domain A, which should succeed.
+        - Update policy to protect api by account_id
+        - Try and read a user who is in AccountB with a token scoped
+          to Account A - this should fail
+        - Retry this for a user who is in Account A, which should succeed.
         - Finally, try getting a user that does not exist, which should
           still return UserNotFound
 
         """
         new_policy = {'identity:get_user':
-                      [["domain_id:%(target.user.domain_id)s"]]}
+                      [["account_id:%(target.user.account_id)s"]]}
         self._set_policy(new_policy)
         self.auth = self.build_authentication_request(
             user_id=self.user1['id'],
             password=self.user1['password'],
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         url_by_name = '/users/%s' % self.user2['id']
         r = self.get(url_by_name, auth=self.auth,
                      expected_status=exception.ForbiddenAction.code)
@@ -213,23 +213,23 @@ class IdentityTestProtectedCase(test_v3.RestfulTestCase):
                      expected_status=exception.UserNotFound.code)
 
     def test_revoke_grant_protected_match_target(self):
-        """DELETE /domains/{id}/users/{id}/roles/{id} (match target)
+        """DELETE /accounts/{id}/users/{id}/roles/{id} (match target)
 
         Test Plan:
 
-        - Update policy to protect api by domain_id of entities in
+        - Update policy to protect api by account_id of entities in
           the grant
         - Try and delete the existing grant that has a user who is
-          from a different domain - this should fail.
-        - Retry this for a user who is in Domain A, which should succeed.
+          from a different account - this should fail.
+        - Retry this for a user who is in Account A, which should succeed.
 
         """
         new_policy = {'identity:revoke_grant':
-                      [["domain_id:%(target.user.domain_id)s"]]}
+                      [["account_id:%(target.user.account_id)s"]]}
         self._set_policy(new_policy)
         collection_url = (
-            '/domains/%(domain_id)s/users/%(user_id)s/roles' % {
-                'domain_id': self.domainA['id'],
+            '/accounts/%(account_id)s/users/%(user_id)s/roles' % {
+                'account_id': self.accountA['id'],
                 'user_id': self.user2['id']})
         member_url = '%(collection_url)s/%(role_id)s' % {
             'collection_url': collection_url,
@@ -238,103 +238,103 @@ class IdentityTestProtectedCase(test_v3.RestfulTestCase):
         self.auth = self.build_authentication_request(
             user_id=self.user1['id'],
             password=self.user1['password'],
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         self.delete(member_url, auth=self.auth,
                     expected_status=exception.ForbiddenAction.code)
 
         collection_url = (
-            '/domains/%(domain_id)s/users/%(user_id)s/roles' % {
-                'domain_id': self.domainA['id'],
+            '/accounts/%(account_id)s/users/%(user_id)s/roles' % {
+                'account_id': self.accountA['id'],
                 'user_id': self.user1['id']})
         member_url = '%(collection_url)s/%(role_id)s' % {
             'collection_url': collection_url,
             'role_id': self.role1['id']}
         self.delete(member_url, auth=self.auth)
 
-    def test_list_users_protected_by_domain(self):
-        """GET /users?domain_id=mydomain (protected)
+    def test_list_users_protected_by_account(self):
+        """GET /users?account_id=myaccount (protected)
 
         Test Plan:
 
-        - Update policy to protect api by domain_id
-        - List groups using a token scoped to domainA with a filter
-          specifying domainA - we should only get back the one user
-          that is in domainA.
-        - Try and read the users from domainB - this should fail since
-          we don't have a token scoped for domainB
+        - Update policy to protect api by account_id
+        - List groups using a token scoped to accountA with a filter
+          specifying accountA - we should only get back the one user
+          that is in accountA.
+        - Try and read the users from accountB - this should fail since
+          we don't have a token scoped for accountB
 
         """
-        new_policy = {"identity:list_users": ["domain_id:%(domain_id)s"]}
+        new_policy = {"identity:list_users": ["account_id:%(account_id)s"]}
         self._set_policy(new_policy)
         self.auth = self.build_authentication_request(
             user_id=self.user1['id'],
             password=self.user1['password'],
-            domain_id=self.domainA['id'])
-        url_by_name = '/users?domain_id=%s' % self.domainA['id']
+            account_id=self.accountA['id'])
+        url_by_name = '/users?account_id=%s' % self.accountA['id']
         r = self.get(url_by_name, auth=self.auth)
-        # We should only get back one user, the one in DomainA
+        # We should only get back one user, the one in AccountA
         id_list = self._get_id_list_from_ref_list(r.result.get('users'))
         self.assertEqual(1, len(id_list))
         self.assertIn(self.user1['id'], id_list)
 
-        # Now try for domainB, which should fail
-        url_by_name = '/users?domain_id=%s' % self.domainB['id']
+        # Now try for accountB, which should fail
+        url_by_name = '/users?account_id=%s' % self.accountB['id']
         r = self.get(url_by_name, auth=self.auth,
                      expected_status=exception.ForbiddenAction.code)
 
-    def test_list_groups_protected_by_domain(self):
-        """GET /groups?domain_id=mydomain (protected)
+    def test_list_groups_protected_by_account(self):
+        """GET /groups?account_id=myaccount (protected)
 
         Test Plan:
 
-        - Update policy to protect api by domain_id
-        - List groups using a token scoped to domainA and make sure
-          we only get back the two groups that are in domainA
-        - Try and read the groups from domainB - this should fail since
-          we don't have a token scoped for domainB
+        - Update policy to protect api by account_id
+        - List groups using a token scoped to accountA and make sure
+          we only get back the two groups that are in accountA
+        - Try and read the groups from accountB - this should fail since
+          we don't have a token scoped for accountB
 
         """
-        new_policy = {"identity:list_groups": ["domain_id:%(domain_id)s"]}
+        new_policy = {"identity:list_groups": ["account_id:%(account_id)s"]}
         self._set_policy(new_policy)
         self.auth = self.build_authentication_request(
             user_id=self.user1['id'],
             password=self.user1['password'],
-            domain_id=self.domainA['id'])
-        url_by_name = '/groups?domain_id=%s' % self.domainA['id']
+            account_id=self.accountA['id'])
+        url_by_name = '/groups?account_id=%s' % self.accountA['id']
         r = self.get(url_by_name, auth=self.auth)
-        # We should only get back two groups, the ones in DomainA
+        # We should only get back two groups, the ones in AccountA
         id_list = self._get_id_list_from_ref_list(r.result.get('groups'))
         self.assertEqual(2, len(id_list))
         self.assertIn(self.group1['id'], id_list)
         self.assertIn(self.group2['id'], id_list)
 
-        # Now try for domainB, which should fail
-        url_by_name = '/groups?domain_id=%s' % self.domainB['id']
+        # Now try for accountB, which should fail
+        url_by_name = '/groups?account_id=%s' % self.accountB['id']
         r = self.get(url_by_name, auth=self.auth,
                      expected_status=exception.ForbiddenAction.code)
 
-    def test_list_groups_protected_by_domain_and_filtered(self):
-        """GET /groups?domain_id=mydomain&name=myname (protected)
+    def test_list_groups_protected_by_account_and_filtered(self):
+        """GET /groups?account_id=myaccount&name=myname (protected)
 
         Test Plan:
 
-        - Update policy to protect api by domain_id
-        - List groups using a token scoped to domainA with a filter
-          specifying both domainA and the name of group.
-        - We should only get back the group in domainA that matches
+        - Update policy to protect api by account_id
+        - List groups using a token scoped to accountA with a filter
+          specifying both accountA and the name of group.
+        - We should only get back the group in accountA that matches
           the name
 
         """
-        new_policy = {"identity:list_groups": ["domain_id:%(domain_id)s"]}
+        new_policy = {"identity:list_groups": ["account_id:%(account_id)s"]}
         self._set_policy(new_policy)
         self.auth = self.build_authentication_request(
             user_id=self.user1['id'],
             password=self.user1['password'],
-            domain_id=self.domainA['id'])
-        url_by_name = '/groups?domain_id=%s&name=%s' % (
-            self.domainA['id'], self.group2['name'])
+            account_id=self.accountA['id'])
+        url_by_name = '/groups?account_id=%s&name=%s' % (
+            self.accountA['id'], self.group2['name'])
         r = self.get(url_by_name, auth=self.auth)
-        # We should only get back one user, the one in DomainA that matches
+        # We should only get back one user, the one in AccountA that matches
         # the name supplied
         id_list = self._get_id_list_from_ref_list(r.result.get('groups'))
         self.assertEqual(1, len(id_list))
@@ -345,24 +345,24 @@ class IdentityTestPolicySample(test_v3.RestfulTestCase):
     """Test policy enforcement of the policy.json file."""
 
     def load_sample_data(self):
-        self._populate_default_domain()
+        self._populate_default_account()
 
         self.just_a_user = self.new_user_ref(
-            domain_id=CONF.identity.default_domain_id)
+            account_id=CONF.identity.default_account_id)
         password = uuid.uuid4().hex
         self.just_a_user['password'] = password
         self.just_a_user = self.identity_api.create_user(self.just_a_user)
         self.just_a_user['password'] = password
 
         self.another_user = self.new_user_ref(
-            domain_id=CONF.identity.default_domain_id)
+            account_id=CONF.identity.default_account_id)
         password = uuid.uuid4().hex
         self.another_user['password'] = password
         self.another_user = self.identity_api.create_user(self.another_user)
         self.another_user['password'] = password
 
         self.admin_user = self.new_user_ref(
-            domain_id=CONF.identity.default_domain_id)
+            account_id=CONF.identity.default_account_id)
         password = uuid.uuid4().hex
         self.admin_user['password'] = password
         self.admin_user = self.identity_api.create_user(self.admin_user)
@@ -375,7 +375,7 @@ class IdentityTestPolicySample(test_v3.RestfulTestCase):
 
         # Create and assign roles to the project
         self.project = self.new_project_ref(
-            domain_id=CONF.identity.default_domain_id)
+            account_id=CONF.identity.default_account_id)
         self.resource_api.create_project(self.project['id'], self.project)
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.just_a_user['id'],
@@ -593,16 +593,16 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
 
         The following data is created:
 
-        - Three domains: domainA, domainB and admin_domain
+        - Three accounts: accountA, accountB and admin_account
         - One project, which name is 'project'
-        - domainA has three users: domain_admin_user, project_admin_user and
+        - accountA has three users: account_admin_user, project_admin_user and
           just_a_user:
 
-          - domain_admin_user has role 'admin' on domainA,
+          - account_admin_user has role 'admin' on accountA,
           - project_admin_user has role 'admin' on the project,
-          - just_a_user has a non-admin role on both domainA and the project.
-        - admin_domain has user cloud_admin_user, with an 'admin' role
-          on admin_domain.
+          - just_a_user has a non-admin role on both accountA and the project.
+        - admin_account has user cloud_admin_user, with an 'admin' role
+          on admin_account.
 
         We test various api protection rules from the cloud sample policy
         file to make sure the sample is valid and that we correctly enforce it.
@@ -621,38 +621,38 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
             policy_file=tests.dirs.etc('policy.v3cloudsample.json'))
 
     def load_sample_data(self):
-        # Start by creating a couple of domains
-        self._populate_default_domain()
-        self.domainA = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainA['id'], self.domainA)
-        self.domainB = self.new_domain_ref()
-        self.resource_api.create_domain(self.domainB['id'], self.domainB)
-        self.admin_domain = {'id': 'admin_domain_id', 'name': 'Admin_domain'}
-        self.resource_api.create_domain(self.admin_domain['id'],
-                                        self.admin_domain)
+        # Start by creating a couple of accounts
+        self._populate_default_account()
+        self.accountA = self.new_account_ref()
+        self.resource_api.create_account(self.accountA['id'], self.accountA)
+        self.accountB = self.new_account_ref()
+        self.resource_api.create_account(self.accountB['id'], self.accountB)
+        self.admin_account = {'id': 'admin_account_id', 'name': 'Admin_account'}
+        self.resource_api.create_account(self.admin_account['id'],
+                                        self.admin_account)
 
         # And our users
         self.cloud_admin_user = self.new_user_ref(
-            domain_id=self.admin_domain['id'])
+            account_id=self.admin_account['id'])
         password = uuid.uuid4().hex
         self.cloud_admin_user['password'] = password
         self.cloud_admin_user = (
             self.identity_api.create_user(self.cloud_admin_user))
         self.cloud_admin_user['password'] = password
-        self.just_a_user = self.new_user_ref(domain_id=self.domainA['id'])
+        self.just_a_user = self.new_user_ref(account_id=self.accountA['id'])
         password = uuid.uuid4().hex
         self.just_a_user['password'] = password
         self.just_a_user = self.identity_api.create_user(self.just_a_user)
         self.just_a_user['password'] = password
-        self.domain_admin_user = self.new_user_ref(
-            domain_id=self.domainA['id'])
+        self.account_admin_user = self.new_user_ref(
+            account_id=self.accountA['id'])
         password = uuid.uuid4().hex
-        self.domain_admin_user['password'] = password
-        self.domain_admin_user = (
-            self.identity_api.create_user(self.domain_admin_user))
-        self.domain_admin_user['password'] = password
+        self.account_admin_user['password'] = password
+        self.account_admin_user = (
+            self.identity_api.create_user(self.account_admin_user))
+        self.account_admin_user['password'] = password
         self.project_admin_user = self.new_user_ref(
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
         password = uuid.uuid4().hex
         self.project_admin_user['password'] = password
         self.project_admin_user = (
@@ -668,18 +668,18 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
         # The cloud admin just gets the admin role
         self.assignment_api.create_grant(self.admin_role['id'],
                                          user_id=self.cloud_admin_user['id'],
-                                         domain_id=self.admin_domain['id'])
+                                         account_id=self.admin_account['id'])
 
-        # Assign roles to the domain
+        # Assign roles to the account
         self.assignment_api.create_grant(self.admin_role['id'],
-                                         user_id=self.domain_admin_user['id'],
-                                         domain_id=self.domainA['id'])
+                                         user_id=self.account_admin_user['id'],
+                                         account_id=self.accountA['id'])
         self.assignment_api.create_grant(self.role['id'],
                                          user_id=self.just_a_user['id'],
-                                         domain_id=self.domainA['id'])
+                                         account_id=self.accountA['id'])
 
         # Create and assign roles to the project
-        self.project = self.new_project_ref(domain_id=self.domainA['id'])
+        self.project = self.new_project_ref(account_id=self.accountA['id'])
         self.resource_api.create_project(self.project['id'], self.project)
         self.assignment_api.create_grant(self.admin_role['id'],
                                          user_id=self.project_admin_user['id'],
@@ -696,10 +696,10 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
         else:
             return (expected_status, expected_status, expected_status)
 
-    def _test_user_management(self, domain_id, expected=None):
+    def _test_user_management(self, account_id, expected=None):
         status_OK, status_created, status_no_data = self._stati(expected)
         entity_url = '/users/%s' % self.just_a_user['id']
-        list_url = '/users?domain_id=%s' % domain_id
+        list_url = '/users?account_id=%s' % account_id
 
         self.get(entity_url, auth=self.auth,
                  expected_status=status_OK)
@@ -711,14 +711,14 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
         self.delete(entity_url, auth=self.auth,
                     expected_status=status_no_data)
 
-        user_ref = self.new_user_ref(domain_id=domain_id)
+        user_ref = self.new_user_ref(account_id=account_id)
         self.post('/users', auth=self.auth, body={'user': user_ref},
                   expected_status=status_created)
 
-    def _test_project_management(self, domain_id, expected=None):
+    def _test_project_management(self, account_id, expected=None):
         status_OK, status_created, status_no_data = self._stati(expected)
         entity_url = '/projects/%s' % self.project['id']
-        list_url = '/projects?domain_id=%s' % domain_id
+        list_url = '/projects?account_id=%s' % account_id
 
         self.get(entity_url, auth=self.auth,
                  expected_status=status_OK)
@@ -730,27 +730,27 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
         self.delete(entity_url, auth=self.auth,
                     expected_status=status_no_data)
 
-        proj_ref = self.new_project_ref(domain_id=domain_id)
+        proj_ref = self.new_project_ref(account_id=account_id)
         self.post('/projects', auth=self.auth, body={'project': proj_ref},
                   expected_status=status_created)
 
-    def _test_domain_management(self, expected=None):
+    def _test_account_management(self, expected=None):
         status_OK, status_created, status_no_data = self._stati(expected)
-        entity_url = '/domains/%s' % self.domainB['id']
-        list_url = '/domains'
+        entity_url = '/accounts/%s' % self.accountB['id']
+        list_url = '/accounts'
 
         self.get(entity_url, auth=self.auth,
                  expected_status=status_OK)
         self.get(list_url, auth=self.auth,
                  expected_status=status_OK)
-        domain = {'description': 'Updated', 'enabled': False}
-        self.patch(entity_url, auth=self.auth, body={'domain': domain},
+        account = {'description': 'Updated', 'enabled': False}
+        self.patch(entity_url, auth=self.auth, body={'account': account},
                    expected_status=status_OK)
         self.delete(entity_url, auth=self.auth,
                     expected_status=status_no_data)
 
-        domain_ref = self.new_domain_ref()
-        self.post('/domains', auth=self.auth, body={'domain': domain_ref},
+        account_ref = self.new_account_ref()
+        self.post('/accounts', auth=self.auth, body={'account': account_ref},
                   expected_status=status_created)
 
     def _test_grants(self, target, entity_id, expected=None):
@@ -777,33 +777,33 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
                     expected_status=status_no_data)
 
     def test_user_management(self):
-        # First, authenticate with a user that does not have the domain
+        # First, authenticate with a user that does not have the account
         # admin role - shouldn't be able to do much.
         self.auth = self.build_authentication_request(
             user_id=self.just_a_user['id'],
             password=self.just_a_user['password'],
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
 
         self._test_user_management(
-            self.domainA['id'], expected=exception.ForbiddenAction.code)
+            self.accountA['id'], expected=exception.ForbiddenAction.code)
 
-        # Now, authenticate with a user that does have the domain admin role
+        # Now, authenticate with a user that does have the account admin role
         self.auth = self.build_authentication_request(
-            user_id=self.domain_admin_user['id'],
-            password=self.domain_admin_user['password'],
-            domain_id=self.domainA['id'])
+            user_id=self.account_admin_user['id'],
+            password=self.account_admin_user['password'],
+            account_id=self.accountA['id'])
 
-        self._test_user_management(self.domainA['id'])
+        self._test_user_management(self.accountA['id'])
 
     def test_user_management_by_cloud_admin(self):
         # Test users management with a cloud admin. This user should
-        # be able to manage users in any domain.
+        # be able to manage users in any account.
         self.auth = self.build_authentication_request(
             user_id=self.cloud_admin_user['id'],
             password=self.cloud_admin_user['password'],
-            domain_id=self.admin_domain['id'])
+            account_id=self.admin_account['id'])
 
-        self._test_user_management(self.domainA['id'])
+        self._test_user_management(self.accountA['id'])
 
     def test_project_management(self):
         # First, authenticate with a user that does not have the project
@@ -811,65 +811,65 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
         self.auth = self.build_authentication_request(
             user_id=self.just_a_user['id'],
             password=self.just_a_user['password'],
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
 
         self._test_project_management(
-            self.domainA['id'], expected=exception.ForbiddenAction.code)
+            self.accountA['id'], expected=exception.ForbiddenAction.code)
 
         # ...but should still be able to list projects of which they are
         # a member
         url = '/users/%s/projects' % self.just_a_user['id']
         self.get(url, auth=self.auth)
 
-        # Now, authenticate with a user that does have the domain admin role
+        # Now, authenticate with a user that does have the account admin role
         self.auth = self.build_authentication_request(
-            user_id=self.domain_admin_user['id'],
-            password=self.domain_admin_user['password'],
-            domain_id=self.domainA['id'])
+            user_id=self.account_admin_user['id'],
+            password=self.account_admin_user['password'],
+            account_id=self.accountA['id'])
 
-        self._test_project_management(self.domainA['id'])
+        self._test_project_management(self.accountA['id'])
 
     def test_project_management_by_cloud_admin(self):
         self.auth = self.build_authentication_request(
             user_id=self.cloud_admin_user['id'],
             password=self.cloud_admin_user['password'],
-            domain_id=self.admin_domain['id'])
+            account_id=self.admin_account['id'])
 
-        # Check whether cloud admin can operate a domain
-        # other than its own domain or not
-        self._test_project_management(self.domainA['id'])
+        # Check whether cloud admin can operate a account
+        # other than its own account or not
+        self._test_project_management(self.accountA['id'])
 
-    def test_domain_grants(self):
+    def test_account_grants(self):
         self.auth = self.build_authentication_request(
             user_id=self.just_a_user['id'],
             password=self.just_a_user['password'],
-            domain_id=self.domainA['id'])
+            account_id=self.accountA['id'])
 
-        self._test_grants('domains', self.domainA['id'],
+        self._test_grants('accounts', self.accountA['id'],
                           expected=exception.ForbiddenAction.code)
 
-        # Now, authenticate with a user that does have the domain admin role
+        # Now, authenticate with a user that does have the account admin role
         self.auth = self.build_authentication_request(
-            user_id=self.domain_admin_user['id'],
-            password=self.domain_admin_user['password'],
-            domain_id=self.domainA['id'])
+            user_id=self.account_admin_user['id'],
+            password=self.account_admin_user['password'],
+            account_id=self.accountA['id'])
 
-        self._test_grants('domains', self.domainA['id'])
+        self._test_grants('accounts', self.accountA['id'])
 
         # Check that with such a token we cannot modify grants on a
-        # different domain
-        self._test_grants('domains', self.domainB['id'],
+        # different account
+        self._test_grants('accounts', self.accountB['id'],
                           expected=exception.ForbiddenAction.code)
 
-    def test_domain_grants_by_cloud_admin(self):
-        # Test domain grants with a cloud admin. This user should be
-        # able to manage roles on any domain.
+    def test_account_grants_by_cloud_admin(self):
+        # Test account grants with a cloud admin. This user should be
+        # able to manage roles on any account.
         self.auth = self.build_authentication_request(
             user_id=self.cloud_admin_user['id'],
             password=self.cloud_admin_user['password'],
-            domain_id=self.admin_domain['id'])
+            account_id=self.admin_account['id'])
 
-        self._test_grants('domains', self.domainA['id'])
+        self._test_grants('accounts', self.accountA['id'])
 
     def test_project_grants(self):
         self.auth = self.build_authentication_request(
@@ -889,31 +889,31 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
 
         self._test_grants('projects', self.project['id'])
 
-    def test_project_grants_by_domain_admin(self):
-        # Test project grants with a domain admin. This user should be
-        # able to manage roles on any project in its own domain.
+    def test_project_grants_by_account_admin(self):
+        # Test project grants with a account admin. This user should be
+        # able to manage roles on any project in its own account.
         self.auth = self.build_authentication_request(
-            user_id=self.domain_admin_user['id'],
-            password=self.domain_admin_user['password'],
-            domain_id=self.domainA['id'])
+            user_id=self.account_admin_user['id'],
+            password=self.account_admin_user['password'],
+            account_id=self.accountA['id'])
 
         self._test_grants('projects', self.project['id'])
 
     def test_cloud_admin(self):
         self.auth = self.build_authentication_request(
-            user_id=self.domain_admin_user['id'],
-            password=self.domain_admin_user['password'],
-            domain_id=self.domainA['id'])
+            user_id=self.account_admin_user['id'],
+            password=self.account_admin_user['password'],
+            account_id=self.accountA['id'])
 
-        self._test_domain_management(
+        self._test_account_management(
             expected=exception.ForbiddenAction.code)
 
         self.auth = self.build_authentication_request(
             user_id=self.cloud_admin_user['id'],
             password=self.cloud_admin_user['password'],
-            domain_id=self.admin_domain['id'])
+            account_id=self.admin_account['id'])
 
-        self._test_domain_management()
+        self._test_account_management()
 
     def test_list_user_credentials(self):
         self.credential_user = self.new_credential_ref(self.just_a_user['id'])
@@ -938,7 +938,7 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
 
     def test_get_and_delete_ec2_credentials(self):
         """Tests getting and deleting ec2 credentials through the ec2 API."""
-        another_user = self.new_user_ref(domain_id=self.domainA['id'])
+        another_user = self.new_user_ref(account_id=self.accountA['id'])
         password = another_user['password']
         another_user = self.identity_api.create_user(another_user)
 
@@ -1028,7 +1028,7 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
         admin_auth = self.build_authentication_request(
             user_id=self.cloud_admin_user['id'],
             password=self.cloud_admin_user['password'],
-            domain_id=self.admin_domain['id'])
+            account_id=self.admin_account['id'])
         admin_token = self.get_requested_token(admin_auth)
 
         user_auth = self.build_authentication_request(
@@ -1088,9 +1088,9 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
         # This is HEAD /v3/auth/tokens
 
         admin_auth = self.build_authentication_request(
-            user_id=self.domain_admin_user['id'],
-            password=self.domain_admin_user['password'],
-            domain_id=self.domainA['id'])
+            user_id=self.account_admin_user['id'],
+            password=self.account_admin_user['password'],
+            account_id=self.accountA['id'])
         admin_token = self.get_requested_token(admin_auth)
 
         user_auth = self.build_authentication_request(
@@ -1150,9 +1150,9 @@ class IdentityTestv3CloudPolicySample(test_v3.RestfulTestCase):
         # This is DELETE /v3/auth/tokens
 
         admin_auth = self.build_authentication_request(
-            user_id=self.domain_admin_user['id'],
-            password=self.domain_admin_user['password'],
-            domain_id=self.domainA['id'])
+            user_id=self.account_admin_user['id'],
+            password=self.account_admin_user['password'],
+            account_id=self.accountA['id'])
         admin_token = self.get_requested_token(admin_auth)
 
         user_auth = self.build_authentication_request(

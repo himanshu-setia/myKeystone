@@ -194,8 +194,8 @@ The contract for a driver for ``list_{entity}`` methods is therefore:
 * It MAY either just return all such entities, or alternatively reduce the
   list by filtering for one or more of the specified filters in the passed
   Hints reference, and removing any such satisfied filters. An exception to
-  this is that for identity drivers that support domains, then they should
-  at least support filtering by domain_id.
+  this is that for identity drivers that support accounts, then they should
+  at least support filtering by account_id.
 
 Entity list truncation by drivers
 ---------------------------------
@@ -215,13 +215,13 @@ the controller level).
 Identity entity ID management between controllers and drivers
 -------------------------------------------------------------
 
-Keystone supports the option of having domain-specific backends for the
+Keystone supports the option of having account-specific backends for the
 identity driver (i.e. for user and group storage), allowing, for example,
-a different LDAP server for each domain. To ensure that Keystone can determine
+a different LDAP server for each account. To ensure that Keystone can determine
 to which backend it should route an API call, starting with Juno, the
-identity manager will, provided that domain-specific backends are enabled,
+identity manager will, provided that account-specific backends are enabled,
 build on-the-fly a persistent mapping table between Keystone Public IDs that
-are presented to the controller and the domain that holds the entity, along
+are presented to the controller and the account that holds the entity, along
 with whatever local ID is understood by the driver.  This hides, for instance,
 the LDAP specifics of whatever ID is being used.
 

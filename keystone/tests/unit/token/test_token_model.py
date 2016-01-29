@@ -48,17 +48,17 @@ class TestKeystoneTokenModel(core.TestCase):
                          token_data.user_id)
         self.assertEqual(self.v3_sample_token['token']['user']['name'],
                          token_data.user_name)
-        self.assertEqual(self.v3_sample_token['token']['user']['domain']['id'],
-                         token_data.user_domain_id)
+        self.assertEqual(self.v3_sample_token['token']['user']['account']['id'],
+                         token_data.user_account_id)
         self.assertEqual(
-            self.v3_sample_token['token']['user']['domain']['name'],
-            token_data.user_domain_name)
+            self.v3_sample_token['token']['user']['account']['name'],
+            token_data.user_account_name)
         self.assertEqual(
-            self.v3_sample_token['token']['project']['domain']['id'],
-            token_data.project_domain_id)
+            self.v3_sample_token['token']['project']['account']['id'],
+            token_data.project_account_id)
         self.assertEqual(
-            self.v3_sample_token['token']['project']['domain']['name'],
-            token_data.project_domain_name)
+            self.v3_sample_token['token']['project']['account']['name'],
+            token_data.project_account_name)
         self.assertEqual(self.v3_sample_token['token']['OS-TRUST:trust']['id'],
                          token_data.trust_id)
         self.assertEqual(
@@ -69,10 +69,10 @@ class TestKeystoneTokenModel(core.TestCase):
             token_data.trustee_user_id)
         # Project Scoped Token
         self.assertRaises(exception.UnexpectedError, getattr, token_data,
-                          'domain_id')
+                          'account_id')
         self.assertRaises(exception.UnexpectedError, getattr, token_data,
-                          'domain_name')
-        self.assertFalse(token_data.domain_scoped)
+                          'account_name')
+        self.assertFalse(token_data.account_scoped)
         self.assertEqual(self.v3_sample_token['token']['project']['id'],
                          token_data.project_id)
         self.assertEqual(self.v3_sample_token['token']['project']['name'],
@@ -94,13 +94,13 @@ class TestKeystoneTokenModel(core.TestCase):
         self.assertRaises(exception.UnexpectedError, getattr, token_data,
                           'project_name')
         self.assertFalse(token_data.project_scoped)
-        domain_id = uuid.uuid4().hex
-        domain_name = uuid.uuid4().hex
-        token_data['domain'] = {'id': domain_id,
-                                'name': domain_name}
-        self.assertEqual(domain_id, token_data.domain_id)
-        self.assertEqual(domain_name, token_data.domain_name)
-        self.assertTrue(token_data.domain_scoped)
+        account_id = uuid.uuid4().hex
+        account_name = uuid.uuid4().hex
+        token_data['account'] = {'id': account_id,
+                                'name': account_name}
+        self.assertEqual(account_id, token_data.account_id)
+        self.assertEqual(account_name, token_data.account_name)
+        self.assertTrue(token_data.account_scoped)
 
         token_data['audit_ids'] = [uuid.uuid4().hex]
         self.assertEqual(token_data.audit_id,
@@ -171,13 +171,13 @@ class TestKeystoneTokenModel(core.TestCase):
                          token_data.user_id)
         self.assertEqual(self.v2_sample_token['access']['user']['name'],
                          token_data.user_name)
-        self.assertEqual(CONF.identity.default_domain_id,
-                         token_data.user_domain_id)
-        self.assertEqual('Default', token_data.user_domain_name)
-        self.assertEqual(CONF.identity.default_domain_id,
-                         token_data.project_domain_id)
+        self.assertEqual(CONF.identity.default_account_id,
+                         token_data.user_account_id)
+        self.assertEqual('Default', token_data.user_account_name)
+        self.assertEqual(CONF.identity.default_account_id,
+                         token_data.project_account_id)
         self.assertEqual('Default',
-                         token_data.project_domain_name)
+                         token_data.project_account_name)
         self.assertEqual(self.v2_sample_token['access']['trust']['id'],
                          token_data.trust_id)
         self.assertEqual(
@@ -206,27 +206,27 @@ class TestKeystoneTokenModel(core.TestCase):
         token_data['token'].pop('tenant')
         self.assertFalse(token_data.scoped)
         self.assertFalse(token_data.project_scoped)
-        self.assertFalse(token_data.domain_scoped)
+        self.assertFalse(token_data.account_scoped)
         self.assertRaises(exception.UnexpectedError, getattr, token_data,
                           'project_id')
         self.assertRaises(exception.UnexpectedError, getattr, token_data,
                           'project_name')
         self.assertRaises(exception.UnexpectedError, getattr, token_data,
-                          'project_domain_id')
+                          'project_account_id')
         self.assertRaises(exception.UnexpectedError, getattr, token_data,
-                          'project_domain_id')
-        # No Domain Scoped tokens in V2
+                          'project_account_id')
+        # No Account Scoped tokens in V2
         self.assertRaises(NotImplementedError, getattr, token_data,
-                          'domain_id')
+                          'account_id')
         self.assertRaises(NotImplementedError, getattr, token_data,
-                          'domain_name')
-        token_data['domain'] = {'id': uuid.uuid4().hex,
+                          'account_name')
+        token_data['account'] = {'id': uuid.uuid4().hex,
                                 'name': uuid.uuid4().hex}
         self.assertRaises(NotImplementedError, getattr, token_data,
-                          'domain_id')
+                          'account_id')
         self.assertRaises(NotImplementedError, getattr, token_data,
-                          'domain_name')
-        self.assertFalse(token_data.domain_scoped)
+                          'account_name')
+        self.assertFalse(token_data.account_scoped)
 
         token_data['token']['audit_ids'] = [uuid.uuid4().hex]
         self.assertEqual(token_data.audit_chain_id,
@@ -247,12 +247,12 @@ class TestKeystoneTokenModel(core.TestCase):
                           token_data={'bogus_data': uuid.uuid4().hex})
 
     def test_token_model_dual_scoped_token(self):
-        domain = {'id': uuid.uuid4().hex,
+        account = {'id': uuid.uuid4().hex,
                   'name': uuid.uuid4().hex}
-        self.v2_sample_token['access']['domain'] = domain
-        self.v3_sample_token['token']['domain'] = domain
+        self.v2_sample_token['access']['account'] = account
+        self.v3_sample_token['token']['account'] = account
 
-        # V2 Tokens Cannot be domain scoped, this should work
+        # V2 Tokens Cannot be account scoped, this should work
         token_model.KeystoneToken(token_id=uuid.uuid4().hex,
                                   token_data=self.v2_sample_token)
 

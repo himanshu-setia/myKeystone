@@ -288,9 +288,9 @@ def validate_groups(group_ids, mapping_id, identity_api):
 # backend are minimized.
 def transform_to_group_ids(group_names, mapping_id,
                            identity_api, assignment_api):
-    """Transform groups identitified by name/domain to their ids
+    """Transform groups identitified by name/account to their ids
 
-    Function accepts list of groups identified by a name and domain giving
+    Function accepts list of groups identified by a name and account giving
     a list of group ids in return.
 
     Example of group_names parameter::
@@ -298,19 +298,19 @@ def transform_to_group_ids(group_names, mapping_id,
         [
             {
                 "name": "group_name",
-                "domain": {
-                    "id": "domain_id"
+                "account": {
+                    "id": "account_id"
                 },
             },
             {
                 "name": "group_name_2",
-                "domain": {
-                    "name": "domain_name"
+                "account": {
+                    "name": "account_name"
                 }
             }
         ]
 
-    :param group_names: list of group identified by name and its domain.
+    :param group_names: list of group identified by name and its account.
     :type group_names: list
 
     :param mapping_id: id of the mapping used for mapping assertion into
@@ -327,26 +327,26 @@ def transform_to_group_ids(group_names, mapping_id,
 
     """
 
-    def resolve_domain(domain):
-        """Return domain id.
+    def resolve_account(account):
+        """Return account id.
 
-        Input is a dictionary with a domain identified either by a ``id`` or a
-        ``name``. In the latter case system will attempt to fetch domain object
+        Input is a dictionary with a account identified either by a ``id`` or a
+        ``name``. In the latter case system will attempt to fetch account object
         from the backend.
 
-        :returns: domain's id
+        :returns: account's id
         :rtype: str
 
         """
-        domain_id = (domain.get('id') or
-                     assignment_api.get_domain_by_name(
-                     domain.get('name')).get('id'))
-        return domain_id
+        account_id = (account.get('id') or
+                     assignment_api.get_account_by_name(
+                     account.get('name')).get('id'))
+        return account_id
 
     for group in group_names:
         try:
             group_dict = identity_api.get_group_by_name(
-                group['name'], resolve_domain(group['domain']))
+                group['name'], resolve_account(group['account']))
             yield group_dict['id']
         except exception.GroupNotFound:
             LOG.debug('Skip mapping group %s; has no entry in the backend',
@@ -420,19 +420,19 @@ class RuleProcessor(object):
                 'group_names': [
                     {
                         'name': 'group_name_1',
-                        'domain': {
-                            'name': 'domain1'
+                        'account': {
+                            'name': 'account1'
                         }
                     },
                     {
                         'name': 'group_name_1_1',
-                        'domain': {
-                            'name': 'domain1'
+                        'account': {
+                            'name': 'account1'
                         }
                     },
                     {
                         'name': 'group_name_2',
-                        'domain': {
+                        'account': {
                             'id': 'xyz132'
                         }
                     }
@@ -497,8 +497,8 @@ class RuleProcessor(object):
                 },
                 {
                     'groups': ['member', 'admin', tester'],
-                    'domain': {
-                        'name': 'default_domain'
+                    'account': {
+                        'name': 'default_account'
                     }
                 }
             ]
@@ -508,8 +508,8 @@ class RuleProcessor(object):
 
         """
 
-        def extract_groups(groups_by_domain):
-            for groups in groups_by_domain.values():
+        def extract_groups(groups_by_account):
+            for groups in groups_by_account.values():
                 for group in {g['name']: g for g in groups}.values():
                     yield group
 
@@ -527,16 +527,16 @@ class RuleProcessor(object):
                 user_type = user['type'] = UserType.EPHEMERAL
 
             if user_type == UserType.EPHEMERAL:
-                user['domain'] = {
-                    'id': (CONF.federation.federated_domain_name or
-                           federation.FEDERATED_DOMAIN_KEYWORD)
+                user['account'] = {
+                    'id': (CONF.federation.federated_account_name or
+                           federation.FEDERATED_ACCOUNT_KEYWORD)
                 }
 
         # initialize the group_ids as a set to eliminate duplicates
         user = {}
         group_ids = set()
         group_names = list()
-        groups_by_domain = dict()
+        groups_by_account = dict()
 
         for identity_value in identity_values:
             if 'user' in identity_value:
@@ -550,14 +550,14 @@ class RuleProcessor(object):
                 if 'id' in group:
                     group_ids.add(group['id'])
                 elif 'name' in group:
-                    domain = (group['domain'].get('name') or
-                              group['domain'].get('id'))
-                    groups_by_domain.setdefault(domain, list()).append(group)
-                group_names.extend(extract_groups(groups_by_domain))
+                    account = (group['account'].get('name') or
+                              group['account'].get('id'))
+                    groups_by_account.setdefault(account, list()).append(group)
+                group_names.extend(extract_groups(groups_by_account))
             if 'groups' in identity_value:
-                if 'domain' not in identity_value:
+                if 'account' not in identity_value:
                     msg = _("Invalid rule: %(identity_value)s. Both 'groups' "
-                            "and 'domain' keywords must be specified.")
+                            "and 'account' keywords must be specified.")
                     msg = msg % {'identity_value': identity_value}
                     raise exception.ValidationError(msg)
                 # In this case, identity_value['groups'] is a string
@@ -569,8 +569,8 @@ class RuleProcessor(object):
                         identity_value['groups'])
                 except ValueError:
                     group_names_list = [identity_value['groups']]
-                domain = identity_value['domain']
-                group_dicts = [{'name': name, 'domain': domain} for name in
+                account = identity_value['account']
+                group_dicts = [{'name': name, 'account': account} for name in
                                group_names_list]
 
                 group_names.extend(group_dicts)

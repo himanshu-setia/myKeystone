@@ -34,7 +34,7 @@ import random
 
 
 CONF = cfg.CONF
-DEFAULT_DOMAIN_ID = 'default'
+DEFAULT_ACCOUNT_ID = 'default'
 
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
@@ -42,8 +42,8 @@ TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 class AuthTestMixin(object):
     """To hold auth building helper functions."""
     def build_auth_scope(self, project_id=None, project_name=None,
-                         project_domain_id=None, project_domain_name=None,
-                         domain_id=None, domain_name=None, trust_id=None,
+                         project_account_id=None, project_account_name=None,
+                         account_id=None, account_name=None, trust_id=None,
                          unscoped=None):
         scope_data = {}
         if unscoped:
@@ -54,38 +54,38 @@ class AuthTestMixin(object):
                 scope_data['project']['id'] = project_id
             else:
                 scope_data['project']['name'] = project_name
-                if project_domain_id or project_domain_name:
-                    project_domain_json = {}
-                    if project_domain_id:
-                        project_domain_json['id'] = project_domain_id
+                if project_account_id or project_account_name:
+                    project_account_json = {}
+                    if project_account_id:
+                        project_account_json['id'] = project_account_id
                     else:
-                        project_domain_json['name'] = project_domain_name
-                    scope_data['project']['domain'] = project_domain_json
-        if domain_id or domain_name:
-            scope_data['domain'] = {}
-            if domain_id:
-                scope_data['domain']['id'] = domain_id
+                        project_account_json['name'] = project_account_name
+                    scope_data['project']['account'] = project_account_json
+        if account_id or account_name:
+            scope_data['account'] = {}
+            if account_id:
+                scope_data['account']['id'] = account_id
             else:
-                scope_data['domain']['name'] = domain_name
+                scope_data['account']['name'] = account_name
         if trust_id:
             scope_data['OS-TRUST:trust'] = {}
             scope_data['OS-TRUST:trust']['id'] = trust_id
         return scope_data
 
     def build_password_auth(self, user_id=None, username=None,
-                            user_domain_id=None, user_domain_name=None,
+                            user_account_id=None, user_account_name=None,
                             password=None):
         password_data = {'user': {}}
         if user_id:
             password_data['user']['id'] = user_id
         else:
             password_data['user']['name'] = username
-            if user_domain_id or user_domain_name:
-                password_data['user']['domain'] = {}
-                if user_domain_id:
-                    password_data['user']['domain']['id'] = user_domain_id
+            if user_account_id or user_account_name:
+                password_data['user']['account'] = {}
+                if user_account_id:
+                    password_data['user']['account']['id'] = user_account_id
                 else:
-                    password_data['user']['domain']['name'] = user_domain_name
+                    password_data['user']['account']['name'] = user_account_name
         password_data['user']['password'] = password
         return password_data
 
@@ -93,8 +93,8 @@ class AuthTestMixin(object):
         return {'id': token}
 
     def build_authentication_request(self, token=None, user_id=None,
-                                     username=None, user_domain_id=None,
-                                     user_domain_name=None, password=None,
+                                     username=None, user_account_id=None,
+                                     user_account_name=None, password=None,
                                      kerberos=False, **kwargs):
 
         """Build auth dictionary.
@@ -113,7 +113,7 @@ class AuthTestMixin(object):
         if user_id or username:
             auth_data['identity']['methods'].append('password')
             auth_data['identity']['password'] = self.build_password_auth(
-                user_id, username, user_domain_id, user_domain_name, password)
+                user_id, username, user_account_id, user_account_name, password)
         if kwargs:
             auth_data['scope'] = self.build_auth_scope(**kwargs)
         return {'auth': auth_data}
@@ -178,56 +178,56 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
     def load_fixtures(self, fixtures):
         self.load_sample_data()
 
-    def _populate_default_domain(self):
+    def _populate_default_account(self):
         if CONF.database.connection == tests.IN_MEM_DB_CONN_STRING:
             # NOTE(morganfainberg): If an in-memory db is being used, be sure
-            # to populate the default domain, this is typically done by
+            # to populate the default account, this is typically done by
             # a migration, but the in-mem db uses model definitions  to create
             # the schema (no migrations are run).
             try:
-                self.resource_api.get_domain(DEFAULT_DOMAIN_ID)
-            except exception.DomainNotFound:
-                domain = {'description': (u'Owns users and tenants (i.e. '
+                self.resource_api.get_account(DEFAULT_ACCOUNT_ID)
+            except exception.AccountNotFound:
+                account = {'description': (u'Owns users and tenants (i.e. '
                                           u'projects) available on Identity '
                                           u'API v2.'),
                           'enabled': True,
-                          'id': DEFAULT_DOMAIN_ID,
+                          'id': DEFAULT_ACCOUNT_ID,
                           'name': u'Default'}
-                self.resource_api.create_domain(DEFAULT_DOMAIN_ID, domain)
+                self.resource_api.create_account(DEFAULT_ACCOUNT_ID, account)
 
     def load_sample_data(self):
-        self._populate_default_domain()
-        self.domain_id = uuid.uuid4().hex
-        self.domain = self.new_domain_ref()
-        self.domain['id'] = self.domain_id
-        self.resource_api.create_domain(self.domain_id, self.domain)
+        self._populate_default_account()
+        self.account_id = uuid.uuid4().hex
+        self.account = self.new_account_ref()
+        self.account['id'] = self.account_id
+        self.resource_api.create_account(self.account_id, self.account)
 
         self.project_id = uuid.uuid4().hex
         self.project = self.new_project_ref(
-            domain_id=self.domain_id)
+            account_id=self.account_id)
         self.project['id'] = self.project_id
         self.resource_api.create_project(self.project_id, self.project)
 
-        self.user = self.new_user_ref(domain_id=self.domain_id)
+        self.user = self.new_user_ref(account_id=self.account_id)
         password = self.user['password']
         self.user = self.identity_api.create_user(self.user)
         self.user['password'] = password
         self.user_id = self.user['id']
 
-        self.default_domain_project_id = uuid.uuid4().hex
-        self.default_domain_project = self.new_project_ref(
-          domain_id=DEFAULT_DOMAIN_ID)
-        self.default_domain_project['id'] = self.default_domain_project_id
-        self.resource_api.create_project(self.default_domain_project_id,
-                                         self.default_domain_project)
+        self.default_account_project_id = uuid.uuid4().hex
+        self.default_account_project = self.new_project_ref(
+          account_id=DEFAULT_ACCOUNT_ID)
+        self.default_account_project['id'] = self.default_account_project_id
+        self.resource_api.create_project(self.default_account_project_id,
+                                         self.default_account_project)
 
-        self.default_domain_user = self.new_user_ref(
-            domain_id=DEFAULT_DOMAIN_ID)
-        password = self.default_domain_user['password']
-        self.default_domain_user = (
-            self.identity_api.create_user(self.default_domain_user))
-        self.default_domain_user['password'] = password
-        self.default_domain_user_id = self.default_domain_user['id']
+        self.default_account_user = self.new_user_ref(
+            account_id=DEFAULT_ACCOUNT_ID)
+        password = self.default_account_user['password']
+        self.default_account_user = (
+            self.identity_api.create_user(self.default_account_user))
+        self.default_account_user['password'] = password
+        self.default_account_user_id = self.default_account_user['id']
 
         # create & grant policy.json's default role for admin_required
         self.role_id = uuid.uuid4().hex
@@ -238,10 +238,10 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.assignment_api.add_role_to_user_and_project(
             self.user_id, self.project_id, self.role_id)
         self.assignment_api.add_role_to_user_and_project(
-            self.default_domain_user_id, self.default_domain_project_id,
+            self.default_account_user_id, self.default_account_project_id,
             self.role_id)
         self.assignment_api.add_role_to_user_and_project(
-            self.default_domain_user_id, self.project_id,
+            self.default_account_user_id, self.project_id,
             self.role_id)
 
         self.region_id = uuid.uuid4().hex
@@ -298,13 +298,13 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         ref.update(kwargs)
         return ref
 
-    def new_domain_ref(self):
+    def new_account_ref(self):
         ref = self.new_ref()
         return ref
 
-    def new_project_ref(self, domain_id, parent_id=None):
+    def new_project_ref(self, account_id, parent_id=None):
         ref = self.new_ref()
-        ref['domain_id'] = domain_id
+        ref['account_id'] = account_id
         ref['parent_id'] = parent_id
         return ref
 
@@ -347,18 +347,18 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
                 mypw += alphabet[next_index]
         return mypw
 
-    def new_user_ref(self, domain_id, project_id=None):
+    def new_user_ref(self, account_id, project_id=None):
         ref = self.new_ref()
-        ref['domain_id'] = domain_id
+        ref['account_id'] = account_id
         ref['email'] = uuid.uuid4().hex
         ref['password'] = self.get_policy_password()
         if project_id:
             ref['default_project_id'] = project_id
         return ref
 
-    def new_group_ref(self, domain_id):
+    def new_group_ref(self, account_id):
         ref = self.new_ref()
-        ref['domain_id'] = domain_id
+        ref['account_id'] = account_id
         return ref
 
     def new_credential_ref(self, user_id, project_id=None, cred_type=None):
@@ -432,7 +432,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.action_resource_type_mapping(action.get('id'), resource_type.get('id'))
         statement1 = dict()
         statement1['action'] = [action.get('name')]
-        #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
+        #TODO (roopali) ; Change of project_id to account_id. and change of format of resourceid; change to resource type
         resource = 'jrn:jcs:'+self.service.get('type')+':'+self.project_id+':'+resource_type.get('name')+':'+uuid.uuid4().hex
         statement1['resource'] =[resource]
         statement1['effect'] = 'allow'
@@ -450,13 +450,13 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         statement1 = dict()
         statement1['action'] = [action.get('name')]
-        #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
+        #TODO (roopali) ; Change of project_id to account_id. and change of format of resourceid; change to resource type
         resource = 'jrn:jcs:'+self.service.get('type')+':'+self.project_id+':'+resource_type.get('name')+':'+uuid.uuid4().hex
         statement1['resource'] =[resource]
         statement1['effect'] = 'allow'
         statement2 = dict()
         statement2['action'] = [action.get('name')]
-        #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
+        #TODO (roopali) ; Change of project_id to account_id. and change of format of resourceid; change to resource type
         resource2 = 'jrn:jcs:'+self.service.get('type')+':'+self.project_id+':'+resource_type.get('name')+':*'
         statement2['resource'] =[resource2]
         statement2['effect'] = 'deny'
@@ -512,9 +512,9 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         return ref
 
-    def create_new_default_project_for_user(self, user_id, domain_id,
+    def create_new_default_project_for_user(self, user_id, account_id,
                                             enable_project=True):
-        ref = self.new_project_ref(domain_id=domain_id)
+        ref = self.new_project_ref(account_id=account_id)
         ref['enabled'] = enable_project
         r = self.post('/projects', body={'project': ref})
         project = self.assertValidProjectResponse(r, ref)
@@ -540,8 +540,8 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
                             'user': {
                                 'name': self.user['name'],
                                 'password': self.user['password'],
-                                'domain': {
-                                    'id': self.user['domain_id']
+                                'account': {
+                                    'id': self.user['account_id']
                                 }
                             }
                         }
@@ -763,13 +763,13 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.assertIn('user', token)
         self.assertIn('id', token['user'])
         self.assertIn('name', token['user'])
-        self.assertIn('domain', token['user'])
-        self.assertIn('id', token['user']['domain'])
+        self.assertIn('account', token['user'])
+        self.assertIn('id', token['user']['account'])
 
         if user is not None:
             self.assertEqual(user['id'], token['user']['id'])
             self.assertEqual(user['name'], token['user']['name'])
-            self.assertEqual(user['domain_id'], token['user']['domain']['id'])
+            self.assertEqual(user['account_id'], token['user']['account']['id'])
 
         return token
 
@@ -779,7 +779,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.assertNotIn('roles', token)
         self.assertNotIn('catalog', token)
         self.assertNotIn('project', token)
-        self.assertNotIn('domain', token)
+        self.assertNotIn('account', token)
 
         return token
 
@@ -822,9 +822,9 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.assertIn('project', token)
         self.assertIn('id', token['project'])
         self.assertIn('name', token['project'])
-        self.assertIn('domain', token['project'])
-        self.assertIn('id', token['project']['domain'])
-        self.assertIn('name', token['project']['domain'])
+        self.assertIn('account', token['project'])
+        self.assertIn('id', token['project']['account'])
+        self.assertIn('name', token['project']['account'])
 
         self.assertEqual(self.role_id, token['roles'][0]['id'])
 
@@ -842,12 +842,12 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.assertIsNotNone(trust['trustor_user'].get('id'))
         self.assertIsNotNone(trust['trustee_user'].get('id'))
 
-    def assertValidDomainScopedTokenResponse(self, r, *args, **kwargs):
+    def assertValidAccountScopedTokenResponse(self, r, *args, **kwargs):
         token = self.assertValidScopedTokenResponse(r, *args, **kwargs)
 
-        self.assertIn('domain', token)
-        self.assertIn('id', token['domain'])
-        self.assertIn('name', token['domain'])
+        self.assertIn('account', token)
+        self.assertIn('id', token['account'])
+        self.assertIn('name', token['account'])
 
         return token
 
@@ -998,25 +998,25 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
 
         return entity
 
-    # domain validation
+    # account validation
 
-    def assertValidDomainListResponse(self, resp, *args, **kwargs):
+    def assertValidAccountListResponse(self, resp, *args, **kwargs):
         return self.assertValidListResponse(
             resp,
-            'domains',
-            self.assertValidDomain,
+            'accounts',
+            self.assertValidAccount,
             *args,
             **kwargs)
 
-    def assertValidDomainResponse(self, resp, *args, **kwargs):
+    def assertValidAccountResponse(self, resp, *args, **kwargs):
         return self.assertValidResponse(
             resp,
-            'domain',
-            self.assertValidDomain,
+            'account',
+            self.assertValidAccount,
             *args,
             **kwargs)
 
-    def assertValidDomain(self, entity, ref=None):
+    def assertValidAccount(self, entity, ref=None):
         if ref:
             pass
         return entity
@@ -1040,9 +1040,9 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             **kwargs)
 
     def assertValidProject(self, entity, ref=None):
-        self.assertIsNotNone(entity.get('domain_id'))
+        self.assertIsNotNone(entity.get('account_id'))
         if ref:
-            self.assertEqual(ref['domain_id'], entity['domain_id'])
+            self.assertEqual(ref['account_id'], entity['account_id'])
         return entity
 
     # user validation
@@ -1064,12 +1064,12 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             **kwargs)
 
     def assertValidUser(self, entity, ref=None):
-        self.assertIsNotNone(entity.get('domain_id'))
+        self.assertIsNotNone(entity.get('account_id'))
         self.assertIsNotNone(entity.get('email'))
         self.assertIsNone(entity.get('password'))
         self.assertNotIn('tenantId', entity)
         if ref:
-            self.assertEqual(ref['domain_id'], entity['domain_id'])
+            self.assertEqual(ref['account_id'], entity['account_id'])
             self.assertEqual(ref['email'], entity['email'])
             if 'default_project_id' in ref:
                 self.assertIsNotNone(ref['default_project_id'])
@@ -1189,15 +1189,15 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             self.assertIsNotNone(entity.get('group'))
             self.assertIsNotNone(entity['group'].get('id'))
 
-        # A scope should be present and have only one of domain or project
+        # A scope should be present and have only one of account or project
         self.assertIsNotNone(entity.get('scope'))
 
         if entity['scope'].get('project'):
-            self.assertIsNone(entity['scope'].get('domain'))
+            self.assertIsNone(entity['scope'].get('account'))
             self.assertIsNotNone(entity['scope']['project'].get('id'))
         else:
-            self.assertIsNotNone(entity['scope'].get('domain'))
-            self.assertIsNotNone(entity['scope']['domain'].get('id'))
+            self.assertIsNotNone(entity['scope'].get('account'))
+            self.assertIsNotNone(entity['scope']['account'].get('id'))
 
         # An assignment link should be present
         self.assertIsNotNone(entity.get('links'))
@@ -1326,12 +1326,12 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         return entity
 
     def build_external_auth_request(self, remote_user,
-                                    remote_domain=None, auth_data=None,
+                                    remote_account=None, auth_data=None,
                                     kerberos=False):
         context = {'environment': {'REMOTE_USER': remote_user,
                                    'AUTH_TYPE': 'Negotiate'}}
-        if remote_domain:
-            context['environment']['REMOTE_DOMAIN'] = remote_domain
+        if remote_account:
+            context['environment']['REMOTE_ACCOUNT'] = remote_account
         if not auth_data:
             auth_data = self.build_authentication_request(
                 kerberos=kerberos)['auth']

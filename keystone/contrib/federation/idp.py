@@ -46,8 +46,8 @@ class SAMLGenerator(object):
     def __init__(self):
         self.assertion_id = uuid.uuid4().hex
 
-    def samlize_token(self, issuer, recipient, user, user_domain_name, roles,
-                      project, project_domain_name, expires_in=None):
+    def samlize_token(self, issuer, recipient, user, user_account_name, roles,
+                      project, project_account_name, expires_in=None):
         """Convert Keystone attributes to a SAML assertion.
 
         :param issuer: URL of the issuing party
@@ -56,14 +56,14 @@ class SAMLGenerator(object):
         :type recipient: string
         :param user: User name
         :type user: string
-        :param user_domain_name: User Domain name
-        :type user_domain_name: string
+        :param user_account_name: User Account name
+        :type user_account_name: string
         :param roles: List of role names
         :type roles: list
         :param project: Project name
         :type project: string
-        :param project_domain_name: Project Domain name
-        :type project_domain_name: string
+        :param project_account_name: Project Account name
+        :type project_account_name: string
         :param expires_in: Sets how long the assertion is valid for, in seconds
         :type expires_in: int
 
@@ -75,7 +75,7 @@ class SAMLGenerator(object):
         saml_issuer = self._create_issuer(issuer)
         subject = self._create_subject(user, expiration_time, recipient)
         attribute_statement = self._create_attribute_statement(
-            user, user_domain_name, roles, project, project_domain_name)
+            user, user_account_name, roles, project, project_account_name)
         authn_statement = self._create_authn_statement(issuer, expiration_time)
         signature = self._create_signature()
 
@@ -160,8 +160,8 @@ class SAMLGenerator(object):
         subject.name_id = name_id
         return subject
 
-    def _create_attribute_statement(self, user, user_domain_name, roles,
-                                    project, project_domain_name):
+    def _create_attribute_statement(self, user, user_account_name, roles,
+                                    project, project_account_name):
         """Create an object that represents a SAML AttributeStatement.
 
         <ns0:AttributeStatement>
@@ -169,7 +169,7 @@ class SAMLGenerator(object):
                 <ns0:AttributeValue
                   xsi:type="xs:string">test_user</ns0:AttributeValue>
             </ns0:Attribute>
-            <ns0:Attribute Name="openstack_user_domain">
+            <ns0:Attribute Name="openstack_user_account">
                 <ns0:AttributeValue
                   xsi:type="xs:string">Default</ns0:AttributeValue>
             </ns0:Attribute>
@@ -183,7 +183,7 @@ class SAMLGenerator(object):
                 <ns0:AttributeValue
                   xsi:type="xs:string">development</ns0:AttributeValue>
             </ns0:Attribute>
-            <ns0:Attribute Name="openstack_project_domain">
+            <ns0:Attribute Name="openstack_project_account">
                 <ns0:AttributeValue
                   xsi:type="xs:string">Default</ns0:AttributeValue>
             </ns0:Attribute>
@@ -199,12 +199,12 @@ class SAMLGenerator(object):
         user_value.set_text(user)
         user_attribute.attribute_value = user_value
 
-        openstack_user_domain = 'openstack_user_domain'
-        user_domain_attribute = saml.Attribute()
-        user_domain_attribute.name = openstack_user_domain
-        user_domain_value = saml.AttributeValue()
-        user_domain_value.set_text(user_domain_name)
-        user_domain_attribute.attribute_value = user_domain_value
+        openstack_user_account = 'openstack_user_account'
+        user_account_attribute = saml.Attribute()
+        user_account_attribute.name = openstack_user_account
+        user_account_value = saml.AttributeValue()
+        user_account_value.set_text(user_account_name)
+        user_account_attribute.attribute_value = user_account_value
 
         openstack_roles = 'openstack_roles'
         roles_attribute = saml.Attribute()
@@ -222,19 +222,19 @@ class SAMLGenerator(object):
         project_value.set_text(project)
         project_attribute.attribute_value = project_value
 
-        openstack_project_domain = 'openstack_project_domain'
-        project_domain_attribute = saml.Attribute()
-        project_domain_attribute.name = openstack_project_domain
-        project_domain_value = saml.AttributeValue()
-        project_domain_value.set_text(project_domain_name)
-        project_domain_attribute.attribute_value = project_domain_value
+        openstack_project_account = 'openstack_project_account'
+        project_account_attribute = saml.Attribute()
+        project_account_attribute.name = openstack_project_account
+        project_account_value = saml.AttributeValue()
+        project_account_value.set_text(project_account_name)
+        project_account_attribute.attribute_value = project_account_value
 
         attribute_statement = saml.AttributeStatement()
         attribute_statement.attribute.append(user_attribute)
         attribute_statement.attribute.append(roles_attribute)
         attribute_statement.attribute.append(project_attribute)
-        attribute_statement.attribute.append(project_domain_attribute)
-        attribute_statement.attribute.append(user_domain_attribute)
+        attribute_statement.attribute.append(project_account_attribute)
+        attribute_statement.attribute.append(user_account_attribute)
         return attribute_statement
 
     def _create_authn_statement(self, issuer, expiration_time):

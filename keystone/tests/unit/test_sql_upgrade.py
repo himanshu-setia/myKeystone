@@ -55,7 +55,7 @@ from keystone.tests.unit.ksfixtures import database
 
 
 CONF = cfg.CONF
-DEFAULT_DOMAIN_ID = CONF.identity.default_domain_id
+DEFAULT_ACCOUNT_ID = CONF.identity.default_account_id
 
 # NOTE(morganfainberg): This should be updated when each DB migration collapse
 # is done to mirror the expected structure of the DB in the format of
@@ -64,7 +64,7 @@ INITIAL_TABLE_STRUCTURE = {
     'credential': [
         'id', 'user_id', 'project_id', 'blob', 'type', 'extra',
     ],
-    'domain': [
+    'account': [
         'id', 'name', 'enabled', 'extra',
     ],
     'endpoint': [
@@ -72,13 +72,13 @@ INITIAL_TABLE_STRUCTURE = {
         'enabled', 'extra',
     ],
     'group': [
-        'id', 'domain_id', 'name', 'description', 'extra',
+        'id', 'account_id', 'name', 'description', 'extra',
     ],
     'policy': [
         'id', 'type', 'blob', 'extra',
     ],
     'project': [
-        'id', 'name', 'extra', 'description', 'enabled', 'domain_id',
+        'id', 'name', 'extra', 'description', 'enabled', 'account_id',
     ],
     'role': [
         'id', 'name', 'extra',
@@ -97,7 +97,7 @@ INITIAL_TABLE_STRUCTURE = {
         'trust_id', 'role_id',
     ],
     'user': [
-        'id', 'name', 'extra', 'password', 'enabled', 'domain_id',
+        'id', 'name', 'extra', 'password', 'enabled', 'account_id',
         'default_project_id', 'expiry'
     ],
     'user_history':[
@@ -141,7 +141,7 @@ JIO_POLICY_TABLE_STRUCTURE = {
 
 INITIAL_EXTENSION_TABLE_STRUCTURE = {
     'revocation_event': [
-        'id', 'domain_id', 'project_id', 'user_id', 'role_id',
+        'id', 'account_id', 'project_id', 'user_id', 'role_id',
         'trust_id', 'consumer_id', 'access_token_id',
         'issued_before', 'expires_at', 'revoked_at', 'audit_id',
         'audit_chain_id',
@@ -310,21 +310,21 @@ class SqlUpgradeTests(SqlMigrateBase):
         for table in INITIAL_TABLE_STRUCTURE:
             self.assertTableColumns(table, INITIAL_TABLE_STRUCTURE[table])
 
-        # Ensure the default domain was properly created.
-        default_domain = migration_helpers.get_default_domain()
+        # Ensure the default account was properly created.
+        default_account = migration_helpers.get_default_account()
 
         meta = sqlalchemy.MetaData()
         meta.bind = self.engine
 
-        domain_table = sqlalchemy.Table('domain', meta, autoload=True)
+        account_table = sqlalchemy.Table('account', meta, autoload=True)
 
         session = self.Session()
-        q = session.query(domain_table)
+        q = session.query(account_table)
         refs = q.all()
 
         self.assertEqual(1, len(refs))
-        for k in default_domain.keys():
-            self.assertEqual(default_domain[k], getattr(refs[0], k))
+        for k in default_account.keys():
+            self.assertEqual(default_account[k], getattr(refs[0], k))
 
     def insert_dict(self, session, table_name, d, table=None):
         """Naively inserts key-value pairs into a table, given a dictionary."""
@@ -447,7 +447,7 @@ class SqlUpgradeTests(SqlMigrateBase):
         self.upgrade(61)
         self.assertTableColumns('project',
                                 ['id', 'name', 'extra', 'description',
-                                 'enabled', 'domain_id', 'parent_id'])
+                                 'enabled', 'account_id', 'parent_id'])
 
     def test_drop_assignment_role_fk(self):
         self.upgrade(61)
@@ -470,17 +470,17 @@ class SqlUpgradeTests(SqlMigrateBase):
                                 ['id', 'description', 'parent_region_id',
                                  'extra'])
 
-    def test_domain_fk(self):
+    def test_account_fk(self):
         self.upgrade(63)
-        self.assertTrue(self.does_fk_exist('group', 'domain_id'))
-        self.assertTrue(self.does_fk_exist('user', 'domain_id'))
+        self.assertTrue(self.does_fk_exist('group', 'account_id'))
+        self.assertTrue(self.does_fk_exist('user', 'account_id'))
         self.upgrade(64)
         if self.engine.name != 'sqlite':
             # sqlite does not support FK deletions (or enforcement)
-            self.assertFalse(self.does_fk_exist('group', 'domain_id'))
-            self.assertFalse(self.does_fk_exist('user', 'domain_id'))
+            self.assertFalse(self.does_fk_exist('group', 'account_id'))
+            self.assertFalse(self.does_fk_exist('user', 'account_id'))
 
-    def test_add_domain_config(self):
+    def test_add_account_config(self):
         whitelisted_table = 'whitelisted_config'
         sensitive_table = 'sensitive_config'
         self.upgrade(64)
@@ -488,9 +488,9 @@ class SqlUpgradeTests(SqlMigrateBase):
         self.assertTableDoesNotExist(sensitive_table)
         self.upgrade(65)
         self.assertTableColumns(whitelisted_table,
-                                ['domain_id', 'group', 'option', 'value'])
+                                ['account_id', 'group', 'option', 'value'])
         self.assertTableColumns(sensitive_table,
-                                ['domain_id', 'group', 'option', 'value'])
+                                ['account_id', 'group', 'option', 'value'])
 
     def test_fixup_service_name_value_upgrade(self):
         """Update service name data from `extra` to empty string."""
@@ -579,13 +579,13 @@ class SqlUpgradeTests(SqlMigrateBase):
                                                     'assignment_role_id_fkey'))
 
     def populate_user_table(self, with_pass_enab=False,
-                            with_pass_enab_domain=False):
+                            with_pass_enab_account=False):
         # Populate the appropriate fields in the user
         # table, depending on the parameters:
         #
         # Default: id, name, extra
         # pass_enab: Add password, enabled as well
-        # pass_enab_domain: Add password, enabled and domain as well
+        # pass_enab_account: Add password, enabled and account as well
         #
         this_table = sqlalchemy.Table("user",
                                       self.metadata,
@@ -605,14 +605,14 @@ class SqlUpgradeTests(SqlMigrateBase):
                      'enabled': bool(enabled),
                      'extra': json.dumps(extra)})
             else:
-                if with_pass_enab_domain:
+                if with_pass_enab_account:
                     password = extra.pop('password', None)
                     enabled = extra.pop('enabled', True)
-                    extra.pop('domain_id')
+                    extra.pop('account_id')
                     ins = this_table.insert().values(
                         {'id': user['id'],
                          'name': user['name'],
-                         'domain_id': user['domain_id'],
+                         'account_id': user['account_id'],
                          'password': password,
                          'enabled': bool(enabled),
                          'extra': json.dumps(extra)})
@@ -624,16 +624,16 @@ class SqlUpgradeTests(SqlMigrateBase):
             self.engine.execute(ins)
 
     def populate_tenant_table(self, with_desc_enab=False,
-                              with_desc_enab_domain=False):
+                              with_desc_enab_account=False):
         # Populate the appropriate fields in the tenant or
         # project table, depending on the parameters
         #
         # Default: id, name, extra
         # desc_enab: Add description, enabled as well
-        # desc_enab_domain: Add description, enabled and domain as well,
+        # desc_enab_account: Add description, enabled and account as well,
         #                   plus use project instead of tenant
         #
-        if with_desc_enab_domain:
+        if with_desc_enab_account:
             # By this time tenants are now projects
             this_table = sqlalchemy.Table("project",
                                           self.metadata,
@@ -658,14 +658,14 @@ class SqlUpgradeTests(SqlMigrateBase):
                      'enabled': bool(enabled),
                      'extra': json.dumps(extra)})
             else:
-                if with_desc_enab_domain:
+                if with_desc_enab_account:
                     desc = extra.pop('description', None)
                     enabled = extra.pop('enabled', True)
-                    extra.pop('domain_id')
+                    extra.pop('account_id')
                     ins = this_table.insert().values(
                         {'id': tenant['id'],
                          'name': tenant['name'],
-                         'domain_id': tenant['domain_id'],
+                         'account_id': tenant['account_id'],
                          'description': desc,
                          'enabled': bool(enabled),
                          'extra': json.dumps(extra)})

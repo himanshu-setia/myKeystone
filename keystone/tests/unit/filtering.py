@@ -58,9 +58,9 @@ class FilterTests(object):
             f = getattr(self.assignment_api, 'list_%ss' % entity_type)
         return f
 
-    def _create_one_entity(self, entity_type, domain_id, name):
+    def _create_one_entity(self, entity_type, account_id, name):
         new_entity = {'name': name,
-                      'domain_id': domain_id}
+                      'account_id': account_id}
         if entity_type in ['user', 'group']:
             # The manager layer creates the ID for users and groups
             new_entity = self._create_entity(entity_type)(new_entity)
@@ -69,25 +69,25 @@ class FilterTests(object):
             self._create_entity(entity_type)(new_entity['id'], new_entity)
         return new_entity
 
-    def _create_test_data(self, entity_type, number, domain_id=None,
+    def _create_test_data(self, entity_type, number, account_id=None,
                           name_dict=None):
         """Create entity test data
 
         :param entity_type: type of entity to create, e.g. 'user', group' etc.
         :param number: number of entities to create,
-        :param domain_id: if not defined, all users will be created in the
-                          default domain.
+        :param account_id: if not defined, all users will be created in the
+                          default account.
         :param name_dict: optional dict containing entity number and name pairs
 
         """
         entity_list = []
-        if domain_id is None:
-            domain_id = CONF.identity.default_domain_id
+        if account_id is None:
+            account_id = CONF.identity.default_account_id
         name_dict = name_dict or {}
         for x in range(number):
             # If this index has a name defined in the name_dict, then use it
             name = name_dict.get(x, uuid.uuid4().hex)
-            new_entity = self._create_one_entity(entity_type, domain_id, name)
+            new_entity = self._create_one_entity(entity_type, account_id, name)
             entity_list.append(new_entity)
         return entity_list
 

@@ -27,11 +27,11 @@
     "identity:update_endpoint": "rule:admin_required",
     "identity:delete_endpoint": "rule:admin_required",
 
-    "identity:get_domain": "rule:admin_required",
-    "identity:list_domains": "rule:admin_required",
-    "identity:create_domain": "rule:admin_required",
-    "identity:update_domain": "rule:admin_required",
-    "identity:delete_domain": "rule:admin_required",
+    "identity:get_account": "rule:admin_required",
+    "identity:list_accounts": "rule:admin_required",
+    "identity:create_account": "rule:admin_required",
+    "identity:update_account": "rule:admin_required",
+    "identity:delete_account": "rule:admin_required",
 
     "identity:get_project": "rule:admin_required",
     "identity:list_projects": "rule:admin_required",
@@ -157,10 +157,10 @@
 
     "identity:get_auth_catalog": "",
     "identity:get_auth_projects": "",
-    "identity:get_auth_domains": "",
+    "identity:get_auth_accounts": "",
 
     "identity:list_projects_for_groups": "",
-    "identity:list_domains_for_groups": "",
+    "identity:list_accounts_for_groups": "",
 
     "identity:list_revoke_events": "",
 
@@ -176,8 +176,8 @@
     "identity:get_policy_for_endpoint": "rule:admin_required",
     "identity:list_endpoints_for_policy": "rule:admin_required",
 
-    "identity:create_domain_config": "rule:admin_required",
-    "identity:get_domain_config": "rule:admin_required",
-    "identity:update_domain_config": "rule:admin_required",
-    "identity:delete_domain_config": "rule:admin_required"
+    "identity:create_account_config": "rule:admin_required",
+    "identity:get_account_config": "rule:admin_required",
+    "identity:update_account_config": "rule:admin_required",
+    "identity:delete_account_config": "rule:admin_required"
 }

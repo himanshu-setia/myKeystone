@@ -120,7 +120,7 @@ class Manager(manager.Manager):
         This includes roles directly assigned to the user on the
         project, as well as those by virtue of group membership. If
         the OS-INHERIT extension is enabled, then this will also
-        include roles inherited from the domain.
+        include roles inherited from the account.
 
         :returns: a list of role ids.
         :raises: keystone.exception.UserNotFound,
@@ -132,7 +132,7 @@ class Manager(manager.Manager):
             return self.list_role_ids_for_groups_on_project(
                 group_ids,
                 project_ref['id'],
-                project_ref['domain_id'],
+                project_ref['account_id'],
                 self._list_parent_ids_of_project(project_ref['id']))
 
         def _get_user_project_roles(user_id, project_ref):
@@ -146,10 +146,10 @@ class Manager(manager.Manager):
                 pass
 
             if CONF.os_inherit.enabled:
-                # Now get any inherited roles for the owning domain
+                # Now get any inherited roles for the owning account
                 try:
                     metadata_ref = self._get_metadata(
-                        user_id=user_id, domain_id=project_ref['domain_id'])
+                        user_id=user_id, account_id=project_ref['account_id'])
                     role_list += self._roles_from_role_dicts(
                         metadata_ref.get('roles', {}), True)
                 except (exception.MetadataNotFound, exception.NotImplemented):
@@ -169,63 +169,63 @@ class Manager(manager.Manager):
         # Use set() to process the list to remove any duplicates
         return list(set(user_role_list + group_role_list))
 
-    def get_roles_for_user_and_domain(self, user_id, domain_id):
-        """Get the roles associated with a user within given domain.
+    def get_roles_for_user_and_account(self, user_id, account_id):
+        """Get the roles associated with a user within given account.
 
         :returns: a list of role ids.
         :raises: keystone.exception.UserNotFound,
-                 keystone.exception.DomainNotFound
+                 keystone.exception.AccountNotFound
 
         """
 
-        def _get_group_domain_roles(user_id, domain_id):
+        def _get_group_account_roles(user_id, account_id):
             role_list = []
             group_ids = self._get_group_ids_for_user_id(user_id)
             for group_id in group_ids:
                 try:
                     metadata_ref = self._get_metadata(group_id=group_id,
-                                                      domain_id=domain_id)
+                                                      account_id=account_id)
                     role_list += self._roles_from_role_dicts(
                         metadata_ref.get('roles', {}), False)
                 except (exception.MetadataNotFound, exception.NotImplemented):
                     # MetadataNotFound implies no group grant, so skip.
                     # Ignore NotImplemented since not all backends support
-                    # domains.
+                    # accounts.
                     pass
             return role_list
 
-        def _get_user_domain_roles(user_id, domain_id):
+        def _get_user_account_roles(user_id, account_id):
             metadata_ref = {}
             try:
                 metadata_ref = self._get_metadata(user_id=user_id,
-                                                  domain_id=domain_id)
+                                                  account_id=account_id)
             except (exception.MetadataNotFound, exception.NotImplemented):
                 # MetadataNotFound implies no user grants.
                 # Ignore NotImplemented since not all backends support
-                # domains
+                # accounts
                 pass
             return self._roles_from_role_dicts(
                 metadata_ref.get('roles', {}), False)
 
-        self.get_domain(domain_id)
-        user_role_list = _get_user_domain_roles(user_id, domain_id)
-        group_role_list = _get_group_domain_roles(user_id, domain_id)
+        self.get_account(account_id)
+        user_role_list = _get_user_account_roles(user_id, account_id)
+        group_role_list = _get_group_account_roles(user_id, account_id)
         # Use set() to process the list to remove any duplicates
         return list(set(user_role_list + group_role_list))
 
-    def get_roles_for_groups(self, group_ids, project_id=None, domain_id=None):
-        """Get a list of roles for this group on domain and/or project."""
+    def get_roles_for_groups(self, group_ids, project_id=None, account_id=None):
+        """Get a list of roles for this group on account and/or project."""
 
         if project_id is not None:
             project = self.resource_api.get_project(project_id)
             role_ids = self.list_role_ids_for_groups_on_project(
-                group_ids, project_id, project['domain_id'],
+                group_ids, project_id, project['account_id'],
                 self._list_parent_ids_of_project(project_id))
-        elif domain_id is not None:
-            role_ids = self.list_role_ids_for_groups_on_domain(
-                group_ids, domain_id)
+        elif account_id is not None:
+            role_ids = self.list_role_ids_for_groups_on_account(
+                group_ids, account_id)
         else:
-            raise AttributeError(_("Must specify either domain or project"))
+            raise AttributeError(_("Must specify either account or project"))
 
         return self.role_api.list_roles_from_ids(role_ids)
 
@@ -263,7 +263,7 @@ class Manager(manager.Manager):
 
     @notifications.role_assignment('created')
     def _add_role_to_user_and_project_adapter(self, role_id, user_id=None,
-                                              group_id=None, domain_id=None,
+                                              group_id=None, account_id=None,
                                               project_id=None,
                                               inherited_to_projects=False,
                                               context=None):
@@ -330,32 +330,32 @@ class Manager(manager.Manager):
                 (x['id'] for x in
                  self.resource_api.list_projects_in_subtree(proj_id)))
 
-        # Now do the same for any domain inherited roles
-        domain_ids = self.list_domain_ids_for_user(
+        # Now do the same for any account inherited roles
+        account_ids = self.list_account_ids_for_user(
             user_id, group_ids, hints or driver_hints.Hints(),
             inherited=True)
         project_ids.update(
-            self.resource_api.list_project_ids_from_domain_ids(domain_ids))
+            self.resource_api.list_project_ids_from_account_ids(account_ids))
 
         return self.resource_api.list_projects_from_ids(list(project_ids))
 
     # TODO(henry-nash): We might want to consider list limiting this at some
     # point in the future.
-    def list_domains_for_user(self, user_id, hints=None):
-        # NOTE(henry-nash): In order to get a complete list of user domains,
+    def list_accounts_for_user(self, user_id, hints=None):
+        # NOTE(henry-nash): In order to get a complete list of user accounts,
         # the driver will need to look at group assignments.  To avoid cross
         # calling between the assignment and identity driver we get the group
         # list here and pass it in. The rest of the detailed logic of listing
         # projects for a user is pushed down into the driver to enable
         # optimization with the various backend technologies (SQL, LDAP etc.).
         group_ids = self._get_group_ids_for_user_id(user_id)
-        domain_ids = self.list_domain_ids_for_user(
+        account_ids = self.list_account_ids_for_user(
             user_id, group_ids, hints or driver_hints.Hints())
-        return self.resource_api.list_domains_from_ids(domain_ids)
+        return self.resource_api.list_accounts_from_ids(account_ids)
 
-    def list_domains_for_groups(self, group_ids):
-        domain_ids = self.list_domain_ids_for_groups(group_ids)
-        return self.resource_api.list_domains_from_ids(domain_ids)
+    def list_accounts_for_groups(self, group_ids):
+        account_ids = self.list_account_ids_for_groups(group_ids)
+        return self.resource_api.list_accounts_from_ids(account_ids)
 
     def list_projects_for_groups(self, group_ids):
         project_ids = (
@@ -364,15 +364,15 @@ class Manager(manager.Manager):
             return self.resource_api.list_projects_from_ids(project_ids)
 
         # os_inherit extension is enabled, so check to see if these groups have
-        # any inherited role assignment on: i) any domain, in which case we
-        # must add in all the projects in that domain; ii) any project, in
+        # any inherited role assignment on: i) any account, in which case we
+        # must add in all the projects in that account; ii) any project, in
         # which case we must add in all the subprojects under that project in
         # the hierarchy.
 
-        domain_ids = self.list_domain_ids_for_groups(group_ids, inherited=True)
+        account_ids = self.list_account_ids_for_groups(group_ids, inherited=True)
 
-        project_ids_from_domains = (
-            self.resource_api.list_project_ids_from_domain_ids(domain_ids))
+        project_ids_from_accounts = (
+            self.resource_api.list_project_ids_from_account_ids(account_ids))
 
         parents_ids = self.list_project_ids_for_groups(group_ids,
                                                        driver_hints.Hints(),
@@ -384,7 +384,7 @@ class Manager(manager.Manager):
             subproject_ids += [subproject['id'] for subproject in subtree]
 
         return self.resource_api.list_projects_from_ids(
-            list(set(project_ids + project_ids_from_domains + subproject_ids)))
+            list(set(project_ids + project_ids_from_accounts + subproject_ids)))
 
     def list_role_assignments_for_role(self, role_id=None):
         # NOTE(henry-nash): Currently the efficiency of the key driver
@@ -400,7 +400,7 @@ class Manager(manager.Manager):
     @notifications.role_assignment('deleted')
     def _remove_role_from_user_and_project_adapter(self, role_id, user_id=None,
                                                    group_id=None,
-                                                   domain_id=None,
+                                                   account_id=None,
                                                    project_id=None,
                                                    inherited_to_projects=False,
                                                    context=None):
@@ -430,67 +430,67 @@ class Manager(manager.Manager):
 
     @notifications.role_assignment('created')
     def create_grant(self, role_id, user_id=None, group_id=None,
-                     domain_id=None, project_id=None,
+                     account_id=None, project_id=None,
                      inherited_to_projects=False, context=None):
         self.role_api.get_role(role_id)
-        if domain_id:
-            self.resource_api.get_domain(domain_id)
+        if account_id:
+            self.resource_api.get_account(account_id)
         if project_id:
             self.resource_api.get_project(project_id)
-        self.driver.create_grant(role_id, user_id, group_id, domain_id,
+        self.driver.create_grant(role_id, user_id, group_id, account_id,
                                  project_id, inherited_to_projects)
 
     def get_grant(self, role_id, user_id=None, group_id=None,
-                  domain_id=None, project_id=None,
+                  account_id=None, project_id=None,
                   inherited_to_projects=False):
         role_ref = self.role_api.get_role(role_id)
-        if domain_id:
-            self.resource_api.get_domain(domain_id)
+        if account_id:
+            self.resource_api.get_account(account_id)
         if project_id:
             self.resource_api.get_project(project_id)
         self.check_grant_role_id(
-            role_id, user_id, group_id, domain_id, project_id,
+            role_id, user_id, group_id, account_id, project_id,
             inherited_to_projects)
         return role_ref
 
     def list_grants(self, user_id=None, group_id=None,
-                    domain_id=None, project_id=None,
+                    account_id=None, project_id=None,
                     inherited_to_projects=False):
-        if domain_id:
-            self.resource_api.get_domain(domain_id)
+        if account_id:
+            self.resource_api.get_account(account_id)
         if project_id:
             self.resource_api.get_project(project_id)
         grant_ids = self.list_grant_role_ids(
-            user_id, group_id, domain_id, project_id, inherited_to_projects)
+            user_id, group_id, account_id, project_id, inherited_to_projects)
         return self.role_api.list_roles_from_ids(grant_ids)
 
     @notifications.role_assignment('deleted')
-    def _emit_revoke_user_grant(self, role_id, user_id, domain_id, project_id,
+    def _emit_revoke_user_grant(self, role_id, user_id, account_id, project_id,
                                 inherited_to_projects, context):
         self._emit_invalidate_grant_token_persistence(user_id, project_id)
 
     def delete_grant(self, role_id, user_id=None, group_id=None,
-                     domain_id=None, project_id=None,
+                     account_id=None, project_id=None,
                      inherited_to_projects=False, context=None):
         if group_id is None:
             self.revoke_api.revoke_by_grant(user_id=user_id,
                                             role_id=role_id,
-                                            domain_id=domain_id,
+                                            account_id=account_id,
                                             project_id=project_id)
             self._emit_revoke_user_grant(
-                role_id, user_id, domain_id, project_id,
+                role_id, user_id, account_id, project_id,
                 inherited_to_projects, context)
         else:
             try:
                 # Group may contain a lot of users so revocation will be
-                # by role & domain/project
-                if domain_id is None:
+                # by role & account/project
+                if account_id is None:
                     self.revoke_api.revoke_by_project_role_assignment(
                         project_id, role_id
                     )
                 else:
-                    self.revoke_api.revoke_by_domain_role_assignment(
-                        domain_id, role_id
+                    self.revoke_api.revoke_by_account_role_assignment(
+                        account_id, role_id
                     )
                 if CONF.token.revoke_by_id:
                     # NOTE(morganfainberg): The user ids are the important part
@@ -498,7 +498,7 @@ class Manager(manager.Manager):
                     for user in self.identity_api.list_users_in_group(
                             group_id):
                         self._emit_revoke_user_grant(
-                            role_id, user['id'], domain_id, project_id,
+                            role_id, user['id'], account_id, project_id,
                             inherited_to_projects, context)
             except exception.GroupNotFound:
                 LOG.debug('Group %s not found, no tokens to invalidate.',
@@ -510,11 +510,11 @@ class Manager(manager.Manager):
         # already done so far in this method. See Bug #1406776.
         self.role_api.get_role(role_id)
 
-        if domain_id:
-            self.resource_api.get_domain(domain_id)
+        if account_id:
+            self.resource_api.get_account(account_id)
         if project_id:
             self.resource_api.get_project(project_id)
-        self.driver.delete_grant(role_id, user_id, group_id, domain_id,
+        self.driver.delete_grant(role_id, user_id, group_id, account_id,
                                  project_id, inherited_to_projects)
 
     def delete_tokens_for_role_assignments(self, role_id):
@@ -527,15 +527,15 @@ class Manager(manager.Manager):
         for assignment in assignments:
             # If we have a project assignment, then record both the user and
             # project IDs so we can target the right token to delete. If it is
-            # a domain assignment, we might as well kill all the tokens for
+            # a account assignment, we might as well kill all the tokens for
             # the user, since in the vast majority of cases all the tokens
-            # for a user will be within one domain anyway, so not worth
-            # trying to delete tokens for each project in the domain.
+            # for a user will be within one account anyway, so not worth
+            # trying to delete tokens for each project in the account.
             if 'user_id' in assignment:
                 if 'project_id' in assignment:
                     user_and_project_ids.append(
                         (assignment['user_id'], assignment['project_id']))
-                elif 'domain_id' in assignment:
+                elif 'account_id' in assignment:
                     self._emit_invalidate_user_token_persistence(
                         assignment['user_id'])
             elif 'group_id' in assignment:
@@ -548,8 +548,8 @@ class Manager(manager.Manager):
                     # Ignore it, but log a debug message
                     if 'project_id' in assignment:
                         target = _('Project (%s)') % assignment['project_id']
-                    elif 'domain_id' in assignment:
-                        target = _('Domain (%s)') % assignment['domain_id']
+                    elif 'account_id' in assignment:
+                        target = _('Account (%s)') % assignment['account_id']
                     else:
                         target = _('Unknown Target')
                     msg = ('Group (%(group)s), referenced in assignment '
@@ -562,7 +562,7 @@ class Manager(manager.Manager):
                     for user in users:
                         user_and_project_ids.append(
                             (user['id'], assignment['project_id']))
-                elif 'domain_id' in assignment:
+                elif 'account_id' in assignment:
                     for user in users:
                         self._emit_invalidate_user_token_persistence(
                             user['id'])
@@ -614,8 +614,8 @@ class Manager(manager.Manager):
         return self.resource_api.create_project(project_id, project)
 
     @deprecated_to_resource_api
-    def get_project_by_name(self, tenant_name, domain_id):
-        return self.resource_api.get_project_by_name(tenant_name, domain_id)
+    def get_project_by_name(self, tenant_name, account_id):
+        return self.resource_api.get_project_by_name(tenant_name, account_id)
 
     @deprecated_to_resource_api
     def get_project(self, project_id):
@@ -634,36 +634,36 @@ class Manager(manager.Manager):
         return self.resource_api.list_projects(hints=hints)
 
     @deprecated_to_resource_api
-    def list_projects_in_domain(self, domain_id):
-        return self.resource_api.list_projects_in_domain(domain_id)
+    def list_projects_in_account(self, account_id):
+        return self.resource_api.list_projects_in_account(account_id)
 
     @deprecated_to_resource_api
-    def create_domain(self, domain_id, domain):
-        return self.resource_api.create_domain(domain_id, domain)
+    def create_account(self, account_id, account):
+        return self.resource_api.create_account(account_id, account)
 
     @deprecated_to_resource_api
-    def get_domain_by_name(self, domain_name):
-        return self.resource_api.get_domain_by_name(domain_name)
+    def get_account_by_name(self, account_name):
+        return self.resource_api.get_account_by_name(account_name)
 
     @deprecated_to_resource_api
-    def get_domain(self, domain_id):
-        return self.resource_api.get_domain(domain_id)
+    def get_account(self, account_id):
+        return self.resource_api.get_account(account_id)
 
     @deprecated_to_resource_api
-    def update_domain(self, domain_id, domain):
-        return self.resource_api.update_domain(domain_id, domain)
+    def update_account(self, account_id, account):
+        return self.resource_api.update_account(account_id, account)
 
     @deprecated_to_resource_api
-    def delete_domain(self, domain_id):
-        return self.resource_api.delete_domain(domain_id)
+    def delete_account(self, account_id):
+        return self.resource_api.delete_account(account_id)
 
     @deprecated_to_resource_api
-    def list_domains(self, hints=None):
-        return self.resource_api.list_domains(hints=hints)
+    def list_accounts(self, hints=None):
+        return self.resource_api.list_accounts(hints=hints)
 
     @deprecated_to_resource_api
-    def assert_domain_enabled(self, domain_id, domain=None):
-        return self.resource_api.assert_domain_enabled(domain_id, domain)
+    def assert_account_enabled(self, account_id, account=None):
+        return self.resource_api.assert_account_enabled(account_id, account)
 
     @deprecated_to_resource_api
     def assert_project_enabled(self, project_id, project=None):
@@ -754,11 +754,11 @@ class Driver(object):
 
     @abc.abstractmethod
     def create_grant(self, role_id, user_id=None, group_id=None,
-                     domain_id=None, project_id=None,
+                     account_id=None, project_id=None,
                      inherited_to_projects=False):
         """Creates a new assignment/grant.
 
-        If the assignment is to a domain, then optionally it may be
+        If the assignment is to a account, then optionally it may be
         specified as inherited to owned projects (this requires
         the OS-INHERIT extension to be enabled).
 
@@ -767,7 +767,7 @@ class Driver(object):
 
     @abc.abstractmethod
     def list_grant_role_ids(self, user_id=None, group_id=None,
-                            domain_id=None, project_id=None,
+                            account_id=None, project_id=None,
                             inherited_to_projects=False):
         """Lists role ids for assignments/grants."""
 
@@ -775,7 +775,7 @@ class Driver(object):
 
     @abc.abstractmethod
     def check_grant_role_id(self, role_id, user_id=None, group_id=None,
-                            domain_id=None, project_id=None,
+                            account_id=None, project_id=None,
                             inherited_to_projects=False):
         """Checks an assignment/grant role id.
 
@@ -787,7 +787,7 @@ class Driver(object):
 
     @abc.abstractmethod
     def delete_grant(self, role_id, user_id=None, group_id=None,
-                     domain_id=None, project_id=None,
+                     account_id=None, project_id=None,
                      inherited_to_projects=False):
         """Deletes assignments/grants.
 
@@ -844,9 +844,9 @@ class Driver(object):
         raise exception.NotImplemented()  # pragma: no cover
 
     @abc.abstractmethod
-    def list_domain_ids_for_user(self, user_id, group_ids, hints,
+    def list_account_ids_for_user(self, user_id, group_ids, hints,
                                  inherited=False):
-        """List all domain ids associated with a given user.
+        """List all account ids associated with a given user.
 
         :param user_id: the user in question
         :param group_ids: the groups this user is a member of.  This list is
@@ -854,40 +854,40 @@ class Driver(object):
                           does not have to call across to identity.
         :param hints: filter hints which the driver should
                       implement if at all possible.
-        :param inherited: whether to return domain_ids that have inherited
+        :param inherited: whether to return account_ids that have inherited
                           assignments or not.
 
-        :returns: a list of domain ids or an empty list.
+        :returns: a list of account ids or an empty list.
 
         """
         raise exception.NotImplemented()  # pragma: no cover
 
     @abc.abstractmethod
-    def list_domain_ids_for_groups(self, group_ids, inherited=False):
-        """List domain ids accessible to specified groups.
+    def list_account_ids_for_groups(self, group_ids, inherited=False):
+        """List account ids accessible to specified groups.
 
         :param group_ids: List of group ids.
-        :param inherited: whether to return domain_ids that have inherited
+        :param inherited: whether to return account_ids that have inherited
                           assignments or not.
-        :returns: List of domain ids accessible to specified groups.
+        :returns: List of account ids accessible to specified groups.
 
         """
         raise exception.NotImplemented()  # pragma: no cover
 
     @abc.abstractmethod
     def list_role_ids_for_groups_on_project(
-            self, group_ids, project_id, project_domain_id, project_parents):
+            self, group_ids, project_id, project_account_id, project_parents):
         """List the group role ids for a specific project.
 
-        Supports the ``OS-INHERIT`` role inheritance from the project's domain
+        Supports the ``OS-INHERIT`` role inheritance from the project's account
         if supported by the assignment driver.
 
         :param group_ids: list of group ids
         :type group_ids: list
         :param project_id: project identifier
         :type project_id: str
-        :param project_domain_id: project's domain identifier
-        :type project_domain_id: str
+        :param project_account_id: project's account identifier
+        :type project_account_id: str
         :param project_parents: list of parent ids of this project
         :type project_parents: list
         :returns: list of role ids for the project
@@ -896,13 +896,13 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def list_role_ids_for_groups_on_domain(self, group_ids, domain_id):
-        """List the group role ids for a specific domain.
+    def list_role_ids_for_groups_on_account(self, group_ids, account_id):
+        """List the group role ids for a specific account.
 
         :param group_ids: list of group ids
         :type group_ids: list
-        :param domain_id: domain identifier
-        :type domain_id: str
+        :param account_id: account identifier
+        :type account_id: str
         :returns: list of role ids for the project
         :rtype: list
         """

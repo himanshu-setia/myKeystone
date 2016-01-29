@@ -59,6 +59,6 @@ class Routers(wsgi.RoutersBase):
 
         self._add_resource(
             mapper, auth_controller,
-            path='/auth/domains',
-            get_action='get_auth_domains',
-            rel=json_home.build_v3_resource_relation('auth_domains'))
+            path='/auth/accounts',
+            get_action='get_auth_accounts',
+            rel=json_home.build_v3_resource_relation('auth_accounts'))

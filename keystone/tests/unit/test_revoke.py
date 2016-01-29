@@ -74,16 +74,16 @@ def _matches(event, token_values):
         else:
             return False
 
-    # The token has two attributes that can match the domain_id
-    if event.domain_id is not None:
-        for attribute_name in ['identity_domain_id', 'assignment_domain_id']:
-            if event.domain_id == token_values[attribute_name]:
+    # The token has two attributes that can match the account_id
+    if event.account_id is not None:
+        for attribute_name in ['identity_account_id', 'assignment_account_id']:
+            if event.account_id == token_values[attribute_name]:
                 break
         else:
             return False
 
-    if event.domain_scope_id is not None:
-        if event.domain_scope_id != token_values['assignment_domain_id']:
+    if event.account_scope_id is not None:
+        if event.account_scope_id != token_values['assignment_account_id']:
             return False
 
     # If any one check does not match, the while token does
@@ -166,14 +166,14 @@ class RevokeTests(object):
         # should no longer throw an exception
         self.revoke_api.check_token(token_values)
 
-    def test_revoke_by_expiration_project_and_domain_fails(self):
+    def test_revoke_by_expiration_project_and_account_fails(self):
         user_id = _new_id()
         expires_at = timeutils.isotime(_future_time(), subsecond=True)
-        domain_id = _new_id()
+        account_id = _new_id()
         project_id = _new_id()
         self.assertThat(
             lambda: self.revoke_api.revoke_by_expiration(
-                user_id, expires_at, domain_id=domain_id,
+                user_id, expires_at, account_id=account_id,
                 project_id=project_id),
             matchers.raises(exception.UnexpectedError))
 
@@ -273,31 +273,31 @@ class RevokeTreeTests(tests.TestCase):
         return event
 
     def _revoke_by_audit_chain_id(self, audit_chain_id, project_id=None,
-                                  domain_id=None):
+                                  account_id=None):
         event = self.tree.add_event(
             model.RevokeEvent(audit_chain_id=audit_chain_id,
                               project_id=project_id,
-                              domain_id=domain_id)
+                              account_id=account_id)
         )
         self.events.append(event)
         return event
 
     def _revoke_by_expiration(self, user_id, expires_at, project_id=None,
-                              domain_id=None):
+                              account_id=None):
         event = self.tree.add_event(
             model.RevokeEvent(user_id=user_id,
                               expires_at=expires_at,
                               project_id=project_id,
-                              domain_id=domain_id))
+                              account_id=account_id))
         self.events.append(event)
         return event
 
     def _revoke_by_grant(self, role_id, user_id=None,
-                         domain_id=None, project_id=None):
+                         account_id=None, project_id=None):
         event = self.tree.add_event(
             model.RevokeEvent(user_id=user_id,
                               role_id=role_id,
-                              domain_id=domain_id,
+                              account_id=account_id,
                               project_id=project_id))
         self.events.append(event)
         return event
@@ -316,15 +316,15 @@ class RevokeTreeTests(tests.TestCase):
         self.events.append(event)
         return event
 
-    def _revoke_by_domain_role_assignment(self, domain_id, role_id):
+    def _revoke_by_account_role_assignment(self, account_id, role_id):
         event = self.tree.add_event(
-            model.RevokeEvent(domain_id=domain_id,
+            model.RevokeEvent(account_id=account_id,
                               role_id=role_id))
         self.events.append(event)
         return event
 
-    def _revoke_by_domain(self, domain_id):
-        event = self.tree.add_event(model.RevokeEvent(domain_id=domain_id))
+    def _revoke_by_account(self, account_id):
+        event = self.tree.add_event(model.RevokeEvent(account_id=account_id))
         self.events.append(event)
 
     def _user_field_test(self, field_name):
@@ -426,21 +426,21 @@ class RevokeTreeTests(tests.TestCase):
         self._revoke_by_expiration(user_id, future_time, project_id=project_id)
         self._assertTokenRevoked(token_data)
 
-    def test_by_user_domain(self):
-        # When a user has a domain-scoped token and the domain-scoped token
+    def test_by_user_account(self):
+        # When a user has a account-scoped token and the account-scoped token
         # is revoked then the token is revoked.
 
         user_id = _new_id()
-        domain_id = _new_id()
+        account_id = _new_id()
 
         future_time = _future_time()
 
         token_data = _sample_blank_token()
         token_data['user_id'] = user_id
-        token_data['assignment_domain_id'] = domain_id
+        token_data['assignment_account_id'] = account_id
         token_data['expires_at'] = future_time.replace(microsecond=0)
 
-        self._revoke_by_expiration(user_id, future_time, domain_id=domain_id)
+        self._revoke_by_expiration(user_id, future_time, account_id=account_id)
         self._assertTokenRevoked(token_data)
 
     def remove_event(self, event):
@@ -510,54 +510,54 @@ class RevokeTreeTests(tests.TestCase):
         token_data['project_id'] = project_id
         self._assertTokenRevoked(token_data)
 
-    def test_by_domain_user(self):
-        # If revoke a domain, then a token for a user in the domain is revoked
+    def test_by_account_user(self):
+        # If revoke a account, then a token for a user in the account is revoked
 
         user_id = _new_id()
-        domain_id = _new_id()
+        account_id = _new_id()
 
         token_data = _sample_blank_token()
         token_data['user_id'] = user_id
-        token_data['identity_domain_id'] = domain_id
+        token_data['identity_account_id'] = account_id
 
-        self._revoke_by_domain(domain_id)
+        self._revoke_by_account(account_id)
 
         self._assertTokenRevoked(token_data)
 
-    def test_by_domain_project(self):
-        # If revoke a domain, then a token scoped to a project in the domain
+    def test_by_account_project(self):
+        # If revoke a account, then a token scoped to a project in the account
         # is revoked.
 
         user_id = _new_id()
-        user_domain_id = _new_id()
+        user_account_id = _new_id()
 
         project_id = _new_id()
-        project_domain_id = _new_id()
+        project_account_id = _new_id()
 
         token_data = _sample_blank_token()
         token_data['user_id'] = user_id
-        token_data['identity_domain_id'] = user_domain_id
+        token_data['identity_account_id'] = user_account_id
         token_data['project_id'] = project_id
-        token_data['assignment_domain_id'] = project_domain_id
+        token_data['assignment_account_id'] = project_account_id
 
-        self._revoke_by_domain(project_domain_id)
+        self._revoke_by_account(project_account_id)
 
         self._assertTokenRevoked(token_data)
 
-    def test_by_domain_domain(self):
-        # If revoke a domain, then a token scoped to the domain is revoked.
+    def test_by_account_account(self):
+        # If revoke a account, then a token scoped to the account is revoked.
 
         user_id = _new_id()
-        user_domain_id = _new_id()
+        user_account_id = _new_id()
 
-        domain_id = _new_id()
+        account_id = _new_id()
 
         token_data = _sample_blank_token()
         token_data['user_id'] = user_id
-        token_data['identity_domain_id'] = user_domain_id
-        token_data['assignment_domain_id'] = domain_id
+        token_data['identity_account_id'] = user_account_id
+        token_data['assignment_account_id'] = account_id
 
-        self._revoke_by_domain(domain_id)
+        self._revoke_by_account(account_id)
 
         self._assertTokenRevoked(token_data)
 
@@ -572,7 +572,7 @@ class RevokeTreeTests(tests.TestCase):
                                        ['access_token_id=*']
                                        ['audit_id=*']
                                        ['audit_chain_id=*']))
-        # two different functions add  domain_ids, +1 for None
+        # two different functions add  account_ids, +1 for None
         self.assertEqual(2 * turn + 1, len(self.tree.revoke_map
                                            ['trust_id=*']
                                            ['consumer_id=*']
@@ -588,7 +588,7 @@ class RevokeTreeTests(tests.TestCase):
                                            ['audit_id=*']
                                            ['audit_chain_id=*']
                                            ['expires_at=*']
-                                           ['domain_id=*']))
+                                           ['account_id=*']))
         # 10 users added
         self.assertEqual(turn, len(self.tree.revoke_map
                                    ['trust_id=*']
@@ -597,7 +597,7 @@ class RevokeTreeTests(tests.TestCase):
                                    ['audit_id=*']
                                    ['audit_chain_id=*']
                                    ['expires_at=*']
-                                   ['domain_id=*']
+                                   ['account_id=*']
                                    ['project_id=*']))
 
     def test_cleanup(self):
@@ -625,9 +625,9 @@ class RevokeTreeTests(tests.TestCase):
             events.append(
                 self._revoke_by_project_role_assignment(_new_id(), _new_id()))
             events.append(
-                self._revoke_by_domain_role_assignment(_new_id(), _new_id()))
+                self._revoke_by_account_role_assignment(_new_id(), _new_id()))
             events.append(
-                self._revoke_by_domain_role_assignment(_new_id(), _new_id()))
+                self._revoke_by_account_role_assignment(_new_id(), _new_id()))
             events.append(
                 self._revoke_by_user_and_project(_new_id(), _new_id()))
             self._assertEventsMatchIteration(i + 1)

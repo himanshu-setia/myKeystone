@@ -144,8 +144,8 @@ class Ec2ControllerCommon(object):
         try:
             self.identity_api.assert_user_enabled(
                 user_id=user_ref['id'], user=user_ref)
-            self.resource_api.assert_domain_enabled(
-                domain_id=user_ref['domain_id'])
+            self.resource_api.assert_account_enabled(
+                account_id=user_ref['account_id'])
             self.resource_api.assert_project_enabled(
                 project_id=tenant_ref['id'], project=tenant_ref)
         except AssertionError as e:
@@ -351,7 +351,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
-        response = dict(domain_id=token_data["access"]["token"]["tenant"]["domain_id"],
+        response = dict(account_id=token_data["access"]["token"]["tenant"]["account_id"],
                         user_id=token_data["access"]["user"]["id"],
                         token_id=token_data["access"]["token"]["id"])
         return response
@@ -531,7 +531,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
         token_id, token_data = self.token_provider_api.issue_v3_token(
             user_ref['id'], method_names, project_id=project_ref['id'],
             metadata_ref=metadata_ref)
-        response = dict(domain_id=token_data["token"]["project"]["domain"]["id"],
+        response = dict(account_id=token_data["token"]["project"]["account"]["id"],
                         user_id=token_data["token"]["user"]["id"],
                         token_id=token_id)
 

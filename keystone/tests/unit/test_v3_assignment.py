@@ -28,7 +28,7 @@ CONF = cfg.CONF
 def _build_role_assignment_query_url(effective=False, **filters):
     '''Build and return a role assignment query url with provided params.
 
-    Available filters are: domain_id, project_id, user_id, group_id, role_id
+    Available filters are: account_id, project_id, user_id, group_id, role_id
     and inherited_to_projects.
 
     '''
@@ -41,7 +41,7 @@ def _build_role_assignment_query_url(effective=False, **filters):
         if k == 'inherited_to_projects':
             query_params += 'scope.OS-INHERIT:inherited_to=projects'
         else:
-            if k in ['domain_id', 'project_id']:
+            if k in ['account_id', 'project_id']:
                 query_params += 'scope.'
             elif k not in ['user_id', 'group_id', 'role_id']:
                 raise ValueError('Invalid key \'%s\' in provided filters.' % k)
@@ -54,13 +54,13 @@ def _build_role_assignment_query_url(effective=False, **filters):
 def _build_role_assignment_link(**attribs):
     """Build and return a role assignment link with provided attributes.
 
-    Provided attributes are expected to contain: domain_id or project_id,
+    Provided attributes are expected to contain: account_id or project_id,
     user_id or group_id, role_id and, optionally, inherited_to_projects.
 
     """
 
-    if attribs.get('domain_id'):
-        link = '/domains/' + attribs['domain_id']
+    if attribs.get('account_id'):
+        link = '/accounts/' + attribs['account_id']
     else:
         link = '/projects/' + attribs['project_id']
 
@@ -80,7 +80,7 @@ def _build_role_assignment_link(**attribs):
 def _build_role_assignment_entity(link=None, **attribs):
     """Build and return a role assignment entity with provided attributes.
 
-    Provided attributes are expected to contain: domain_id or project_id,
+    Provided attributes are expected to contain: account_id or project_id,
     user_id or group_id, role_id and, optionally, inherited_to_projects.
 
     """
@@ -88,8 +88,8 @@ def _build_role_assignment_entity(link=None, **attribs):
     entity = {'links': {'assignment': (
         link or _build_role_assignment_link(**attribs))}}
 
-    if attribs.get('domain_id'):
-        entity['scope'] = {'domain': {'id': attribs['domain_id']}}
+    if attribs.get('account_id'):
+        entity['scope'] = {'account': {'id': attribs['account_id']}}
     else:
         entity['scope'] = {'project': {'id': attribs['project_id']}}
 
@@ -112,13 +112,13 @@ def _build_role_assignment_entity(link=None, **attribs):
 
 
 class AssignmentTestCase(test_v3.RestfulTestCase):
-    """Test domains, projects, roles and role assignments."""
+    """Test accounts, projects, roles and role assignments."""
 
     def setUp(self):
         super(AssignmentTestCase, self).setUp()
 
         self.group = self.new_group_ref(
-            domain_id=self.domain_id)
+            account_id=self.account_id)
         self.group = self.identity_api.create_group(self.group)
         self.group_id = self.group['id']
 
@@ -132,72 +132,72 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
             self.credential)
         self.new_root_action()
 
-    # Domain CRUD tests
+    # Account CRUD tests
 
-    def test_create_domain(self):
-        """Call ``POST /domains``."""
-        ref = self.new_domain_ref()
+    def test_create_account(self):
+        """Call ``POST /accounts``."""
+        ref = self.new_account_ref()
         r = self.post(
-            '/domains',
-            body={'domain': ref})
-        return self.assertValidDomainResponse(r, ref)
+            '/accounts',
+            body={'account': ref})
+        return self.assertValidAccountResponse(r, ref)
 
-    def test_create_domain_case_sensitivity(self):
-        """Call `POST /domains`` twice with upper() and lower() cased name."""
-        ref = self.new_domain_ref()
+    def test_create_account_case_sensitivity(self):
+        """Call `POST /accounts`` twice with upper() and lower() cased name."""
+        ref = self.new_account_ref()
 
         # ensure the name is lowercase
         ref['name'] = ref['name'].lower()
         r = self.post(
-            '/domains',
-            body={'domain': ref})
-        self.assertValidDomainResponse(r, ref)
+            '/accounts',
+            body={'account': ref})
+        self.assertValidAccountResponse(r, ref)
 
         # ensure the name is uppercase
         ref['name'] = ref['name'].upper()
         r = self.post(
-            '/domains',
-            body={'domain': ref})
-        self.assertValidDomainResponse(r, ref)
+            '/accounts',
+            body={'account': ref})
+        self.assertValidAccountResponse(r, ref)
 
-    def test_create_domain_400(self):
-        """Call ``POST /domains``."""
-        self.post('/domains', body={'domain': {}}, expected_status=400)
+    def test_create_account_400(self):
+        """Call ``POST /accounts``."""
+        self.post('/accounts', body={'account': {}}, expected_status=400)
 
-    def test_list_domains(self):
-        """Call ``GET /domains``."""
-        resource_url = '/domains'
+    def test_list_accounts(self):
+        """Call ``GET /accounts``."""
+        resource_url = '/accounts'
         r = self.get(resource_url)
-        self.assertValidDomainListResponse(r, ref=self.domain,
+        self.assertValidAccountListResponse(r, ref=self.account,
                                            resource_url=resource_url)
 
-    def test_get_domain(self):
-        """Call ``GET /domains/{domain_id}``."""
-        r = self.get('/domains/%(domain_id)s' % {
-            'domain_id': self.domain_id})
-        self.assertValidDomainResponse(r, self.domain)
+    def test_get_account(self):
+        """Call ``GET /accounts/{account_id}``."""
+        r = self.get('/accounts/%(account_id)s' % {
+            'account_id': self.account_id})
+        self.assertValidAccountResponse(r, self.account)
 
-    def test_update_domain(self):
-        """Call ``PATCH /domains/{domain_id}``."""
-        ref = self.new_domain_ref()
+    def test_update_account(self):
+        """Call ``PATCH /accounts/{account_id}``."""
+        ref = self.new_account_ref()
         del ref['id']
-        r = self.patch('/domains/%(domain_id)s' % {
-            'domain_id': self.domain_id},
-            body={'domain': ref})
-        self.assertValidDomainResponse(r, ref)
+        r = self.patch('/accounts/%(account_id)s' % {
+            'account_id': self.account_id},
+            body={'account': ref})
+        self.assertValidAccountResponse(r, ref)
 
-    def test_disable_domain(self):
-        """Call ``PATCH /domains/{domain_id}`` (set enabled=False)."""
-        # Create a 2nd set of entities in a 2nd domain
-        self.domain2 = self.new_domain_ref()
-        self.resource_api.create_domain(self.domain2['id'], self.domain2)
+    def test_disable_account(self):
+        """Call ``PATCH /accounts/{account_id}`` (set enabled=False)."""
+        # Create a 2nd set of entities in a 2nd account
+        self.account2 = self.new_account_ref()
+        self.resource_api.create_account(self.account2['id'], self.account2)
 
         self.project2 = self.new_project_ref(
-            domain_id=self.domain2['id'])
+            account_id=self.account2['id'])
         self.resource_api.create_project(self.project2['id'], self.project2)
 
         self.user2 = self.new_user_ref(
-            domain_id=self.domain2['id'],
+            account_id=self.account2['id'],
             project_id=self.project2['id'])
         password = self.user2['password']
         self.user2 = self.identity_api.create_user(self.user2)
@@ -206,8 +206,8 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         self.assignment_api.add_user_to_project(self.project2['id'],
                                                 self.user2['id'])
 
-        # First check a user in that domain can authenticate. The v2 user
-        # cannot authenticate because they exist outside the default domain.
+        # First check a user in that account can authenticate. The v2 user
+        # cannot authenticate because they exist outside the default account.
         body = {
             'auth': {
                 'passwordCredentials': {
@@ -226,12 +226,12 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
             project_id=self.project2['id'])
         self.v3_authenticate_token(auth_data)
 
-        # Now disable the domain
-        self.domain2['enabled'] = False
-        r = self.patch('/domains/%(domain_id)s' % {
-            'domain_id': self.domain2['id']},
-            body={'domain': {'enabled': False}})
-        self.assertValidDomainResponse(r, self.domain2)
+        # Now disable the account
+        self.account2['enabled'] = False
+        r = self.patch('/accounts/%(account_id)s' % {
+            'account_id': self.account2['id']},
+            body={'account': {'enabled': False}})
+        self.assertValidAccountResponse(r, self.account2)
 
         # Make sure the user can no longer authenticate, via
         # either API
@@ -256,55 +256,55 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         auth_data = self.build_authentication_request(
             username=self.user2['name'],
-            user_domain_id=self.domain2['id'],
+            user_account_id=self.account2['id'],
             password=self.user2['password'],
             project_id=self.project2['id'])
         self.v3_authenticate_token(auth_data, expected_status=401)
 
-    def test_delete_enabled_domain_fails(self):
-        """Call ``DELETE /domains/{domain_id}`` (when domain enabled)."""
+    def test_delete_enabled_account_fails(self):
+        """Call ``DELETE /accounts/{account_id}`` (when account enabled)."""
 
-        # Try deleting an enabled domain, which should fail
-        self.delete('/domains/%(domain_id)s' % {
-            'domain_id': self.domain['id']},
+        # Try deleting an enabled account, which should fail
+        self.delete('/accounts/%(account_id)s' % {
+            'account_id': self.account['id']},
             expected_status=exception.ForbiddenAction.code)
 
-    def test_delete_domain(self):
-        """Call ``DELETE /domains/{domain_id}``.
+    def test_delete_account(self):
+        """Call ``DELETE /accounts/{account_id}``.
 
         The sample data set up already has a user, group, project
-        and credential that is part of self.domain. Since the user
-        we will authenticate with is in this domain, we create a
-        another set of entities in a second domain.  Deleting this
-        second domain should delete all these new entities. In addition,
-        all the entities in the regular self.domain should be unaffected
+        and credential that is part of self.account. Since the user
+        we will authenticate with is in this account, we create a
+        another set of entities in a second account.  Deleting this
+        second account should delete all these new entities. In addition,
+        all the entities in the regular self.account should be unaffected
         by the delete.
 
         Test Plan:
 
-        - Create domain2 and a 2nd set of entities
-        - Disable domain2
-        - Delete domain2
-        - Check entities in domain2 have been deleted
-        - Check entities in self.domain are unaffected
+        - Create account2 and a 2nd set of entities
+        - Disable account2
+        - Delete account2
+        - Check entities in account2 have been deleted
+        - Check entities in self.account are unaffected
 
         """
 
-        # Create a 2nd set of entities in a 2nd domain
-        self.domain2 = self.new_domain_ref()
-        self.resource_api.create_domain(self.domain2['id'], self.domain2)
+        # Create a 2nd set of entities in a 2nd account
+        self.account2 = self.new_account_ref()
+        self.resource_api.create_account(self.account2['id'], self.account2)
 
         self.project2 = self.new_project_ref(
-            domain_id=self.domain2['id'])
+            account_id=self.account2['id'])
         self.resource_api.create_project(self.project2['id'], self.project2)
 
         self.user2 = self.new_user_ref(
-            domain_id=self.domain2['id'],
+            account_id=self.account2['id'],
             project_id=self.project2['id'])
         self.user2 = self.identity_api.create_user(self.user2)
 
         self.group2 = self.new_group_ref(
-            domain_id=self.domain2['id'])
+            account_id=self.account2['id'])
         self.group2 = self.identity_api.create_group(self.group2)
 
         self.credential2 = self.new_credential_ref(
@@ -314,19 +314,19 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
             self.credential2['id'],
             self.credential2)
 
-        # Now disable the new domain and delete it
-        self.domain2['enabled'] = False
-        r = self.patch('/domains/%(domain_id)s' % {
-            'domain_id': self.domain2['id']},
-            body={'domain': {'enabled': False}})
-        self.assertValidDomainResponse(r, self.domain2)
-        self.delete('/domains/%(domain_id)s' % {
-            'domain_id': self.domain2['id']})
+        # Now disable the new account and delete it
+        self.account2['enabled'] = False
+        r = self.patch('/accounts/%(account_id)s' % {
+            'account_id': self.account2['id']},
+            body={'account': {'enabled': False}})
+        self.assertValidAccountResponse(r, self.account2)
+        self.delete('/accounts/%(account_id)s' % {
+            'account_id': self.account2['id']})
 
-        # Check all the domain2 relevant entities are gone
-        self.assertRaises(exception.DomainNotFound,
-                          self.resource_api.get_domain,
-                          self.domain2['id'])
+        # Check all the account2 relevant entities are gone
+        self.assertRaises(exception.AccountNotFound,
+                          self.resource_api.get_account,
+                          self.account2['id'])
         self.assertRaises(exception.ProjectNotFound,
                           self.resource_api.get_project,
                           self.project2['id'])
@@ -340,9 +340,9 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
                           self.credential_api.get_credential,
                           self.credential2['id'])
 
-        # ...and that all self.domain entities are still here
-        r = self.resource_api.get_domain(self.domain['id'])
-        self.assertDictEqual(r, self.domain)
+        # ...and that all self.account entities are still here
+        r = self.resource_api.get_account(self.account['id'])
+        self.assertDictEqual(r, self.account)
         r = self.resource_api.get_project(self.project['id'])
         self.assertDictEqual(r, self.project)
         r = self.identity_api.get_group(self.group['id'])
@@ -353,78 +353,78 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         r = self.credential_api.get_credential(self.credential['id'])
         self.assertDictEqual(r, self.credential)
 
-    def test_delete_default_domain_fails(self):
-        # Attempting to delete the default domain results in 403 Forbidden.
+    def test_delete_default_account_fails(self):
+        # Attempting to delete the default account results in 403 Forbidden.
 
         # Need to disable it first.
-        self.patch('/domains/%(domain_id)s' % {
-            'domain_id': CONF.identity.default_domain_id},
-            body={'domain': {'enabled': False}})
+        self.patch('/accounts/%(account_id)s' % {
+            'account_id': CONF.identity.default_account_id},
+            body={'account': {'enabled': False}})
 
-        self.delete('/domains/%(domain_id)s' % {
-            'domain_id': CONF.identity.default_domain_id},
+        self.delete('/accounts/%(account_id)s' % {
+            'account_id': CONF.identity.default_account_id},
             expected_status=exception.ForbiddenAction.code)
 
-    def test_delete_new_default_domain_fails(self):
-        # If change the default domain ID, deleting the new default domain
+    def test_delete_new_default_account_fails(self):
+        # If change the default account ID, deleting the new default account
         # results in a 403 Forbidden.
 
-        # Create a new domain that's not the default
-        new_domain = self.new_domain_ref()
-        new_domain_id = new_domain['id']
-        self.resource_api.create_domain(new_domain_id, new_domain)
+        # Create a new account that's not the default
+        new_account = self.new_account_ref()
+        new_account_id = new_account['id']
+        self.resource_api.create_account(new_account_id, new_account)
 
-        # Disable the new domain so can delete it later.
-        self.patch('/domains/%(domain_id)s' % {
-            'domain_id': new_domain_id},
-            body={'domain': {'enabled': False}})
+        # Disable the new account so can delete it later.
+        self.patch('/accounts/%(account_id)s' % {
+            'account_id': new_account_id},
+            body={'account': {'enabled': False}})
 
-        # Change the default domain
+        # Change the default account
         self.config_fixture.config(group='identity',
-                                   default_domain_id=new_domain_id)
+                                   default_account_id=new_account_id)
 
-        # Attempt to delete the new domain
+        # Attempt to delete the new account
 
-        self.delete('/domains/%(domain_id)s' % {'domain_id': new_domain_id},
+        self.delete('/accounts/%(account_id)s' % {'account_id': new_account_id},
                     expected_status=exception.ForbiddenAction.code)
 
-    def test_delete_old_default_domain(self):
-        # If change the default domain ID, deleting the old default domain
+    def test_delete_old_default_account(self):
+        # If change the default account ID, deleting the old default account
         # works.
 
-        # Create a new domain that's not the default
-        new_domain = self.new_domain_ref()
-        new_domain_id = new_domain['id']
-        self.resource_api.create_domain(new_domain_id, new_domain)
+        # Create a new account that's not the default
+        new_account = self.new_account_ref()
+        new_account_id = new_account['id']
+        self.resource_api.create_account(new_account_id, new_account)
 
-        old_default_domain_id = CONF.identity.default_domain_id
+        old_default_account_id = CONF.identity.default_account_id
 
-        # Disable the default domain so we can delete it later.
-        self.patch('/domains/%(domain_id)s' % {
-            'domain_id': old_default_domain_id},
-            body={'domain': {'enabled': False}})
+        # Disable the default account so we can delete it later.
+        self.patch('/accounts/%(account_id)s' % {
+            'account_id': old_default_account_id},
+            body={'account': {'enabled': False}})
 
-        # Change the default domain
+        # Change the default account
         self.config_fixture.config(group='identity',
-                                   default_domain_id=new_domain_id)
+                                   default_account_id=new_account_id)
 
-        # Delete the old default domain
+        # Delete the old default account
 
         self.delete(
-            '/domains/%(domain_id)s' % {'domain_id': old_default_domain_id})
+            '/accounts/%(account_id)s' % {'account_id': old_default_account_id})
 
-    def test_token_revoked_once_domain_disabled(self):
-        """Test token from a disabled domain has been invalidated.
+    def test_token_revoked_once_account_disabled(self):
+        """Test token from a disabled account has been invalidated.
 
-        Test that a token that was valid for an enabled domain
-        becomes invalid once that domain is disabled.
+        Test that a token that was valid for an enabled account
+        becomes invalid once that account is disabled.
 
         """
 
-        self.domain = self.new_domain_ref()
-        self.resource_api.create_domain(self.domain['id'], self.domain)
+        self.account = self.new_account_ref()
+        self.resource_api.create_account(self.account['id'], self.account)
 
-        self.user2 = self.new_user_ref(domain_id=self.domain['id'])
+        self.user2 = self.new_user_ref(account_id=self.account['id'])
         password = self.user2['password']
         self.user2 = self.identity_api.create_user(self.user2)
         self.user2['password'] = password
@@ -444,45 +444,45 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
                   headers={'x-subject-token': subject_token},
                   expected_status=200)
 
-        # now disable the domain
-        self.domain['enabled'] = False
-        url = "/domains/%(domain_id)s" % {'domain_id': self.domain['id']}
+        # now disable the account
+        self.account['enabled'] = False
+        url = "/accounts/%(account_id)s" % {'account_id': self.account['id']}
         self.patch(url,
-                   body={'domain': {'enabled': False}},
+                   body={'account': {'enabled': False}},
                    expected_status=200)
 
         # validates the same token again and it should be 'not found'
-        # as the domain has already been disabled.
+        # as the account has already been disabled.
         self.head('/auth/tokens',
                   headers={'x-subject-token': subject_token},
                   expected_status=404)
 
-    def test_delete_domain_hierarchy(self):
-        """Call ``DELETE /domains/{domain_id}``."""
-        domain = self.new_domain_ref()
-        self.resource_api.create_domain(domain['id'], domain)
+    def test_delete_account_hierarchy(self):
+        """Call ``DELETE /accounts/{account_id}``."""
+        account = self.new_account_ref()
+        self.resource_api.create_account(account['id'], account)
 
         root_project = self.new_project_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         self.resource_api.create_project(root_project['id'], root_project)
 
         leaf_project = self.new_project_ref(
-            domain_id=domain['id'],
+            account_id=account['id'],
             parent_id=root_project['id'])
         self.resource_api.create_project(leaf_project['id'], leaf_project)
 
         # Need to disable it first.
-        self.patch('/domains/%(domain_id)s' % {
-            'domain_id': domain['id']},
-            body={'domain': {'enabled': False}})
+        self.patch('/accounts/%(account_id)s' % {
+            'account_id': account['id']},
+            body={'account': {'enabled': False}})
 
         self.delete(
-            '/domains/%(domain_id)s' % {
-                'domain_id': domain['id']})
+            '/accounts/%(account_id)s' % {
+                'account_id': account['id']})
 
-        self.assertRaises(exception.DomainNotFound,
-                          self.resource_api.get_domain,
-                          domain['id'])
+        self.assertRaises(exception.AccountNotFound,
+                          self.resource_api.get_account,
+                          account['id'])
 
         self.assertRaises(exception.ProjectNotFound,
                           self.resource_api.get_project,
@@ -492,68 +492,68 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
                           self.resource_api.get_project,
                           leaf_project['id'])
 
-    def test_forbid_operations_on_federated_domain(self):
-        """Make sure one cannot operate on federated domain.
+    def test_forbid_operations_on_federated_account(self):
+        """Make sure one cannot operate on federated account.
 
         This includes operations like create, update, delete
-        on domain identified by id and name where difference variations of
+        on account identified by id and name where difference variations of
         id 'Federated' are used.
 
         """
-        def create_domains():
+        def create_accounts():
             for variation in ('Federated', 'FEDERATED',
                               'federated', 'fEderated'):
-                domain = self.new_domain_ref()
-                domain['id'] = variation
-                yield domain
+                account = self.new_account_ref()
+                account['id'] = variation
+                yield account
 
-        for domain in create_domains():
+        for account in create_accounts():
             self.assertRaises(
-                AssertionError, self.assignment_api.create_domain,
-                domain['id'], domain)
+                AssertionError, self.assignment_api.create_account,
+                account['id'], account)
             self.assertRaises(
-                AssertionError, self.assignment_api.update_domain,
-                domain['id'], domain)
+                AssertionError, self.assignment_api.update_account,
+                account['id'], account)
             self.assertRaises(
-                exception.DomainNotFound, self.assignment_api.delete_domain,
-                domain['id'])
+                exception.AccountNotFound, self.assignment_api.delete_account,
+                account['id'])
 
             # swap 'name' with 'id' and try again, expecting the request to
             # gracefully fail
-            domain['id'], domain['name'] = domain['name'], domain['id']
+            account['id'], account['name'] = account['name'], account['id']
             self.assertRaises(
-                AssertionError, self.assignment_api.create_domain,
-                domain['id'], domain)
+                AssertionError, self.assignment_api.create_account,
+                account['id'], account)
             self.assertRaises(
-                AssertionError, self.assignment_api.update_domain,
-                domain['id'], domain)
+                AssertionError, self.assignment_api.update_account,
+                account['id'], account)
             self.assertRaises(
-                exception.DomainNotFound, self.assignment_api.delete_domain,
-                domain['id'])
+                exception.AccountNotFound, self.assignment_api.delete_account,
+                account['id'])
 
-    def test_forbid_operations_on_defined_federated_domain(self):
-        """Make sure one cannot operate on a user-defined federated domain.
+    def test_forbid_operations_on_defined_federated_account(self):
+        """Make sure one cannot operate on a user-defined federated account.
 
         This includes operations like create, update, delete.
 
         """
 
-        non_default_name = 'beta_federated_domain'
+        non_default_name = 'beta_federated_account'
         self.config_fixture.config(group='federation',
-                                   federated_domain_name=non_default_name)
-        domain = self.new_domain_ref()
-        domain['name'] = non_default_name
+                                   federated_account_name=non_default_name)
+        account = self.new_account_ref()
+        account['name'] = non_default_name
         self.assertRaises(AssertionError,
-                          self.assignment_api.create_domain,
-                          domain['id'], domain)
-        self.assertRaises(exception.DomainNotFound,
-                          self.assignment_api.delete_domain,
-                          domain['id'])
+                          self.assignment_api.create_account,
+                          account['id'], account)
+        self.assertRaises(exception.AccountNotFound,
+                          self.assignment_api.delete_account,
+                          account['id'])
         self.assertRaises(AssertionError,
-                          self.assignment_api.update_domain,
-                          domain['id'], domain)
+                          self.assignment_api.update_account,
+                          account['id'], account)
 
-    def test_set_federated_domain_when_config_empty(self):
+    def test_set_federated_account_when_config_empty(self):
         """Make sure we are operable even if config value is not properly
         set.
 
@@ -562,30 +562,30 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         """
         federated_name = 'Federated'
         self.config_fixture.config(group='federation',
-                                   federated_domain_name='')
-        domain = self.new_domain_ref()
-        domain['id'] = federated_name
+                                   federated_account_name='')
+        account = self.new_account_ref()
+        account['id'] = federated_name
         self.assertRaises(AssertionError,
-                          self.assignment_api.create_domain,
-                          domain['id'], domain)
-        self.assertRaises(exception.DomainNotFound,
-                          self.assignment_api.delete_domain,
-                          domain['id'])
+                          self.assignment_api.create_account,
+                          account['id'], account)
+        self.assertRaises(exception.AccountNotFound,
+                          self.assignment_api.delete_account,
+                          account['id'])
         self.assertRaises(AssertionError,
-                          self.assignment_api.update_domain,
-                          domain['id'], domain)
+                          self.assignment_api.update_account,
+                          account['id'], account)
 
         # swap id with name
-        domain['id'], domain['name'] = domain['name'], domain['id']
+        account['id'], account['name'] = account['name'], account['id']
         self.assertRaises(AssertionError,
-                          self.assignment_api.create_domain,
-                          domain['id'], domain)
-        self.assertRaises(exception.DomainNotFound,
-                          self.assignment_api.delete_domain,
-                          domain['id'])
+                          self.assignment_api.create_account,
+                          account['id'], account)
+        self.assertRaises(exception.AccountNotFound,
+                          self.assignment_api.delete_account,
+                          account['id'])
         self.assertRaises(AssertionError,
-                          self.assignment_api.update_domain,
-                          domain['id'], domain)
+                          self.assignment_api.update_account,
+                          account['id'], account)
 
     # Project CRUD tests
 
@@ -598,7 +598,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
     def test_create_project(self):
         """Call ``POST /projects``."""
-        ref = self.new_project_ref(domain_id=self.domain_id)
+        ref = self.new_project_ref(account_id=self.account_id)
         r = self.post(
             '/projects',
             body={'project': ref})
@@ -617,14 +617,14 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         :returns projects: a list of the projects in the created hierarchy.
 
         """
-        new_ref = self.new_project_ref(domain_id=self.domain_id)
+        new_ref = self.new_project_ref(account_id=self.account_id)
         resp = self.post('/projects', body={'project': new_ref})
 
         projects = [resp.result]
 
         for i in range(hierarchy_size):
             new_ref = self.new_project_ref(
-                domain_id=self.domain_id,
+                account_id=self.account_id,
                 parent_id=projects[i]['project']['id'])
             resp = self.post('/projects',
                              body={'project': new_ref})
@@ -777,7 +777,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         # Add another child to projects[0] - it will be projects[3]
         new_ref = self.new_project_ref(
-            domain_id=self.domain_id,
+            account_id=self.account_id,
             parent_id=projects[0]['project']['id'])
         resp = self.post('/projects',
                          body={'project': new_ref})
@@ -786,7 +786,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         # Add another child to projects[1] - it will be projects[4]
         new_ref = self.new_project_ref(
-            domain_id=self.domain_id,
+            account_id=self.account_id,
             parent_id=projects[1]['project']['id'])
         resp = self.post('/projects',
                          body={'project': new_ref})
@@ -920,7 +920,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
     def test_update_project(self):
         """Call ``PATCH /projects/{project_id}``."""
-        ref = self.new_project_ref(domain_id=self.domain_id)
+        ref = self.new_project_ref(account_id=self.account_id)
         del ref['id']
         r = self.patch(
             '/projects/%(project_id)s' % {
@@ -928,17 +928,17 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
             body={'project': ref})
         self.assertValidProjectResponse(r, ref)
 
-    def test_update_project_domain_id(self):
-        """Call ``PATCH /projects/{project_id}`` with domain_id."""
-        project = self.new_project_ref(domain_id=self.domain['id'])
+    def test_update_project_account_id(self):
+        """Call ``PATCH /projects/{project_id}`` with account_id."""
+        project = self.new_project_ref(account_id=self.account['id'])
         self.resource_api.create_project(project['id'], project)
-        project['domain_id'] = CONF.identity.default_domain_id
+        project['account_id'] = CONF.identity.default_account_id
         r = self.patch('/projects/%(project_id)s' % {
             'project_id': project['id']},
             body={'project': project},
             expected_status=exception.ValidationError.code)
-        self.config_fixture.config(domain_id_immutable=False)
-        project['domain_id'] = self.domain['id']
+        self.config_fixture.config(account_id_immutable=False)
+        project['account_id'] = self.account['id']
         r = self.patch('/projects/%(project_id)s' % {
             'project_id': project['id']},
             body={'project': project})
@@ -991,7 +991,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         self.assertDictEqual(r, self.credential)
         # Create a second credential with a different project
         self.project2 = self.new_project_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         self.resource_api.create_project(self.project2['id'], self.project2)
         self.credential2 = self.new_credential_ref(
             user_id=self.user['id'],
@@ -1119,10 +1119,10 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         self.put(member_url, expected_status=404)
 
-    def test_crud_user_domain_role_grants(self):
+    def test_crud_user_account_role_grants(self):
         collection_url = (
-            '/domains/%(domain_id)s/users/%(user_id)s/roles' % {
-                'domain_id': self.domain_id,
+            '/accounts/%(account_id)s/users/%(user_id)s/roles' % {
+                'account_id': self.account_id,
                 'user_id': self.user['id']})
         member_url = '%(collection_url)s/%(role_id)s' % {
             'collection_url': collection_url,
@@ -1139,10 +1139,10 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         self.assertValidRoleListResponse(r, expected_length=0,
                                          resource_url=collection_url)
 
-    def test_crud_user_domain_role_grants_no_user(self):
-        """Grant role on a domain to a user that doesn't exist, 404 result.
+    def test_crud_user_account_role_grants_no_user(self):
+        """Grant role on a account to a user that doesn't exist, 404 result.
 
-        When grant a role on a domain to a user that doesn't exist, the server
+        When grant a role on a account to a user that doesn't exist, the server
         returns 404 Not Found for the user.
 
         """
@@ -1150,8 +1150,8 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         user_id = uuid.uuid4().hex
 
         collection_url = (
-            '/domains/%(domain_id)s/users/%(user_id)s/roles' % {
-                'domain_id': self.domain_id, 'user_id': user_id})
+            '/accounts/%(account_id)s/users/%(user_id)s/roles' % {
+                'account_id': self.account_id, 'user_id': user_id})
         member_url = '%(collection_url)s/%(role_id)s' % {
             'collection_url': collection_url,
             'role_id': self.role_id}
@@ -1198,10 +1198,10 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         self.put(member_url, expected_status=404)
 
-    def test_crud_group_domain_role_grants(self):
+    def test_crud_group_account_role_grants(self):
         collection_url = (
-            '/domains/%(domain_id)s/groups/%(group_id)s/roles' % {
-                'domain_id': self.domain_id,
+            '/accounts/%(account_id)s/groups/%(group_id)s/roles' % {
+                'account_id': self.account_id,
                 'group_id': self.group_id})
         member_url = '%(collection_url)s/%(role_id)s' % {
             'collection_url': collection_url,
@@ -1218,10 +1218,10 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         self.assertValidRoleListResponse(r, expected_length=0,
                                          resource_url=collection_url)
 
-    def test_crud_group_domain_role_grants_no_group(self):
-        """Grant role on a domain to a group that doesn't exist, 404 result.
+    def test_crud_group_account_role_grants_no_group(self):
+        """Grant role on a account to a group that doesn't exist, 404 result.
 
-        When grant a role on a domain to a group that doesn't exist, the server
+        When grant a role on a account to a group that doesn't exist, the server
         returns 404 Not Found for the group.
 
         """
@@ -1229,8 +1229,8 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         group_id = uuid.uuid4().hex
 
         collection_url = (
-            '/domains/%(domain_id)s/groups/%(group_id)s/roles' % {
-                'domain_id': self.domain_id,
+            '/accounts/%(account_id)s/groups/%(group_id)s/roles' % {
+                'account_id': self.account_id,
                 'group_id': group_id})
         member_url = '%(collection_url)s/%(role_id)s' % {
             'collection_url': collection_url,
@@ -1241,7 +1241,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
     def _create_new_user_and_assign_role_on_project(self):
         """Create a new user and assign user a role on a project."""
         # Create a new user
-        new_user = self.new_user_ref(domain_id=self.domain_id)
+        new_user = self.new_user_ref(account_id=self.account_id)
         user_ref = self.identity_api.create_user(new_user)
         # Assign the user a role on the project
         collection_url = (
@@ -1323,7 +1323,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         """Call ``GET /role_assignments``.
 
         The sample data set up already has a user, group and project
-        that is part of self.domain. We use these plus a new user
+        that is part of self.account. We use these plus a new user
         we create as our data set, making sure we ignore any
         role assignments that are already in existence.
 
@@ -1336,7 +1336,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         - Create extra user for tests
         - Get a list of all existing role assignments
         - Add a new assignment for each of the four combinations, i.e.
-          group+domain, user+domain, group+project, user+project, using
+          group+account, user+account, group+project, user+project, using
           the same role each time
         - Get a new list of all role assignments, checking these four new
           ones have been added
@@ -1350,7 +1350,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         # user it creates, we also need a new user that will not have any
         # existing assignments
         self.user1 = self.new_user_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         self.user1 = self.identity_api.create_user(self.user1)
 
         collection_url = '/role_assignments'
@@ -1361,7 +1361,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         # Now add one of each of the four types of assignment, making sure
         # that we get them all back.
-        gd_entity = _build_role_assignment_entity(domain_id=self.domain_id,
+        gd_entity = _build_role_assignment_entity(account_id=self.account_id,
                                                   group_id=self.group_id,
                                                   role_id=self.role_id)
         self.put(gd_entity['links']['assignment'])
@@ -1372,7 +1372,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
             resource_url=collection_url)
         self.assertRoleAssignmentInListResponse(r, gd_entity)
 
-        ud_entity = _build_role_assignment_entity(domain_id=self.domain_id,
+        ud_entity = _build_role_assignment_entity(account_id=self.account_id,
                                                   user_id=self.user1['id'],
                                                   role_id=self.role_id)
         self.put(ud_entity['links']['assignment'])
@@ -1429,20 +1429,20 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         - Create two extra user for tests
         - Add these users to a group
-        - Add a role assignment for the group on a domain
+        - Add a role assignment for the group on a account
         - Get a list of all role assignments, checking one has been added
         - Then get a list of all effective role assignments - the group
-          assignment should have turned into assignments on the domain
+          assignment should have turned into assignments on the account
           for each of the group members.
 
         """
         self.user1 = self.new_user_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         password = self.user1['password']
         self.user1 = self.identity_api.create_user(self.user1)
         self.user1['password'] = password
         self.user2 = self.new_user_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         password = self.user2['password']
         self.user2 = self.identity_api.create_user(self.user2)
         self.user2['password'] = password
@@ -1455,7 +1455,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
                                                    resource_url=collection_url)
         existing_assignments = len(r.result.get('role_assignments'))
 
-        gd_entity = _build_role_assignment_entity(domain_id=self.domain_id,
+        gd_entity = _build_role_assignment_entity(account_id=self.account_id,
                                                   group_id=self.group_id,
                                                   role_id=self.role_id)
         self.put(gd_entity['links']['assignment'])
@@ -1476,11 +1476,11 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
             expected_length=existing_assignments + 2,
             resource_url=collection_url)
         ud_entity = _build_role_assignment_entity(
-            link=gd_entity['links']['assignment'], domain_id=self.domain_id,
+            link=gd_entity['links']['assignment'], account_id=self.account_id,
             user_id=self.user1['id'], role_id=self.role_id)
         self.assertRoleAssignmentInListResponse(r, ud_entity)
         ud_entity = _build_role_assignment_entity(
-            link=gd_entity['links']['assignment'], domain_id=self.domain_id,
+            link=gd_entity['links']['assignment'], account_id=self.account_id,
             user_id=self.user2['id'], role_id=self.role_id)
         self.assertRoleAssignmentInListResponse(r, ud_entity)
 
@@ -1501,7 +1501,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         - Create two extra user for tests
         - Add these users to a group
-        - Add a role assignment for the group on a domain
+        - Add a role assignment for the group on a account
         - Get a list of all role assignments, checking one has been added
         - Then issue various request with different ways of defining
           the 'effective' query parameter. As we have tested the
@@ -1511,12 +1511,12 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         """
         self.user1 = self.new_user_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         password = self.user1['password']
         self.user1 = self.identity_api.create_user(self.user1)
         self.user1['password'] = password
         self.user2 = self.new_user_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         password = self.user2['password']
         self.user2 = self.identity_api.create_user(self.user2)
         self.user2['password'] = password
@@ -1529,7 +1529,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
                                                    resource_url=collection_url)
         existing_assignments = len(r.result.get('role_assignments'))
 
-        gd_entity = _build_role_assignment_entity(domain_id=self.domain_id,
+        gd_entity = _build_role_assignment_entity(account_id=self.account_id,
                                                   group_id=self.group_id,
                                                   role_id=self.role_id)
         self.put(gd_entity['links']['assignment'])
@@ -1583,8 +1583,8 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         - Create extra users, group, role and project for tests
         - Make the following assignments:
-          Give group1, role1 on project1 and domain
-          Give user1, role2 on project1 and domain
+          Give group1, role1 on project1 and account
+          Give user1, role2 on project1 and account
           Make User1 a member of Group1
         - Test a series of single filter list calls, checking that
           the correct results are obtained
@@ -1599,24 +1599,24 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         # user it creates, we also need a new user that will not have any
         # existing assignments
         self.user1 = self.new_user_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         password = self.user1['password']
         self.user1 = self.identity_api.create_user(self.user1)
         self.user1['password'] = password
         self.user2 = self.new_user_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         password = self.user2['password']
         self.user2 = self.identity_api.create_user(self.user2)
         self.user2['password'] = password
         self.group1 = self.new_group_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         self.group1 = self.identity_api.create_group(self.group1)
         self.identity_api.add_user_to_group(self.user1['id'],
                                             self.group1['id'])
         self.identity_api.add_user_to_group(self.user2['id'],
                                             self.group1['id'])
         self.project1 = self.new_project_ref(
-            domain_id=self.domain['id'])
+            account_id=self.account['id'])
         self.resource_api.create_project(self.project1['id'], self.project1)
         self.role1 = self.new_role_ref()
         self.role_api.create_role(self.role1['id'], self.role1)
@@ -1625,12 +1625,12 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
 
         # Now add one of each of the four types of assignment
 
-        gd_entity = _build_role_assignment_entity(domain_id=self.domain_id,
+        gd_entity = _build_role_assignment_entity(account_id=self.account_id,
                                                   group_id=self.group1['id'],
                                                   role_id=self.role1['id'])
         self.put(gd_entity['links']['assignment'])
 
-        ud_entity = _build_role_assignment_entity(domain_id=self.domain_id,
+        ud_entity = _build_role_assignment_entity(account_id=self.account_id,
                                                   user_id=self.user1['id'],
                                                   role_id=self.role2['id'])
         self.put(ud_entity['links']['assignment'])
@@ -1656,8 +1656,8 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         self.assertRoleAssignmentInListResponse(r, up_entity)
         self.assertRoleAssignmentInListResponse(r, gp_entity)
 
-        collection_url = ('/role_assignments?scope.domain.id=%s' %
-                          self.domain['id'])
+        collection_url = ('/role_assignments?scope.account.id=%s' %
+                          self.account['id'])
         r = self.get(collection_url)
         self.assertValidRoleAssignmentListResponse(r,
                                                    expected_length=2,
@@ -1719,7 +1719,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
         gp1_link = _build_role_assignment_link(project_id=self.project1['id'],
                                                group_id=self.group1['id'],
                                                role_id=self.role1['id'])
-        gd1_link = _build_role_assignment_link(domain_id=self.domain_id,
+        gd1_link = _build_role_assignment_link(account_id=self.account_id,
                                                group_id=self.group1['id'],
                                                role_id=self.role1['id'])
 
@@ -1727,7 +1727,7 @@ class AssignmentTestCase(test_v3.RestfulTestCase):
             link=gp1_link, project_id=self.project1['id'],
             user_id=self.user1['id'], role_id=self.role1['id'])
         ud1_entity = _build_role_assignment_entity(
-            link=gd1_link, domain_id=self.domain_id, user_id=self.user1['id'],
+            link=gd1_link, account_id=self.account_id, user_id=self.user1['id'],
             role_id=self.role1['id'])
         self.assertRoleAssignmentInListResponse(r, up1_entity)
         self.assertRoleAssignmentInListResponse(r, ud1_entity)
@@ -1759,7 +1759,7 @@ class RoleAssignmentBaseTestCase(test_v3.RestfulTestCase):
     def load_sample_data(self):
         """Creates sample data to be used on tests.
 
-        Created data are i) a role and ii) a domain containing: a project
+        Created data are i) a role and ii) a account containing: a project
         hierarchy and 3 users within 3 groups.
 
         """
@@ -1773,7 +1773,7 @@ class RoleAssignmentBaseTestCase(test_v3.RestfulTestCase):
             subprojects = []
             for i in range(breadth):
                 subprojects.append(self.new_project_ref(
-                    domain_id=self.domain_id, parent_id=parent_id))
+                    account_id=self.account_id, parent_id=parent_id))
                 self.assignment_api.create_project(subprojects[-1]['id'],
                                                    subprojects[-1])
 
@@ -1782,13 +1782,13 @@ class RoleAssignmentBaseTestCase(test_v3.RestfulTestCase):
 
         super(RoleAssignmentBaseTestCase, self).load_sample_data()
 
-        # Create a domain
-        self.domain = self.new_domain_ref()
-        self.domain_id = self.domain['id']
-        self.assignment_api.create_domain(self.domain_id, self.domain)
+        # Create a account
+        self.account = self.new_account_ref()
+        self.account_id = self.account['id']
+        self.assignment_api.create_account(self.account_id, self.account)
 
         # Create a project hierarchy
-        self.project = self.new_project_ref(domain_id=self.domain_id)
+        self.project = self.new_project_ref(account_id=self.account_id)
         self.project_id = self.project['id']
         self.assignment_api.create_project(self.project_id, self.project)
 
@@ -1799,14 +1799,14 @@ class RoleAssignmentBaseTestCase(test_v3.RestfulTestCase):
         # Create 3 users
         self.user_ids = []
         for i in range(3):
-            user = self.new_user_ref(domain_id=self.domain_id)
+            user = self.new_user_ref(account_id=self.account_id)
             user = self.identity_api.create_user(user)
             self.user_ids.append(user['id'])
 
         # Create 3 groups
         self.group_ids = []
         for i in range(3):
-            group = self.new_group_ref(domain_id=self.domain_id)
+            group = self.new_group_ref(account_id=self.account_id)
             group = self.identity_api.create_group(group)
             self.group_ids.append(group['id'])
 
@@ -1851,7 +1851,7 @@ class RoleAssignmentBaseTestCase(test_v3.RestfulTestCase):
 
         :param filters: query parameters are created with the provided filters
                         on role assignments attributes. Valid filters are:
-                        role_id, domain_id, project_id, group_id, user_id and
+                        role_id, account_id, project_id, group_id, user_id and
                         inherited_to_projects.
 
         :returns: role assignments query URL.
@@ -1863,16 +1863,16 @@ class RoleAssignmentBaseTestCase(test_v3.RestfulTestCase):
 class RoleAssignmentFailureTestCase(RoleAssignmentBaseTestCase):
     """Class for testing invalid query params on /v3/role_assignments API.
 
-    Querying domain and project, or user and group results in a HTTP 400, since
+    Querying account and project, or user and group results in a HTTP 400, since
     a role assignment must contain only a single pair of (actor, target). In
     addition, since filtering on role assignments applies only to the final
-    result, effective mode cannot be combined with i) group or ii) domain and
+    result, effective mode cannot be combined with i) group or ii) account and
     inherited, because it would always result in an empty list.
 
     """
 
-    def test_get_role_assignments_by_domain_and_project(self):
-        self.get_role_assignments(domain_id=self.domain_id,
+    def test_get_role_assignments_by_account_and_project(self):
+        self.get_role_assignments(account_id=self.account_id,
                                   project_id=self.project_id,
                                   expected_status=400)
 
@@ -1884,7 +1884,7 @@ class RoleAssignmentFailureTestCase(RoleAssignmentBaseTestCase):
     def test_get_role_assignments_by_effective_and_inherited(self):
         self.config_fixture.config(group='os_inherit', enabled=True)
 
-        self.get_role_assignments(domain_id=self.domain_id, effective=True,
+        self.get_role_assignments(account_id=self.account_id, effective=True,
                                   inherited_to_projects=True,
                                   expected_status=400)
 
@@ -1897,7 +1897,7 @@ class RoleAssignmentFailureTestCase(RoleAssignmentBaseTestCase):
 class RoleAssignmentDirectTestCase(RoleAssignmentBaseTestCase):
     """Class for testing direct assignments on /v3/role_assignments API.
 
-    Direct assignments on a domain or project have effect on them directly,
+    Direct assignments on a account or project have effect on them directly,
     instead of on their project hierarchy, i.e they are non-inherited. In
     addition, group direct assignments are not expanded to group's users.
 
@@ -1915,7 +1915,7 @@ class RoleAssignmentDirectTestCase(RoleAssignmentBaseTestCase):
         - deletes the created role assignment.
 
         :param filters: filters to be considered when listing role assignments.
-                        Valid filters are: role_id, domain_id, project_id,
+                        Valid filters are: role_id, account_id, project_id,
                         group_id, user_id and inherited_to_projects.
 
         """
@@ -1951,12 +1951,12 @@ class RoleAssignmentDirectTestCase(RoleAssignmentBaseTestCase):
         from sample data.
 
         :param attribs: info from a role assignment entity. Valid attributes
-                        are: role_id, domain_id, project_id, group_id, user_id
+                        are: role_id, account_id, project_id, group_id, user_id
                         and inherited_to_projects.
 
         """
         if not any(target in attribs
-                   for target in ('domain_id', 'projects_id')):
+                   for target in ('account_id', 'projects_id')):
             attribs['project_id'] = self.project_id
 
         if not any(actor in attribs for actor in ('user_id', 'group_id')):
@@ -1971,7 +1971,7 @@ class RoleAssignmentDirectTestCase(RoleAssignmentBaseTestCase):
         """Given the filters, it returns expected direct role assignments.
 
         :param filters: filters that will be considered when listing role
-                        assignments. Valid filters are: role_id, domain_id,
+                        assignments. Valid filters are: role_id, account_id,
                         project_id, group_id, user_id and
                         inherited_to_projects.
 
@@ -1985,8 +1985,8 @@ class RoleAssignmentDirectTestCase(RoleAssignmentBaseTestCase):
     # 'by'. For example, test_get_role_assignments_by_project_user_and_role
     # calls the generic test method with project_id, user_id and role_id.
 
-    def test_get_role_assignments_by_domain(self, **filters):
-        self._test_get_role_assignments(domain_id=self.domain_id, **filters)
+    def test_get_role_assignments_by_account(self, **filters):
+        self._test_get_role_assignments(account_id=self.account_id, **filters)
 
     def test_get_role_assignments_by_project(self, **filters):
         self._test_get_role_assignments(project_id=self.project_id, **filters)
@@ -2002,12 +2002,12 @@ class RoleAssignmentDirectTestCase(RoleAssignmentBaseTestCase):
     def test_get_role_assignments_by_role(self, **filters):
         self._test_get_role_assignments(role_id=self.role_id, **filters)
 
-    def test_get_role_assignments_by_domain_and_user(self, **filters):
-        self.test_get_role_assignments_by_domain(user_id=self.default_user_id,
+    def test_get_role_assignments_by_account_and_user(self, **filters):
+        self.test_get_role_assignments_by_account(user_id=self.default_user_id,
                                                  **filters)
 
-    def test_get_role_assignments_by_domain_and_group(self, **filters):
-        self.test_get_role_assignments_by_domain(
+    def test_get_role_assignments_by_account_and_group(self, **filters):
+        self.test_get_role_assignments_by_account(
             group_id=self.default_group_id, **filters)
 
     def test_get_role_assignments_by_project_and_user(self, **filters):
@@ -2018,12 +2018,12 @@ class RoleAssignmentDirectTestCase(RoleAssignmentBaseTestCase):
         self.test_get_role_assignments_by_project(
             group_id=self.default_group_id, **filters)
 
-    def test_get_role_assignments_by_domain_user_and_role(self, **filters):
-        self.test_get_role_assignments_by_domain_and_user(role_id=self.role_id,
+    def test_get_role_assignments_by_account_user_and_role(self, **filters):
+        self.test_get_role_assignments_by_account_and_user(role_id=self.role_id,
                                                           **filters)
 
-    def test_get_role_assignments_by_domain_group_and_role(self, **filters):
-        self.test_get_role_assignments_by_domain_and_group(
+    def test_get_role_assignments_by_account_group_and_role(self, **filters):
+        self.test_get_role_assignments_by_account_and_group(
             role_id=self.role_id, **filters)
 
     def test_get_role_assignments_by_project_user_and_role(self, **filters):
@@ -2038,7 +2038,7 @@ class RoleAssignmentDirectTestCase(RoleAssignmentBaseTestCase):
 class RoleAssignmentInheritedTestCase(RoleAssignmentDirectTestCase):
     """Class for testing inherited assignments on /v3/role_assignments API.
 
-    Inherited assignments on a domain or project have no effect on them
+    Inherited assignments on a account or project have no effect on them
     directly, but on the projects under them instead.
 
     Tests on this class do not make assertions on the effect of inherited
@@ -2060,7 +2060,7 @@ class RoleAssignmentInheritedTestCase(RoleAssignmentDirectTestCase):
 class RoleAssignmentEffectiveTestCase(RoleAssignmentInheritedTestCase):
     """Class for testing inheritance effects on /v3/role_assignments API.
 
-    Inherited assignments on a domain or project have no effect on them
+    Inherited assignments on a account or project have no effect on them
     directly, but on the projects under them instead.
 
     Tests on this class make assertions on the effect of inherited assignments
@@ -2072,11 +2072,11 @@ class RoleAssignmentEffectiveTestCase(RoleAssignmentInheritedTestCase):
         """Returns effective role assignments query URL from given filters.
 
         For test methods in this class, effetive will always be true. As in
-        effective mode, inherited_to_projects, group_id, domain_id and
+        effective mode, inherited_to_projects, group_id, account_id and
         project_id will always be desconsidered from provided filters.
 
         :param filters: query parameters are created with the provided filters.
-                        Valid filters are: role_id, domain_id, project_id,
+                        Valid filters are: role_id, account_id, project_id,
                         group_id, user_id and inherited_to_projects.
 
         :returns: role assignments query URL.
@@ -2086,7 +2086,7 @@ class RoleAssignmentEffectiveTestCase(RoleAssignmentInheritedTestCase):
         query_filters.pop('inherited_to_projects')
 
         query_filters.pop('group_id', None)
-        query_filters.pop('domain_id', None)
+        query_filters.pop('account_id', None)
         query_filters.pop('project_id', None)
 
         return _build_role_assignment_query_url(effective=True,
@@ -2096,7 +2096,7 @@ class RoleAssignmentEffectiveTestCase(RoleAssignmentInheritedTestCase):
         """Given the filters, it returns expected direct role assignments.
 
         :param filters: filters that will be considered when listing role
-                        assignments. Valid filters are: role_id, domain_id,
+                        assignments. Valid filters are: role_id, account_id,
                         project_id, group_id, user_id and
                         inherited_to_projects.
 
@@ -2117,10 +2117,10 @@ class RoleAssignmentEffectiveTestCase(RoleAssignmentInheritedTestCase):
 
         # Expand role inheritance
         project_ids = [None]
-        if filters.get('domain_id'):
+        if filters.get('account_id'):
             project_ids = [project['id'] for project in
-                           self.assignment_api.list_projects_in_domain(
-                               filters.pop('domain_id'))]
+                           self.assignment_api.list_projects_in_account(
+                               filters.pop('account_id'))]
         else:
             project_ids = [project['id'] for project in
                            self.assignment_api.list_projects_in_subtree(
@@ -2145,126 +2145,126 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         super(AssignmentInheritanceTestCase, self).config_overrides()
         self.config_fixture.config(group='os_inherit', enabled=True)
 
-    def test_get_token_from_inherited_user_domain_role_grants(self):
+    def test_get_token_from_inherited_user_account_role_grants(self):
         # Create a new user to ensure that no grant is loaded from sample data
-        user = self.new_user_ref(domain_id=self.domain_id)
+        user = self.new_user_ref(account_id=self.account_id)
         password = user['password']
         user = self.identity_api.create_user(user)
         user['password'] = password
 
-        # Define domain and project authentication data
-        domain_auth_data = self.build_authentication_request(
+        # Define account and project authentication data
+        account_auth_data = self.build_authentication_request(
             user_id=user['id'],
             password=user['password'],
-            domain_id=self.domain_id)
+            account_id=self.account_id)
         project_auth_data = self.build_authentication_request(
             user_id=user['id'],
             password=user['password'],
             project_id=self.project_id)
 
-        # Check the user cannot get a domain nor a project token
-        self.v3_authenticate_token(domain_auth_data, expected_status=401)
+        # Check the user cannot get a account nor a project token
+        self.v3_authenticate_token(account_auth_data, expected_status=401)
         self.v3_authenticate_token(project_auth_data, expected_status=401)
 
-        # Grant non-inherited role for user on domain
+        # Grant non-inherited role for user on account
         non_inher_ud_link = _build_role_assignment_link(
-            domain_id=self.domain_id, user_id=user['id'], role_id=self.role_id)
+            account_id=self.account_id, user_id=user['id'], role_id=self.role_id)
         self.put(non_inher_ud_link)
 
-        # Check the user can get only a domain token
-        self.v3_authenticate_token(domain_auth_data)
+        # Check the user can get only a account token
+        self.v3_authenticate_token(account_auth_data)
         self.v3_authenticate_token(project_auth_data, expected_status=401)
 
         # Create inherited role
         inherited_role = {'id': uuid.uuid4().hex, 'name': 'inherited'}
         self.role_api.create_role(inherited_role['id'], inherited_role)
 
-        # Grant inherited role for user on domain
+        # Grant inherited role for user on account
         inher_ud_link = _build_role_assignment_link(
-            domain_id=self.domain_id, user_id=user['id'],
+            account_id=self.account_id, user_id=user['id'],
             role_id=inherited_role['id'], inherited_to_projects=True)
         self.put(inher_ud_link)
 
-        # Check the user can get both a domain and a project token
-        self.v3_authenticate_token(domain_auth_data)
+        # Check the user can get both a account and a project token
+        self.v3_authenticate_token(account_auth_data)
         self.v3_authenticate_token(project_auth_data)
 
         # Delete inherited grant
         self.delete(inher_ud_link)
 
-        # Check the user can only get a domain token
-        self.v3_authenticate_token(domain_auth_data)
+        # Check the user can only get a account token
+        self.v3_authenticate_token(account_auth_data)
         self.v3_authenticate_token(project_auth_data, expected_status=401)
 
         # Delete non-inherited grant
         self.delete(non_inher_ud_link)
 
-        # Check the user cannot get a domain token anymore
-        self.v3_authenticate_token(domain_auth_data, expected_status=401)
+        # Check the user cannot get a account token anymore
+        self.v3_authenticate_token(account_auth_data, expected_status=401)
 
-    def test_get_token_from_inherited_group_domain_role_grants(self):
+    def test_get_token_from_inherited_group_account_role_grants(self):
         # Create a new group and put a new user in it to
         # ensure that no grant is loaded from sample data
-        user = self.new_user_ref(domain_id=self.domain_id)
+        user = self.new_user_ref(account_id=self.account_id)
         password = user['password']
         user = self.identity_api.create_user(user)
         user['password'] = password
 
-        group = self.new_group_ref(domain_id=self.domain['id'])
+        group = self.new_group_ref(account_id=self.account['id'])
         group = self.identity_api.create_group(group)
         self.identity_api.add_user_to_group(user['id'], group['id'])
 
-        # Define domain and project authentication data
-        domain_auth_data = self.build_authentication_request(
+        # Define account and project authentication data
+        account_auth_data = self.build_authentication_request(
             user_id=user['id'],
             password=user['password'],
-            domain_id=self.domain_id)
+            account_id=self.account_id)
         project_auth_data = self.build_authentication_request(
             user_id=user['id'],
             password=user['password'],
             project_id=self.project_id)
 
-        # Check the user cannot get a domain nor a project token
-        self.v3_authenticate_token(domain_auth_data, expected_status=401)
+        # Check the user cannot get a account nor a project token
+        self.v3_authenticate_token(account_auth_data, expected_status=401)
         self.v3_authenticate_token(project_auth_data, expected_status=401)
 
-        # Grant non-inherited role for user on domain
+        # Grant non-inherited role for user on account
         non_inher_gd_link = _build_role_assignment_link(
-            domain_id=self.domain_id, user_id=user['id'], role_id=self.role_id)
+            account_id=self.account_id, user_id=user['id'], role_id=self.role_id)
         self.put(non_inher_gd_link)
 
-        # Check the user can get only a domain token
-        self.v3_authenticate_token(domain_auth_data)
+        # Check the user can get only a account token
+        self.v3_authenticate_token(account_auth_data)
         self.v3_authenticate_token(project_auth_data, expected_status=401)
 
         # Create inherited role
         inherited_role = {'id': uuid.uuid4().hex, 'name': 'inherited'}
         self.role_api.create_role(inherited_role['id'], inherited_role)
 
-        # Grant inherited role for user on domain
+        # Grant inherited role for user on account
         inher_gd_link = _build_role_assignment_link(
-            domain_id=self.domain_id, user_id=user['id'],
+            account_id=self.account_id, user_id=user['id'],
             role_id=inherited_role['id'], inherited_to_projects=True)
         self.put(inher_gd_link)
 
-        # Check the user can get both a domain and a project token
-        self.v3_authenticate_token(domain_auth_data)
+        # Check the user can get both a account and a project token
+        self.v3_authenticate_token(account_auth_data)
         self.v3_authenticate_token(project_auth_data)
 
         # Delete inherited grant
         self.delete(inher_gd_link)
 
-        # Check the user can only get a domain token
-        self.v3_authenticate_token(domain_auth_data)
+        # Check the user can only get a account token
+        self.v3_authenticate_token(account_auth_data)
         self.v3_authenticate_token(project_auth_data, expected_status=401)
 
         # Delete non-inherited grant
         self.delete(non_inher_gd_link)
 
-        # Check the user cannot get a domain token anymore
-        self.v3_authenticate_token(domain_auth_data, expected_status=401)
+        # Check the user cannot get a account token anymore
+        self.v3_authenticate_token(account_auth_data, expected_status=401)
 
-    def test_crud_user_inherited_domain_role_grants(self):
+    def test_crud_user_inherited_account_role_grants(self):
         role_list = []
         for _ in range(2):
             role = {'id': uuid.uuid4().hex, 'name': uuid.uuid4().hex}
@@ -2274,11 +2274,11 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         # Create a non-inherited role as a spoiler
         self.assignment_api.create_grant(
             role_list[1]['id'], user_id=self.user['id'],
-            domain_id=self.domain_id)
+            account_id=self.account_id)
 
         base_collection_url = (
-            '/OS-INHERIT/domains/%(domain_id)s/users/%(user_id)s/roles' % {
-                'domain_id': self.domain_id,
+            '/OS-INHERIT/accounts/%(account_id)s/users/%(user_id)s/roles' % {
+                'account_id': self.account_id,
                 'user_id': self.user['id']})
         member_url = '%(collection_url)s/%(role_id)s/inherited_to_projects' % {
             'collection_url': base_collection_url,
@@ -2299,17 +2299,17 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         self.assertValidRoleListResponse(r, expected_length=0,
                                          resource_url=collection_url)
 
-    def test_list_role_assignments_for_inherited_domain_grants(self):
-        """Call ``GET /role_assignments with inherited domain grants``.
+    def test_list_role_assignments_for_inherited_account_grants(self):
+        """Call ``GET /role_assignments with inherited account grants``.
 
         Test Plan:
 
         - Create 4 roles
-        - Create a domain with a user and two projects
+        - Create a account with a user and two projects
         - Assign two direct roles to project1
         - Assign a spoiler role to project2
-        - Issue the URL to add inherited role to the domain
-        - Issue the URL to check it is indeed on the domain
+        - Issue the URL to add inherited role to the account
+        - Issue the URL to check it is indeed on the account
         - Issue the URL to check effective roles on project1 - this
           should return 3 roles.
 
@@ -2320,18 +2320,18 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
             self.role_api.create_role(role['id'], role)
             role_list.append(role)
 
-        domain = self.new_domain_ref()
-        self.resource_api.create_domain(domain['id'], domain)
+        account = self.new_account_ref()
+        self.resource_api.create_account(account['id'], account)
         user1 = self.new_user_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         password = user1['password']
         user1 = self.identity_api.create_user(user1)
         user1['password'] = password
         project1 = self.new_project_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         self.resource_api.create_project(project1['id'], project1)
         project2 = self.new_project_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         self.resource_api.create_project(project2['id'], project2)
         # Add some roles to the project
         self.assignment_api.add_role_to_user_and_project(
@@ -2342,10 +2342,10 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         self.assignment_api.add_role_to_user_and_project(
             user1['id'], project2['id'], role_list[2]['id'])
 
-        # Now create our inherited role on the domain
+        # Now create our inherited role on the account
         base_collection_url = (
-            '/OS-INHERIT/domains/%(domain_id)s/users/%(user_id)s/roles' % {
-                'domain_id': domain['id'],
+            '/OS-INHERIT/accounts/%(account_id)s/users/%(user_id)s/roles' % {
+                'account_id': account['id'],
                 'user_id': user1['id']})
         member_url = '%(collection_url)s/%(role_id)s/inherited_to_projects' % {
             'collection_url': base_collection_url,
@@ -2358,19 +2358,19 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         self.assertValidRoleListResponse(r, ref=role_list[3],
                                          resource_url=collection_url)
 
-        # Now use the list domain role assignments api to check if this
+        # Now use the list account role assignments api to check if this
         # is included
         collection_url = (
             '/role_assignments?user.id=%(user_id)s'
-            '&scope.domain.id=%(domain_id)s' % {
+            '&scope.account.id=%(account_id)s' % {
                 'user_id': user1['id'],
-                'domain_id': domain['id']})
+                'account_id': account['id']})
         r = self.get(collection_url)
         self.assertValidRoleAssignmentListResponse(r,
                                                    expected_length=1,
                                                    resource_url=collection_url)
         ud_entity = _build_role_assignment_entity(
-            domain_id=domain['id'], user_id=user1['id'],
+            account_id=account['id'], user_id=user1['id'],
             role_id=role_list[3]['id'], inherited_to_projects=True)
         self.assertRoleAssignmentInListResponse(r, ud_entity)
 
@@ -2387,9 +2387,9 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
                                                    expected_length=3,
                                                    resource_url=collection_url)
         # An effective role for an inherited role will be a project
-        # entity, with a domain link to the inherited assignment
+        # entity, with a account link to the inherited assignment
         ud_url = _build_role_assignment_link(
-            domain_id=domain['id'], user_id=user1['id'],
+            account_id=account['id'], user_id=user1['id'],
             role_id=role_list[3]['id'], inherited_to_projects=True)
         up_entity = _build_role_assignment_entity(link=ud_url,
                                                   project_id=project1['id'],
@@ -2399,11 +2399,11 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         self.assertRoleAssignmentInListResponse(r, up_entity)
 
     def test_list_role_assignments_for_disabled_inheritance_extension(self):
-        """Call ``GET /role_assignments with inherited domain grants``.
+        """Call ``GET /role_assignments with inherited account grants``.
 
         Test Plan:
 
-        - Issue the URL to add inherited role to the domain
+        - Issue the URL to add inherited role to the account
         - Issue the URL to check effective roles on project include the
           inherited role
         - Disable the extension
@@ -2418,18 +2418,18 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
             self.role_api.create_role(role['id'], role)
             role_list.append(role)
 
-        domain = self.new_domain_ref()
-        self.resource_api.create_domain(domain['id'], domain)
+        account = self.new_account_ref()
+        self.resource_api.create_account(account['id'], account)
         user1 = self.new_user_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         password = user1['password']
         user1 = self.identity_api.create_user(user1)
         user1['password'] = password
         project1 = self.new_project_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         self.resource_api.create_project(project1['id'], project1)
         project2 = self.new_project_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         self.resource_api.create_project(project2['id'], project2)
         # Add some roles to the project
         self.assignment_api.add_role_to_user_and_project(
@@ -2440,10 +2440,10 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         self.assignment_api.add_role_to_user_and_project(
             user1['id'], project2['id'], role_list[2]['id'])
 
-        # Now create our inherited role on the domain
+        # Now create our inherited role on the account
         base_collection_url = (
-            '/OS-INHERIT/domains/%(domain_id)s/users/%(user_id)s/roles' % {
-                'domain_id': domain['id'],
+            '/OS-INHERIT/accounts/%(account_id)s/users/%(user_id)s/roles' % {
+                'account_id': account['id'],
                 'user_id': user1['id']})
         member_url = '%(collection_url)s/%(role_id)s/inherited_to_projects' % {
             'collection_url': base_collection_url,
@@ -2470,7 +2470,7 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
                                                    resource_url=collection_url)
 
         ud_url = _build_role_assignment_link(
-            domain_id=domain['id'], user_id=user1['id'],
+            account_id=account['id'], user_id=user1['id'],
             role_id=role_list[3]['id'], inherited_to_projects=True)
         up_entity = _build_role_assignment_entity(link=ud_url,
                                                   project_id=project1['id'],
@@ -2490,17 +2490,17 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
 
         self.assertRoleAssignmentNotInListResponse(r, up_entity)
 
-    def test_list_role_assignments_for_inherited_group_domain_grants(self):
-        """Call ``GET /role_assignments with inherited group domain grants``.
+    def test_list_role_assignments_for_inherited_group_account_grants(self):
+        """Call ``GET /role_assignments with inherited group account grants``.
 
         Test Plan:
 
         - Create 4 roles
-        - Create a domain with a user and two projects
+        - Create a account with a user and two projects
         - Assign two direct roles to project1
         - Assign a spoiler role to project2
-        - Issue the URL to add inherited role to the domain
-        - Issue the URL to check it is indeed on the domain
+        - Issue the URL to add inherited role to the account
+        - Issue the URL to check it is indeed on the account
         - Issue the URL to check effective roles on project1 - this
           should return 3 roles.
 
@@ -2511,30 +2511,30 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
             self.role_api.create_role(role['id'], role)
             role_list.append(role)
 
-        domain = self.new_domain_ref()
-        self.resource_api.create_domain(domain['id'], domain)
+        account = self.new_account_ref()
+        self.resource_api.create_account(account['id'], account)
         user1 = self.new_user_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         password = user1['password']
         user1 = self.identity_api.create_user(user1)
         user1['password'] = password
         user2 = self.new_user_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         password = user2['password']
         user2 = self.identity_api.create_user(user2)
         user2['password'] = password
         group1 = self.new_group_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         group1 = self.identity_api.create_group(group1)
         self.identity_api.add_user_to_group(user1['id'],
                                             group1['id'])
         self.identity_api.add_user_to_group(user2['id'],
                                             group1['id'])
         project1 = self.new_project_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         self.resource_api.create_project(project1['id'], project1)
         project2 = self.new_project_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         self.resource_api.create_project(project2['id'], project2)
         # Add some roles to the project
         self.assignment_api.add_role_to_user_and_project(
@@ -2545,10 +2545,10 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         self.assignment_api.add_role_to_user_and_project(
             user1['id'], project2['id'], role_list[2]['id'])
 
-        # Now create our inherited role on the domain
+        # Now create our inherited role on the account
         base_collection_url = (
-            '/OS-INHERIT/domains/%(domain_id)s/groups/%(group_id)s/roles' % {
-                'domain_id': domain['id'],
+            '/OS-INHERIT/accounts/%(account_id)s/groups/%(group_id)s/roles' % {
+                'account_id': account['id'],
                 'group_id': group1['id']})
         member_url = '%(collection_url)s/%(role_id)s/inherited_to_projects' % {
             'collection_url': base_collection_url,
@@ -2561,19 +2561,19 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         self.assertValidRoleListResponse(r, ref=role_list[3],
                                          resource_url=collection_url)
 
-        # Now use the list domain role assignments api to check if this
+        # Now use the list account role assignments api to check if this
         # is included
         collection_url = (
             '/role_assignments?group.id=%(group_id)s'
-            '&scope.domain.id=%(domain_id)s' % {
+            '&scope.account.id=%(account_id)s' % {
                 'group_id': group1['id'],
-                'domain_id': domain['id']})
+                'account_id': account['id']})
         r = self.get(collection_url)
         self.assertValidRoleAssignmentListResponse(r,
                                                    expected_length=1,
                                                    resource_url=collection_url)
         gd_entity = _build_role_assignment_entity(
-            domain_id=domain['id'], group_id=group1['id'],
+            account_id=account['id'], group_id=group1['id'],
             role_id=role_list[3]['id'], inherited_to_projects=True)
         self.assertRoleAssignmentInListResponse(r, gd_entity)
 
@@ -2590,7 +2590,7 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
                                                    expected_length=3,
                                                    resource_url=collection_url)
         # An effective role for an inherited role will be a project
-        # entity, with a domain link to the inherited assignment
+        # entity, with a account link to the inherited assignment
         up_entity = _build_role_assignment_entity(
             link=gd_entity['links']['assignment'], project_id=project1['id'],
             user_id=user1['id'], role_id=role_list[3]['id'],
@@ -2603,10 +2603,10 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
         Test Plan:
 
         - Create 5 roles
-        - Create a domain with a user, group and two projects
+        - Create a account with a user, group and two projects
         - Assign three direct spoiler roles to projects
-        - Issue the URL to add an inherited user role to the domain
-        - Issue the URL to add an inherited group role to the domain
+        - Issue the URL to add an inherited user role to the account
+        - Issue the URL to add an inherited group role to the account
         - Issue the URL to filter by inherited roles - this should
           return just the 2 inherited roles.
 
@@ -2617,21 +2617,21 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
             self.role_api.create_role(role['id'], role)
             role_list.append(role)
 
-        domain = self.new_domain_ref()
-        self.resource_api.create_domain(domain['id'], domain)
+        account = self.new_account_ref()
+        self.resource_api.create_account(account['id'], account)
         user1 = self.new_user_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         password = user1['password']
         user1 = self.identity_api.create_user(user1)
         user1['password'] = password
         group1 = self.new_group_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         group1 = self.identity_api.create_group(group1)
         project1 = self.new_project_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         self.resource_api.create_project(project1['id'], project1)
         project2 = self.new_project_ref(
-            domain_id=domain['id'])
+            account_id=account['id'])
         self.resource_api.create_project(project2['id'], project2)
         # Add some spoiler roles to the projects
         self.assignment_api.add_role_to_user_and_project(
@@ -2640,13 +2640,13 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
             user1['id'], project2['id'], role_list[1]['id'])
         # Create a non-inherited role as a spoiler
         self.assignment_api.create_grant(
-            role_list[2]['id'], user_id=user1['id'], domain_id=domain['id'])
+            role_list[2]['id'], user_id=user1['id'], account_id=account['id'])
 
-        # Now create two inherited roles on the domain, one for a user
-        # and one for a domain
+        # Now create two inherited roles on the account, one for a user
+        # and one for a account
         base_collection_url = (
-            '/OS-INHERIT/domains/%(domain_id)s/users/%(user_id)s/roles' % {
-                'domain_id': domain['id'],
+            '/OS-INHERIT/accounts/%(account_id)s/users/%(user_id)s/roles' % {
+                'account_id': account['id'],
                 'user_id': user1['id']})
         member_url = '%(collection_url)s/%(role_id)s/inherited_to_projects' % {
             'collection_url': base_collection_url,
@@ -2660,8 +2660,8 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
                                          resource_url=collection_url)
 
         base_collection_url = (
-            '/OS-INHERIT/domains/%(domain_id)s/groups/%(group_id)s/roles' % {
-                'domain_id': domain['id'],
+            '/OS-INHERIT/accounts/%(account_id)s/groups/%(group_id)s/roles' % {
+                'account_id': account['id'],
                 'group_id': group1['id']})
         member_url = '%(collection_url)s/%(role_id)s/inherited_to_projects' % {
             'collection_url': base_collection_url,
@@ -2675,7 +2675,7 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
                                          resource_url=collection_url)
 
         # Now use the list role assignments api to get a list of inherited
-        # roles on the domain - should get back the two roles
+        # roles on the account - should get back the two roles
         collection_url = (
             '/role_assignments?scope.OS-INHERIT:inherited_to=projects')
         r = self.get(collection_url)
@@ -2683,10 +2683,10 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
                                                    expected_length=2,
                                                    resource_url=collection_url)
         ud_entity = _build_role_assignment_entity(
-            domain_id=domain['id'], user_id=user1['id'],
+            account_id=account['id'], user_id=user1['id'],
             role_id=role_list[3]['id'], inherited_to_projects=True)
         gd_entity = _build_role_assignment_entity(
-            domain_id=domain['id'], group_id=group1['id'],
+            account_id=account['id'], group_id=group1['id'],
             role_id=role_list[4]['id'], inherited_to_projects=True)
         self.assertRoleAssignmentInListResponse(r, ud_entity)
         self.assertRoleAssignmentInListResponse(r, gd_entity)
@@ -2699,8 +2699,8 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
 
         """
         # Create project hierarchy
-        root = self.new_project_ref(domain_id=self.domain['id'])
-        leaf = self.new_project_ref(domain_id=self.domain['id'],
+        root = self.new_project_ref(account_id=self.account['id'])
+        leaf = self.new_project_ref(account_id=self.account['id'],
                                     parent_id=root['id'])
 
         self.resource_api.create_project(root['id'], root)
@@ -2773,7 +2773,7 @@ class AssignmentInheritanceTestCase(test_v3.RestfulTestCase):
             self._setup_hierarchical_projects_scenario())
 
         # Create group and add user to it
-        group = self.new_group_ref(domain_id=self.domain['id'])
+        group = self.new_group_ref(account_id=self.account['id'])
         group = self.identity_api.create_group(group)
         self.identity_api.add_user_to_group(self.user['id'], group['id'])
 
@@ -2991,8 +2991,8 @@ class AssignmentInheritanceDisabledTestCase(test_v3.RestfulTestCase):
         self.role_api.create_role(role['id'], role)
 
         base_collection_url = (
-            '/OS-INHERIT/domains/%(domain_id)s/users/%(user_id)s/roles' % {
-                'domain_id': self.domain_id,
+            '/OS-INHERIT/accounts/%(account_id)s/users/%(user_id)s/roles' % {
+                'account_id': self.account_id,
                 'user_id': self.user['id']})
         member_url = '%(collection_url)s/%(role_id)s/inherited_to_projects' % {
             'collection_url': base_collection_url,
@@ -3006,71 +3006,71 @@ class AssignmentInheritanceDisabledTestCase(test_v3.RestfulTestCase):
 
 
 class AssignmentV3toV2MethodsTestCase(tests.TestCase):
-    """Test domain V3 to V2 conversion methods."""
+    """Test account V3 to V2 conversion methods."""
     def _setup_initial_projects(self):
         self.project_id = uuid.uuid4().hex
-        self.domain_id = CONF.identity.default_domain_id
+        self.account_id = CONF.identity.default_account_id
         self.parent_id = uuid.uuid4().hex
-        # Project with only domain_id in ref
+        # Project with only account_id in ref
         self.project1 = {'id': self.project_id,
                          'name': self.project_id,
-                         'domain_id': self.domain_id}
-        # Project with both domain_id and parent_id in ref
+                         'account_id': self.account_id}
+        # Project with both account_id and parent_id in ref
         self.project2 = {'id': self.project_id,
                          'name': self.project_id,
-                         'domain_id': self.domain_id,
+                         'account_id': self.account_id,
                          'parent_id': self.parent_id}
-        # Project with no domain_id and parent_id in ref
+        # Project with no account_id and parent_id in ref
         self.project3 = {'id': self.project_id,
                          'name': self.project_id,
-                         'domain_id': self.domain_id,
+                         'account_id': self.account_id,
                          'parent_id': self.parent_id}
-        # Expected result with no domain_id and parent_id
+        # Expected result with no account_id and parent_id
         self.expected_project = {'id': self.project_id,
                                  'name': self.project_id}
 
-    def test_v2controller_filter_domain_id(self):
-        # V2.0 is not domain aware, ensure domain_id is popped off the ref.
+    def test_v2controller_filter_account_id(self):
+        # V2.0 is not account aware, ensure account_id is popped off the ref.
         other_data = uuid.uuid4().hex
-        domain_id = CONF.identity.default_domain_id
-        ref = {'domain_id': domain_id,
+        account_id = CONF.identity.default_account_id
+        ref = {'account_id': account_id,
                'other_data': other_data}
 
-        ref_no_domain = {'other_data': other_data}
-        expected_ref = ref_no_domain.copy()
+        ref_no_account = {'other_data': other_data}
+        expected_ref = ref_no_account.copy()
 
-        updated_ref = controller.V2Controller.filter_domain_id(ref)
+        updated_ref = controller.V2Controller.filter_account_id(ref)
         self.assertIs(ref, updated_ref)
         self.assertDictEqual(ref, expected_ref)
-        # Make sure we don't error/muck up data if domain_id isn't present
-        updated_ref = controller.V2Controller.filter_domain_id(ref_no_domain)
-        self.assertIs(ref_no_domain, updated_ref)
-        self.assertDictEqual(ref_no_domain, expected_ref)
+        # Make sure we don't error/muck up data if account_id isn't present
+        updated_ref = controller.V2Controller.filter_account_id(ref_no_account)
+        self.assertIs(ref_no_account, updated_ref)
+        self.assertDictEqual(ref_no_account, expected_ref)
 
-    def test_v3controller_filter_domain_id(self):
+    def test_v3controller_filter_account_id(self):
         # No data should be filtered out in this case.
         other_data = uuid.uuid4().hex
-        domain_id = uuid.uuid4().hex
-        ref = {'domain_id': domain_id,
+        account_id = uuid.uuid4().hex
+        ref = {'account_id': account_id,
                'other_data': other_data}
 
         expected_ref = ref.copy()
-        updated_ref = controller.V3Controller.filter_domain_id(ref)
+        updated_ref = controller.V3Controller.filter_account_id(ref)
         self.assertIs(ref, updated_ref)
         self.assertDictEqual(ref, expected_ref)
 
-    def test_v2controller_filter_domain(self):
+    def test_v2controller_filter_account(self):
         other_data = uuid.uuid4().hex
-        domain_id = uuid.uuid4().hex
-        non_default_domain_ref = {'domain': {'id': domain_id},
+        account_id = uuid.uuid4().hex
+        non_default_account_ref = {'account': {'id': account_id},
                                   'other_data': other_data}
-        default_domain_ref = {'domain': {'id': 'default'},
+        default_account_ref = {'account': {'id': 'default'},
                               'other_data': other_data}
-        updated_ref = controller.V2Controller.filter_domain(default_domain_ref)
-        self.assertNotIn('domain', updated_ref)
+        updated_ref = controller.V2Controller.filter_account(default_account_ref)
+        self.assertNotIn('account', updated_ref)
         self.assertRaises(exception.Unauthorized,
-                          controller.V2Controller.filter_domain,
-                          non_default_domain_ref)
+                          controller.V2Controller.filter_account,
+                          non_default_account_ref)
 
     def test_v2controller_filter_project_parent_id(self):
         # V2.0 is not project hierarchy aware, ensure parent_id is popped off.

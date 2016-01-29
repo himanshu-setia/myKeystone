@@ -199,8 +199,8 @@ V3_JSON_HOME_RESOURCES_INHERIT_DISABLED = {
         'href': '/auth/catalog'},
     json_home.build_v3_resource_relation('auth_projects'): {
         'href': '/auth/projects'},
-    json_home.build_v3_resource_relation('auth_domains'): {
-        'href': '/auth/domains'},
+    json_home.build_v3_resource_relation('auth_accounts'): {
+        'href': '/auth/accounts'},
     json_home.build_v3_resource_relation('credential'): {
         'href-template': '/credentials/{credential_id}',
         'href-vars': {
@@ -208,34 +208,34 @@ V3_JSON_HOME_RESOURCES_INHERIT_DISABLED = {
             json_home.build_v3_parameter_relation('credential_id')}},
     json_home.build_v3_resource_relation('credentials'): {
         'href': '/credentials'},
-    json_home.build_v3_resource_relation('domain'): {
-        'href-template': '/domains/{domain_id}',
-        'href-vars': {'domain_id': json_home.Parameters.DOMAIN_ID, }},
-    json_home.build_v3_resource_relation('domain_group_role'): {
+    json_home.build_v3_resource_relation('account'): {
+        'href-template': '/accounts/{account_id}',
+        'href-vars': {'account_id': json_home.Parameters.ACCOUNT_ID, }},
+    json_home.build_v3_resource_relation('account_group_role'): {
         'href-template':
-        '/domains/{domain_id}/groups/{group_id}/roles/{role_id}',
+        '/accounts/{account_id}/groups/{group_id}/roles/{role_id}',
         'href-vars': {
-            'domain_id': json_home.Parameters.DOMAIN_ID,
+            'account_id': json_home.Parameters.ACCOUNT_ID,
             'group_id': json_home.Parameters.GROUP_ID,
             'role_id': json_home.Parameters.ROLE_ID, }},
-    json_home.build_v3_resource_relation('domain_group_roles'): {
-        'href-template': '/domains/{domain_id}/groups/{group_id}/roles',
+    json_home.build_v3_resource_relation('account_group_roles'): {
+        'href-template': '/accounts/{account_id}/groups/{group_id}/roles',
         'href-vars': {
-            'domain_id': json_home.Parameters.DOMAIN_ID,
+            'account_id': json_home.Parameters.ACCOUNT_ID,
             'group_id': json_home.Parameters.GROUP_ID}},
-    json_home.build_v3_resource_relation('domain_user_role'): {
+    json_home.build_v3_resource_relation('account_user_role'): {
         'href-template':
-        '/domains/{domain_id}/users/{user_id}/roles/{role_id}',
+        '/accounts/{account_id}/users/{user_id}/roles/{role_id}',
         'href-vars': {
-            'domain_id': json_home.Parameters.DOMAIN_ID,
+            'account_id': json_home.Parameters.ACCOUNT_ID,
             'role_id': json_home.Parameters.ROLE_ID,
             'user_id': json_home.Parameters.USER_ID, }},
-    json_home.build_v3_resource_relation('domain_user_roles'): {
-        'href-template': '/domains/{domain_id}/users/{user_id}/roles',
+    json_home.build_v3_resource_relation('account_user_roles'): {
+        'href-template': '/accounts/{account_id}/users/{user_id}/roles',
         'href-vars': {
-            'domain_id': json_home.Parameters.DOMAIN_ID,
+            'account_id': json_home.Parameters.ACCOUNT_ID,
             'user_id': json_home.Parameters.USER_ID, }},
-    json_home.build_v3_resource_relation('domains'): {'href': '/domains'},
+    json_home.build_v3_resource_relation('accounts'): {'href': '/accounts'},
     json_home.build_v3_resource_relation('endpoint'): {
         'href-template': '/endpoints/{endpoint_id}',
         'href-vars': {
@@ -365,8 +365,8 @@ V3_JSON_HOME_RESOURCES_INHERIT_DISABLED = {
         'href-template': '/users/{user_id}/projects',
         'href-vars': {'user_id': json_home.Parameters.USER_ID, }},
     json_home.build_v3_resource_relation('users'): {'href': '/users'},
-    _build_federation_rel(resource_name='domains'): {
-        'href': '/OS-FEDERATION/domains'},
+    _build_federation_rel(resource_name='accounts'): {
+        'href': '/OS-FEDERATION/accounts'},
     _build_federation_rel(resource_name='websso'): {
         'href-template': '/auth/OS-FEDERATION/websso/{protocol_id}',
         'href-vars': {
@@ -515,24 +515,24 @@ V3_JSON_HOME_RESOURCES_INHERIT_DISABLED = {
         'href-template': BASE_EP_FILTER + '/projects',
         'href-vars': {'endpoint_group_id':
                       ENDPOINT_GROUP_ID_PARAMETER_RELATION, }},
-    json_home.build_v3_resource_relation('domain_config'): {
+    json_home.build_v3_resource_relation('account_config'): {
         'href-template':
-        '/domains/{domain_id}/config',
+        '/accounts/{account_id}/config',
         'href-vars': {
-            'domain_id': json_home.Parameters.DOMAIN_ID},
+            'account_id': json_home.Parameters.ACCOUNT_ID},
         'hints': {'status': 'experimental'}},
-    json_home.build_v3_resource_relation('domain_config_group'): {
+    json_home.build_v3_resource_relation('account_config_group'): {
         'href-template':
-        '/domains/{domain_id}/config/{group}',
+        '/accounts/{account_id}/config/{group}',
         'href-vars': {
-            'domain_id': json_home.Parameters.DOMAIN_ID,
+            'account_id': json_home.Parameters.ACCOUNT_ID,
             'group': json_home.build_v3_parameter_relation('config_group')},
         'hints': {'status': 'experimental'}},
-    json_home.build_v3_resource_relation('domain_config_option'): {
+    json_home.build_v3_resource_relation('account_config_option'): {
         'href-template':
-        '/domains/{domain_id}/config/{group}/{option}',
+        '/accounts/{account_id}/config/{group}/{option}',
         'href-vars': {
-            'domain_id': json_home.Parameters.DOMAIN_ID,
+            'account_id': json_home.Parameters.ACCOUNT_ID,
             'group': json_home.build_v3_parameter_relation('config_group'),
             'option': json_home.build_v3_parameter_relation('config_option')},
         'hints': {'status': 'experimental'}},
@@ -551,12 +551,12 @@ V3_JSON_HOME_RESOURCES_INHERIT_ENABLED.update(
     (
         (
             build_os_inherit_relation(
-                resource_name='domain_user_role_inherited_to_projects'),
+                resource_name='account_user_role_inherited_to_projects'),
             {
-                'href-template': '/OS-INHERIT/domains/{domain_id}/users/'
+                'href-template': '/OS-INHERIT/accounts/{account_id}/users/'
                 '{user_id}/roles/{role_id}/inherited_to_projects',
                 'href-vars': {
-                    'domain_id': json_home.Parameters.DOMAIN_ID,
+                    'account_id': json_home.Parameters.ACCOUNT_ID,
                     'role_id': json_home.Parameters.ROLE_ID,
                     'user_id': json_home.Parameters.USER_ID,
                 },
@@ -564,12 +564,12 @@ V3_JSON_HOME_RESOURCES_INHERIT_ENABLED.update(
         ),
         (
             build_os_inherit_relation(
-                resource_name='domain_group_role_inherited_to_projects'),
+                resource_name='account_group_role_inherited_to_projects'),
             {
-                'href-template': '/OS-INHERIT/domains/{domain_id}/groups/'
+                'href-template': '/OS-INHERIT/accounts/{account_id}/groups/'
                 '{group_id}/roles/{role_id}/inherited_to_projects',
                 'href-vars': {
-                    'domain_id': json_home.Parameters.DOMAIN_ID,
+                    'account_id': json_home.Parameters.ACCOUNT_ID,
                     'group_id': json_home.Parameters.GROUP_ID,
                     'role_id': json_home.Parameters.ROLE_ID,
                 },
@@ -577,24 +577,24 @@ V3_JSON_HOME_RESOURCES_INHERIT_ENABLED.update(
         ),
         (
             build_os_inherit_relation(
-                resource_name='domain_user_roles_inherited_to_projects'),
+                resource_name='account_user_roles_inherited_to_projects'),
             {
-                'href-template': '/OS-INHERIT/domains/{domain_id}/users/'
+                'href-template': '/OS-INHERIT/accounts/{account_id}/users/'
                 '{user_id}/roles/inherited_to_projects',
                 'href-vars': {
-                    'domain_id': json_home.Parameters.DOMAIN_ID,
+                    'account_id': json_home.Parameters.ACCOUNT_ID,
                     'user_id': json_home.Parameters.USER_ID,
                 },
             }
         ),
         (
             build_os_inherit_relation(
-                resource_name='domain_group_roles_inherited_to_projects'),
+                resource_name='account_group_roles_inherited_to_projects'),
             {
-                'href-template': '/OS-INHERIT/domains/{domain_id}/groups/'
+                'href-template': '/OS-INHERIT/accounts/{account_id}/groups/'
                 '{group_id}/roles/inherited_to_projects',
                 'href-vars': {
-                    'domain_id': json_home.Parameters.DOMAIN_ID,
+                    'account_id': json_home.Parameters.ACCOUNT_ID,
                     'group_id': json_home.Parameters.GROUP_ID,
                 },
             }

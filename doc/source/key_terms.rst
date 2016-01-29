@@ -15,20 +15,20 @@ Users
 -----
 
 ``Users`` represent an individual API consumer. A user itself must be owned by
-a specific domain, and hence all user names are **not** globally unique, but
-only unique to their domain.
+a specific account, and hence all user names are **not** globally unique, but
+only unique to their account.
 
 Groups
 ------
 
 ``Groups`` are a container representing a collection of users. A group itself
-must be owned by a specific domain, and hence all group names are **not**
-globally unique, but only unique to their domain.
+must be owned by a specific account, and hence all group names are **not**
+globally unique, but only unique to their account.
 
 Resources
 =========
 
-The Identity portion of keystone includes ``Projects`` and ``Domains``, and
+The Identity portion of keystone includes ``Projects`` and ``Accounts``, and
 are commonly stored in an SQL backend.
 
 Projects (Tenants)
@@ -37,34 +37,34 @@ Projects (Tenants)
 ``Projects`` (known as Tenants in v2.0) represent the base unit of
 ``ownership`` in OpenStack, in that all resources in OpenStack should be owned
 by a specific project.
-A project itself must be owned by a specific domain, and hence all project
-names are **not** globally unique, but unique to their domain.
-If the domain for a project is not specified, then it is added to the default
-domain.
+A project itself must be owned by a specific account, and hence all project
+names are **not** globally unique, but unique to their account.
+If the account for a project is not specified, then it is added to the default
+account.
 
-Domains
+Accounts
 -------
 
-``Domains`` are a high-level container for projects, users and groups. Each is
-owned by exactly one domain. Each domain defines a namespace where certain an
-API-visible name attribute exists. keystone provides a default domain, aptly
+``Accounts`` are a high-level container for projects, users and groups. Each is
+owned by exactly one account. Each account defines a namespace where certain an
+API-visible name attribute exists. keystone provides a default account, aptly
 named 'Default'.
 
 In the Identity v3 API, the uniqueness of attributes is as follows:
 
-- Domain Name. Globally unique across all domains.
+- Account Name. Globally unique across all accounts.
 
-- Role Name. Globally unique across all domains.
+- Role Name. Globally unique across all accounts.
 
-- User Name. Unique within the owning domain.
+- User Name. Unique within the owning account.
 
-- Project Name. Unique within the owning domain.
+- Project Name. Unique within the owning account.
 
-- Group Name. Unique within the owning domain.
+- Group Name. Unique within the owning account.
 
-Due to their container architecture, domains may be used as a way to delegate
-management of OpenStack resources. A user in a domain may still access
-resources in another domain, if an appropriate assignment is granted.
+Due to their container architecture, accounts may be used as a way to delegate
+management of OpenStack resources. A user in a account may still access
+resources in another account, if an appropriate assignment is granted.
 
 
 Assignment
@@ -74,7 +74,7 @@ Roles
 -----
 
 ``Roles`` dictate the level of authorization the end user can obtain. Roles
-can be granted at either the domain or project level. Role can be assigned to
+can be granted at either the account or project level. Role can be assigned to
 the individual user or at the group level. Role names are globally unique.
 
 Role Assignments
@@ -117,8 +117,8 @@ The user (ID of 0ca8f6) is attempting to retrieve a token that is scoped to
 project (ID of 263fd9).
 
 To perform the same call with names instead of IDs, we now need to supply
-information about the domain. This is because usernames are only unique within
-a given domain, but user IDs are supposed to be unique across the deployment.
+information about the account. This is because usernames are only unique within
+a given account, but user IDs are supposed to be unique across the deployment.
 Thus, the auth request looks like the following:
 
 .. code-block:: javascript
@@ -131,7 +131,7 @@ Thus, the auth request looks like the following:
                 ],
                 "password": {
                     "user": {
-                        "domain": {
+                        "account": {
                             "name": "acme"
                         }
                         "name": "userA",
@@ -141,7 +141,7 @@ Thus, the auth request looks like the following:
             },
             "scope": {
                 "project": {
-                    "domain": {
+                    "account": {
                         "id": "1789d1"
                     },
                     "name": "project-x"
@@ -150,22 +150,22 @@ Thus, the auth request looks like the following:
         }
     }
 
-For both the user and the project portion, we must supply either a domain ID
-or a domain name, in order to properly determine the correct user and project.
+For both the user and the project portion, we must supply either a account ID
+or a account name, in order to properly determine the correct user and project.
 
 Alternatively, if we wanted to represent this as environment variables for a
 command line, it would be:
 
 .. code-block:: bash
 
-    $ export OS_PROJECT_DOMAIN_ID=1789d1
-    $ export OS_USER_DOMAIN_NAME=acme
+    $ export OS_PROJECT_ACCOUNT_ID=1789d1
+    $ export OS_USER_ACCOUNT_NAME=acme
     $ export OS_USERNAME=userA
     $ export OS_PASSWORD=secretsecret
     $ export OS_PROJECT_NAME=project-x
 
 Note that the project the user it attempting to access must be in the same
-domain as the user.
+account as the user.
 
 What is Scope?
 ==============
@@ -173,13 +173,13 @@ What is Scope?
 Scope is an overloaded term.
 
 In reference to authenticating, as seen above, scope refers to the portion
-of the POST data that dictates what ``Resource`` (project or domain) the user
+of the POST data that dictates what ``Resource`` (project or account) the user
 wants to access.
 
 In reference to tokens, scope refers to the effectiveness of a token,
 i.e.: a `project-scoped` token is only useful on the project it was initially
-granted for. A `domain-scoped` token may be used to perform domain-related
+granted for. A `account-scoped` token may be used to perform account-related
 function.
 
-In reference to users, groups, and projects, scope often refers to the domain
-that the entity is owned by. i.e.: a user in domain X is scoped to domain X.
+In reference to users, groups, and projects, scope often refers to the account
+that the entity is owned by. i.e.: a user in account X is scoped to account X.
