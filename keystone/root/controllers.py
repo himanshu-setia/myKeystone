@@ -32,7 +32,6 @@ class RootV3(controller.V3Controller):
 
     @controller.v2_deprecated
     def genericmapper(self, context):
-        self.assert_admin(context)
 
         query_string = context.get('query_string', None)
         Action = query_string['Action']
@@ -190,5 +189,26 @@ class RootV3(controller.V3Controller):
             jio_policy_id = query_string['PolicyId']
             group_id = query_string['GroupId']
             jio_policy_controller.detach_policy_from_group(context, jio_policy_id,group_id)
+
+        elif Action == 'CreateResourceBasedPolicy':
+            import pdb;pdb.set_trace()
+            policy_document = json.loads(query_string['PolicyDocument'])
+            return jio_policy_controller.create_resource_based_policy(context, policy_document)
+        elif Action == 'UpdateResourceBasedPolicy':
+            policy_document = json.loads(query_string['PolicyDocument'])
+            jio_policy_id = query_string['Id']
+            return jio_policy_controller.update_resource_based_policy(context, jio_policy_id, policy_document)
+        elif Action == 'DeleteResourceBasedPolicy':
+            jio_policy_id = query_string['Id']
+            return jio_policy_controller.delete_resource_based_policy(context, jio_policy_id)
+        elif Action == 'AttachPolicyToResource':
+            jio_policy_id = query_string['PolicyId']
+            resource = json.loads(query_string['Resource'])
+            return jio_policy_controller.attach_policy_to_resource(context, jio_policy_id, resource['resource'])
+        elif Action == 'DetachPolicyFromResource':
+            jio_policy_id = query_string['PolicyId']
+            resource_id = query_string['ResourceId']
+            jio_policy_controller.detach_policy_from_resource(context, jio_policy_id, resource_id)        
+
         else:
             raise exception.ActionNotFound(action = Action)
