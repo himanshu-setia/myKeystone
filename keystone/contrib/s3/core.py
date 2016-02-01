@@ -70,8 +70,16 @@ class S3Extension(wsgi.V3ExtensionRouter):
             rel=json_home.build_v3_extension_resource_relation(
                 'sign-auth', '1.0', 'sign-auth'))
 
-
-
+    def add_routes(self, mapper):
+        controller = S3Controller()
+        # validation
+        self._add_resource(
+            mapper, controller,
+            path='/sign-auth-ex',
+            post_action='validate_cross_account_with_sign',
+            rel=json_home.build_v3_extension_resource_relation(
+                'sign-auth-ex', '1.0', 'sign-auth-ex'))
+ 
 
 class S3Controller(controllers.Ec2Controller):
     def check_signature(self, creds_ref, credentials):

@@ -232,7 +232,7 @@ class UserV3(controller.V3Controller):
 
         return True
 
-    @controller.jio_policy_filterprotected(args='User')
+    #@controller.jio_policy_filterprotected(args='User')
     def create_user(self, context, user):
         self._require_attribute(user, 'name')
         expiry_days = CONF.password_policy.expiry_days

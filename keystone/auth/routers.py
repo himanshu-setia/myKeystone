@@ -33,6 +33,12 @@ class Routers(wsgi.RoutersBase):
 
         self._add_resource(
             mapper, auth_controller,
+            path='/token-auth-ex',
+            post_action='validate_cross_account_with_token',
+            rel=json_home.build_v3_resource_relation('token-auth-ex'))
+
+        self._add_resource(
+            mapper, auth_controller,
             path='/token-auth',
             get_action='validate_token_with_action_resource_get',
             post_action='validate_token_with_action_resource_post',

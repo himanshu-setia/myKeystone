@@ -285,6 +285,86 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
         return token_data
 
 
+    def validate_cross_account_with_sign(self,context, credentials=None, ec2Credentials=None):
+        #(user_ref, tenant_ref, metadata_ref, roles_ref,
+         #catalog_ref) = self._authenticate(credentials=credentials,
+          #                                 ec2credentials=ec2Credentials)
+        #user_id = user_ref["id"]
+        import pdb;pdb.set_trace()
+        user_id= 'c68b22593d82449f9b971fd50d3a326d'
+        query_string = context.get('query_string', None)
+
+        if query_string:
+            action = query_string.pop('action', None)
+            resource = query_string.pop('resource', None)
+            imp_allow = query_string.pop('implicit_allow', False)
+            user_acc_id = query_string.pop('user_acc_id', None)
+            res_acc_id = query_string.pop('res_acc_id', False)
+
+            if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                imp_allow = True
+            else:
+                imp_allow = False
+            if action and resource:
+                is_authorized = self.jio_policy_api.\
+                    is_cross_account_access_auth(user_id, user_acc_id, resource, res_acc_id, action, imp_allow)
+                if not is_authorized:
+                    raise exception.Forbidden(message='Policy does not allow to'
+                                          'perform this action')
+            else:
+                raise exception.ValidationError(attribute="action and resource",
+                                            target="query_string")
+        else:
+            act_res_list = None
+            if ec2Credentials:
+                act_res_list = ec2Credentials.get("action_resource_list", None)
+                user_acc_id = ec2Credentials.get('user_acc_id', None)
+                res_acc_id = ec2Credentials.get('res_acc_id', False)
+            if not act_res_list and credentials:
+                act_res_list = credentials.get("action_resource_list",None)
+                user_acc_id = credentials.get('user_acc_id', None)
+                res_acc_id = credentials.get('res_acc_id', False)
+            if not act_res_list:
+                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
+            #act_res_list = json.loads(act_res_list)
+            try:
+                action = [item['action'] for item in act_res_list]
+                resource = [item['resource'] for item in act_res_list]
+                is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
+            except KeyError as e:
+                raise exception.ValidationError(attribute="action and resource",
+                                            target="body")
+            is_authorized = True
+            for act, res, imp_allow in zip(action, resource, is_implicit_allow):
+                if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                    imp_allow = True
+                else:
+                    imp_allow = False
+                is_authorized = is_authorized and self.jio_policy_api.\
+                    is_cross_account_access_auth(user_id, user_acc_id, res, res_acc_id, act, imp_allow)
+
+            if not is_authorized:
+                raise exception.Forbidden(message='Policy does not allow to'
+                                          'perform this action')
+
+
+        # NOTE(morganfainberg): Make sure the data is in correct form since it
+        # might be consumed external to Keystone and this is a v2.0 controller.
+        # The token provider does not explicitly care about user_ref version
+        # in this case, but the data is stored in the token itself and should
+        # match the version
+        user_ref = self.v3_to_v2_user(user_ref)
+        auth_token_data = dict(user=user_ref,
+                               tenant=tenant_ref,
+                               metadata=metadata_ref,
+                               id='placeholder')
+        (token_id, token_data) = self.token_provider_api.issue_v2_token(
+            auth_token_data, roles_ref, catalog_ref)
+        response = dict(domain_id=token_data["access"]["token"]["tenant"]["domain_id"],
+                        user_id=token_data["access"]["user"]["id"],
+                        token_id=token_data["access"]["token"]["id"])
+        return response
+
 
     def authorise_with_action_resource(self, context, credentials=None, ec2Credentials=None):
         (user_ref, tenant_ref, metadata_ref, roles_ref,
@@ -471,6 +551,82 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
             user_ref['id'], method_names, project_id=project_ref['id'],
             metadata_ref=metadata_ref)
         return render_token_data_response(token_id, token_data)
+
+
+
+    def validate_cross_account_with_sign(self,context, credentials=None, ec2Credentials=None):
+        import pdb;pdb.set_trace()
+        #(user_ref, tenant_ref, metadata_ref, roles_ref,
+        # catalog_ref) = self._authenticate(credentials=credentials,
+                                           #ec2credentials=ec2Credentials)
+        #user_id = user_ref["id"]
+        user_id= 'c68b22593d82449f9b971fd50d3a326d'
+        query_string = context.get('query_string', None)
+
+        if query_string:
+            action = query_string.pop('action', None)
+            resource = query_string.pop('resource', None)
+            imp_allow = query_string.pop('implicit_allow', False)
+            user_acc_id = query_string.pop('user_acc_id', None)
+            res_acc_id = query_string.pop('res_acc_id', False)
+
+            if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                imp_allow = True
+            else:
+                imp_allow = False
+            if action and resource:
+                is_authorized = self.jio_policy_api.\
+                    is_cross_account_access_auth(user_id, user_acc_id, resource, res_acc_id, action, imp_allow)
+                if not is_authorized:
+                    raise exception.Forbidden(message='Policy does not allow to'
+                                          'perform this action')
+            else:
+                raise exception.ValidationError(attribute="action and resource",
+                                            target="query_string")
+        else:
+            act_res_list = None
+            if ec2Credentials:
+                act_res_list = ec2Credentials.get("action_resource_list", None)
+                user_acc_id = ec2Credentials.get('user_acc_id', None)
+                res_acc_id = ec2Credentials.get('res_acc_id', False)
+            if not act_res_list and credentials:
+                act_res_list = credentials.get("action_resource_list",None)
+                user_acc_id = credentials.get('user_acc_id', None)
+                res_acc_id = credentials.get('res_acc_id', False)
+            if not act_res_list:
+                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
+            #act_res_list = json.loads(act_res_list)
+            try:
+                action = [item['action'] for item in act_res_list]
+                resource = [item['resource'] for item in act_res_list]
+                is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
+            except KeyError as e:
+                raise exception.ValidationError(attribute="action and resource",
+                                            target="body")
+            is_authorized = True
+            for act, res, imp_allow in zip(action, resource, is_implicit_allow):
+                if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                    imp_allow = True
+                else:
+                    imp_allow = False
+                is_authorized = is_authorized and self.jio_policy_api.\
+                    is_cross_account_access_auth(user_id, user_acc_id, res, res_acc_id, act, imp_allow)
+
+            if not is_authorized:
+                raise exception.Forbidden(message='Policy does not allow to'
+                                          'perform this action')
+
+        method_names = ['ec2credential']
+
+        token_id, token_data = self.token_provider_api.issue_v3_token(
+            user_id, method_names, project_id=user_acc_id,
+            metadata_ref='')
+        
+        response = dict(domain_id=token_data["token"]["project"]["domain"]["id"],
+                        user_id=token_data["token"]["user"]["id"],
+                        token_id=token_id)
+
+        return render_token_data_response(token_id,response)
 
     def authorise_with_action_resource(self, context, credentials=None, ec2Credentials=None):
         (user_ref, project_ref, metadata_ref, roles_ref,
