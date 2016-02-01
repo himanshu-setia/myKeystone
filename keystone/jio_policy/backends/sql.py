@@ -94,7 +94,7 @@ class PolicyUserGroupModel(sql.ModelBase):
 
 class PolicyActionPrincipleModel(sql.ModelBase):
     __tablename__ = 'policy_action_principle'
-    attributes = ['policy_id', 'action_id', 'principle_id', 'principle_type', 'effect']
+    attributes = ['policy_id', 'action_id', 'principle_id', 'principle_type', 'principle_acc_id', 'effect']
     policy_id = sql.Column(sql.String(64), sql.ForeignKey('jio_policy.id'), primary_key=True)
     action_id = sql.Column(sql.String(64), sql.ForeignKey('action.id'), primary_key=True)
     principle_acc_id = sql.Column(sql.String(64),nullable=False)
@@ -179,6 +179,8 @@ class Policy(jio_policy.Driver):
                     zip_resource = zip(resource_ids, resource)
                     is_cross_account_access = False
 
+                    #For RBP,same resource will be used in UBP, so these resources will be
+                    #redundant, need to remove them
                     for pair in zip_resource:
                             session.add(ResourceModel(id=pair[0], name=pair[1],
                                     service_type=Policy._get_service_name(
@@ -194,7 +196,7 @@ class Policy(jio_policy.Driver):
                             resource = session.query(ResourceModel.id).\
                                 filter(ResourceModel.name == pair[1][1]).all()
 
-                            resource_ids = [x[0] for x in resource]
+                            resource_ids = [res[0] for res in resource]
                             policy_ids = session.query(JioPolicyModel).join(PolicyResourceModel)\
                                  .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
                                  .filter(JioPolicyModel.project_id == account_id)\
@@ -208,7 +210,7 @@ class Policy(jio_policy.Driver):
                                              .filter(PolicyActionPrincipleModel.principle_acc_id == project_id)\
                                              .with_entities(PolicyActionPrincipleModel.effect).all()
 
-                                effect_list = [x[0] for x in effect]
+                                effect_list = [eff[0] for eff in effect]
 
                                 for effect in effect_list:
                                     if not effect:
@@ -480,13 +482,19 @@ class Policy(jio_policy.Driver):
                             if principle_type == None:
                                 principle_id = None
 
-                            if principle_type is not None and principle_type not in ['*','User','Group']:
+                            principle_acc_id = principle_list[0]
+                            if principle_acc_id == project_id:
                                  raise exception.ValidationError(
-                                         attribute='valid principle type', target='principle')
-    
+                                         attribute='valid account id', target='principle')
+
+                            if principle_type == 'User' and principle_id !='*':
+                                self.identity_api.get_user(principle_id)
+                            elif principle_type == 'Group' and principle_id!='*':
+                                self.identity_api.get_group(principle_id)
+
                             session.add(
                                 PolicyActionPrincipleModel(
-                                    policy_id=policy_id, action_id=action_id,
+                                    policy_id=policy_id, action_id=action_id,principle_acc_id=principle_acc_id,
                                     principle_id=principle_id, principle_type=principle_type ,effect=effect))
     
                     except sql.NotFound:
@@ -545,11 +553,12 @@ class Policy(jio_policy.Driver):
         policy_ids = session.query(JioPolicyModel).join(PolicyResourceModel)\
                         .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
                         .filter(JioPolicyModel.project_id == res_acc_id)\
+                        .filter(JioPolicyModel.type == 'ResourcePolicy')\
                         .with_entities(JioPolicyModel.id).all()
 
         group_ids.append('*')
         policy_exists = False
-        is_authrorized = True
+        is_authorized = True
         for policy in policy_ids:
             policy_id = policy[0]
             result_list = session.query(PolicyActionPrincipleModel).join(ActionModel)\
@@ -804,14 +813,13 @@ class Policy(jio_policy.Driver):
                           .filter(PolicyActionPrincipleModel.policy_id == policy_id)\
                           .with_entities(ActionModel.action_name).distinct().all()
 
-            actions = [x[0] for x in action_tuple]
+            actions = [action[0] for action in action_tuple]
             try:
                 zip_resource = zip(resource_ids, resource)
-                policy_ref = self._get_policy(session, policy_id)
+                self._get_policy(session, policy_id)
                 
                 for pair in itertools.product(actions, zip_resource):
                     #check if action is allowed in resource type
-                    action_id = pair[0]
                     resource_type = Policy._get_resource_type(pair[1][1])
                     if resource_type is not None and resource_type is not '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
                         raise exception.ValidationError(
@@ -832,7 +840,7 @@ class Policy(jio_policy.Driver):
 
     def detach_policy_from_resource(self, policy_id, resource_id):
         session = sql.get_session()
-        policy_ref = self._get_policy(session, policy_id)
+        self._get_policy(session, policy_id)
         session.query(PolicyResourceModel).filter_by(
             resource_id=resource_id).filter_by(policy_id=policy_id).delete()
 
