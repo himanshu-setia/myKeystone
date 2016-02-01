@@ -603,7 +603,6 @@ class Auth(controller.V3Controller):
         import pdb;pdb.set_trace()
         token_data = self.validate_token_data(context)
         act_res_list = kwargs.get('action_resource_list', None)
-        user_acc_id = kwargs.get('user_acc_id', None)
         res_acc_id = kwargs.get('res_acc_id',None)
         if not act_res_list:
             raise exception.ValidationError(attribute="action and resource",
@@ -619,9 +618,9 @@ class Auth(controller.V3Controller):
         auth_context = self.get_auth_context(context)
 
         user_id = token_data["token"]["user"]["id"]
-
+        account_id = token_data["token"]["project"]["id"]
         self._validate_cross_account_with_token(
-                    user_id, user_acc_id, resource, res_acc_id, action, is_implicit_allow, context)
+                    user_id, account_id, resource, res_acc_id, action, is_implicit_allow, context)
         return self.render_response(token_data,context)
 
 
