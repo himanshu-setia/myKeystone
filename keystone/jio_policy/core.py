@@ -80,6 +80,11 @@ class Manager(manager.Manager):
         self.identity_api.get_user(user_id)
         self.driver.attach_policy_to_user(policy_id, user_id)
 
+    def is_cross_account_access_auth(self, user_id, user_acc_id, res_id, res_acc_id, action, imp_allow):
+        group_ids = self._get_group_ids_for_user_id(user_id)
+        ref = self.driver.is_cross_account_access_auth(user_id, group_ids, user_acc_id, res_id, res_acc_id, action, imp_allow)
+        return ref
+
     def detach_policy_from_user(self, policy_id, user_id):
         self.identity_api.get_user(user_id)
         self.driver.detach_policy_from_user(policy_id, user_id)

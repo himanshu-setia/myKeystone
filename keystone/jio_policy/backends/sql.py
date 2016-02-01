@@ -15,6 +15,7 @@ import uuid
 import itertools
 import copy
 from datetime import datetime
+from keystone.common import dependency
 from keystone.common import sql
 from keystone import exception
 from keystone import jio_policy
@@ -29,7 +30,7 @@ class JioPolicyModel(sql.ModelBase, sql.DictBase):
     attributes = ['id', 'project_id', 'created_at', 'deleted_at']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
-    type = sql.Column(sql.String(64), nullable=False)
+    type = sql.Column(sql.Enum('UserPolicy', 'ResourcePolicy'), nullable=False)
     project_id = sql.Column(sql.String(64), nullable=False)
     created_at = sql.Column(sql.DateTime, nullable=False)
     updated_at = sql.Column(sql.DateTime)
@@ -96,6 +97,7 @@ class PolicyActionPrincipleModel(sql.ModelBase):
     attributes = ['policy_id', 'action_id', 'principle_id', 'principle_type', 'effect']
     policy_id = sql.Column(sql.String(64), sql.ForeignKey('jio_policy.id'), primary_key=True)
     action_id = sql.Column(sql.String(64), sql.ForeignKey('action.id'), primary_key=True)
+    principle_acc_id = sql.Column(sql.String(64),nullable=False)
     principle_id = sql.Column(sql.String(64), primary_key=True)
     principle_type = sql.Column(sql.String(64), nullable=False)
     effect = sql.Column(sql.Boolean)
@@ -109,7 +111,7 @@ class PolicyResourceModel(sql.ModelBase):
     policy_id = sql.Column(sql.String(64), sql.ForeignKey('jio_policy.id'), primary_key=True)
 
 
-
+@dependency.requires('identity_api')
 class Policy(jio_policy.Driver):
 
     @classmethod
@@ -148,7 +150,7 @@ class Policy(jio_policy.Driver):
 
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
-                        project_id=project_id, type='User',
+                        project_id=project_id, type='UserPolicy',
                         created_at=created_at,
                         updated_at=created_at,
                         policy_blob=jsonutils.dumps(ref)))
@@ -165,12 +167,6 @@ class Policy(jio_policy.Driver):
                         resource=':'.join(var)
                 # Autofill account id in resource
                 # Assumption account_id == domain_id == project_id
-                for index, item in enumerate(resource):
-                    if len(item.split(':')) > 4 and item.split(':')[3]=='':
-                        var=item.split(':')
-                        var[3]=project_id
-                        resource[index]=':'.join(var)
-
                 if effect == 'allow':
                     effect = True
                 elif effect == 'deny':
@@ -181,50 +177,68 @@ class Policy(jio_policy.Driver):
                 resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                 try:
                     zip_resource = zip(resource_ids, resource)
+                    is_cross_account_access = False
+
                     for pair in zip_resource:
-
-                        #resource = Policy._get_resource_list(pair[1])
-                        #acc_id = resource[3]
-                        #res_id = resource[5]
-
-                        #if acc_id != project_id:
-                            #LOG.debug('Cross Account Policy')
-                         #   id = session.query(PolicyResourceModel).join(JioPolicyModel)\
-                          #                 .filter(PolicyResourceModel.resource_id == res_id)\
-                           #                .filter(JioPolicyModel.project_id == JioPolicyModel.project_id)\
-                            #               .with_entities(JioPolicyModel.id).one()[0]
-
-                            #result_tuple = session.query(PolicyActionPrincipleModel).one()
-                                               #.filter_by(policy_id= '5f778f3b6161d48f').all()
-
-                            #cross_account_access_ok = False
-                            #for res in result_tuple:
-                             #   if res['policy_id'] == id and res['principle_id'] == res_id and res['effect'] == 1:
-                              #      cross_account_access_ok = True
-                               #     break
- 
-                            #if cross_account_access_ok is not True:
-                             #   raise exception.ValidationError(attribute='cross account access',
-                              #  target='resource')
-
-                        session.add(ResourceModel(id=pair[0], name=pair[1],
+                            session.add(ResourceModel(id=pair[0], name=pair[1],
                                     service_type=Policy._get_service_name(
                                         pair[1])))
-
+                    
                     for pair in itertools.product(action, zip_resource):
+                        resource = Policy._get_resource_list(pair[1][1])
+                        account_id = resource[3]
+
+                        if account_id != project_id:
+                            #LOG.debug('Cross Account Policy')
+
+                            resource = session.query(ResourceModel.id).\
+                                filter(ResourceModel.name == pair[1][1]).all()
+
+                            resource_ids = [x[0] for x in resource]
+                            policy_ids = session.query(JioPolicyModel).join(PolicyResourceModel)\
+                                 .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
+                                 .filter(JioPolicyModel.project_id == account_id)\
+                                 .filter(JioPolicyModel.type == 'ResourcePolicy')\
+                                 .with_entities(JioPolicyModel.id).all()
+
+                            for policy in policy_ids:
+                                id = policy[0]
+                                effect = session.query(PolicyActionPrincipleModel).join(ActionModel)\
+                                             .filter(PolicyActionPrincipleModel.policy_id == id).filter(ActionModel.action_name == pair[0])\
+                                             .filter(PolicyActionPrincipleModel.principle_acc_id == project_id)\
+                                             .with_entities(PolicyActionPrincipleModel.effect).all()
+
+                                effect_list = [x[0] for x in effect]
+
+                                for effect in effect_list:
+                                    if not effect:
+                                        is_cross_account_access = False
+                                        break
+                                    else:
+                                        is_cross_account_access = True
+
+                            if not is_cross_account_access:
+                                raise exception.Forbidden(message='Resource Based Policy does not exist')
+
                         #check if action is allowed in resource type
                         action_id = session.query(ActionModel).filter_by(
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
                         resource_type = Policy._get_resource_type(pair[1][1])
-                        if resource_type is not None and resource_type != '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
+                        if resource_type is not None and resource_type is not '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
                              raise exception.ValidationError(
                                      attribute='valid resource type', target='resource')
+
+                        if is_cross_account_access:
+                            resource_id = resource_ids[0]
+                        else:
+                            resource_id = pair[1][0]
 
                         session.add(
                             PolicyActionResourceModel(
                                 policy_id=policy_id, action_id=action_id,
-                                resource_id=pair[1][0], effect=effect))
+                                resource_id=resource_id, effect=effect))
+
 
                 except sql.NotFound:
                     raise exception.ValidationError(
@@ -251,7 +265,7 @@ class Policy(jio_policy.Driver):
 
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
-                        type='Resource',
+                        type='ResourcePolicy',
                         project_id=project_id,
                         created_at=created_at,
                         updated_at=created_at,
@@ -288,13 +302,19 @@ class Policy(jio_policy.Driver):
                              raise exception.ValidationError(
                                      attribute='valid principle type', target='principle')
 
-                        if principle_list[0] == project_id:
+                        principle_acc_id = principle_list[0]
+                        if principle_acc_id == project_id:
                              raise exception.ValidationError(
                                      attribute='valid account id', target='principle')
 
+                        if principle_type == 'User' and principle_id !='*':
+                            self.identity_api.get_user(principle_id)
+                        elif principle_type == 'Group' and principle_id!='*':
+                            self.identity_api.get_group(principle_id)
+                        
                         session.add(
                             PolicyActionPrincipleModel(
-                                policy_id=policy_id, action_id=action_id,
+                                policy_id=policy_id, action_id=action_id,principle_acc_id=principle_acc_id,
                                 principle_id=principle_id, principle_type=principle_type ,effect=effect))
 
                 except sql.NotFound:
@@ -511,6 +531,51 @@ class Policy(jio_policy.Driver):
 
             session.delete(policy_ref)
 
+
+    def is_cross_account_access_auth(self, user_id, group_ids, user_acc_id, res_id, res_acc_id, action, is_impl_allow):
+        session = sql.get_session()
+
+        if len(res_id.split(':')) < 6:
+            raise exception.ResourceNotFound(resource=res_id)  
+
+        resource = session.query(ResourceModel.id).\
+            filter(ResourceModel.name == res_id).all()
+
+        resource_ids = [x[0] for x in resource]
+        policy_ids = session.query(JioPolicyModel).join(PolicyResourceModel)\
+                        .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
+                        .filter(JioPolicyModel.project_id == res_acc_id)\
+                        .with_entities(JioPolicyModel.id).all()
+
+        group_ids.append('*')
+        policy_exists = False
+        is_authrorized = True
+        for policy in policy_ids:
+            policy_id = policy[0]
+            result_list = session.query(PolicyActionPrincipleModel).join(ActionModel)\
+                         .filter(PolicyActionPrincipleModel.policy_id == policy_id).filter(ActionModel.action_name == action).all()
+
+            for result in result_list:
+                if result:
+                    if result.principle_type == 'None' and user_id == user_acc_id:
+                        policy_exists = True
+                        is_authorized = result.effect 
+                    elif result.principle_type == 'User' and result.principle_id in ['*',user_id]:
+                        policy_exists = True
+                        is_authorized = result.effect 
+                    elif result.principle_type == 'Group' and result.principle_id in group_ids:
+                        policy_exists = True
+                        is_authorized = result.effect 
+                
+                if is_authorized == False:
+                    return False
+
+        if policy_exists is True:
+            return True
+        else:
+            return is_impl_allow   
+                
+    
     def is_user_authorized(self, user_id, group_id, project_id, action, resource, is_implicit_allow):
         session = sql.get_session()
         # resource name must have 5 separators (:) e.g. 
@@ -712,6 +777,7 @@ class Policy(jio_policy.Driver):
             session.query(PolicyUserGroupModel).filter_by(
                 user_group_id=user_group_id).filter_by(policy_id=policy_id).\
                 filter_by(type=type).delete()
+
 
     def attach_policy_to_user(self, policy_id, user_id):
         self._attach_policy_to_user_group(policy_id, user_id,
