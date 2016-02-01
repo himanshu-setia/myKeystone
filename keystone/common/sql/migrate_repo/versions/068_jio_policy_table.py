@@ -124,6 +124,7 @@ def upgrade(migrate_engine):
             sql.Column('action_id', sql.String(length=64), nullable=False),
             sql.Column('principle_id', sql.String(length=64), nullable=False),
             sql.Column('principle_type', sql.Enum('User','Group', name='type'), nullable=False),
+            sql.Column('principle_acc_id',sql.String(length=64), nullable=False),  
             sql.Column('effect', sql.Boolean, default=False, nullable=False),
             sql.PrimaryKeyConstraint('action_id', 'principle_id', 'policy_id'),
             sql.ForeignKeyConstraint(
