@@ -123,6 +123,9 @@ class PostParamsMiddleware(wsgi.Middleware):
                 continue
             params[k] = v
 
+        if 'auth' in params:
+            account_id = params["auth"]["identity"]["password"]["user"]["account"]["id"]
+            params["auth"]["scope"] = {"account":{"id":account_id}}
         request.environ[PARAMS_ENV] = params
 
 
@@ -173,6 +176,9 @@ class JsonBodyMiddleware(wsgi.Middleware):
                 continue
             params[k] = v
 
+        if 'auth' in params:
+            account_id = params["auth"]["identity"]["password"]["user"]["account"]["id"]
+            params["auth"]["scope"] = {"account":{"id":account_id}}
         request.environ[PARAMS_ENV] = params
 
 
