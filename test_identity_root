@@ -1,0 +1,540 @@
+Tests running...
+Response: 200 OK
+Content-Type: application/json
+Vary: X-Auth-Token
+X-Openstack-Request-Id: req-a13b4754-616c-47b3-a4e1-0fb84a6d81f8
+{"group": {"description": "93983f8d74cb43f0bc3d8bca588ecd24", "links": {"self": "http://localhost/v3/groups/86fd051a9ff44858aba378886f706f0c"}, "enabled": true, "name": "294732fb72b746ccbb33c883b15919f1", "id": "86fd051a9ff44858aba378886f706f0c", "account_id": "0b4a40adfd554b698211242e9bed5802"}}
+======================================================================
+ERROR: keystone.tests.unit.test_v3_identity_root.IdentityTestCase.test_delete_user
+----------------------------------------------------------------------
+pythonlogging:'': {{{
+Adding cache-proxy 'keystone.tests.unit.test_cache.CacheIsolatingProxy' to backend.
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f107021aa10> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f1070248910> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f1070248910> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f1070248910> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106ffeabd0> acquired
+Calling creation function
+Released creation lock
+Auth token not in the request header. Will not build auth context.
+/v3/auth/tokens
+calling verify signature
+None
+POST http://localhost:80/v3/auth/tokens
+Auth token not in the request header. Will not build auth context.
+/v3/auth/tokens
+calling verify signature
+None
+POST http://localhost:80/v3/auth/tokens
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f107000e910> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dcc52d0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d8a7310> acquired
+Calling creation function
+Released creation lock
+RBAC: auth_context: {'is_delegated_auth': False, 'access_token_id': None, 'user_id': u'482c543ed4fd4c098314915c973f1884', 'account_id': '4010edb05aba479581b7582310584092', 'trustee_id': None, 'trustor_id': None, 'consumer_id': None, 'token': <KeystoneToken (audit_id=FN-2vzerQbqlyy_lAV5lTQ, audit_chain_id=FN-2vzerQbqlyy_lAV5lTQ) at 0x7f106eab23c8>, 'project_id': '4010edb05aba479581b7582310584092', 'trust_id': None}
+HEAD http://localhost:80/v3/auth/tokens
+RBAC: Authorizing identity:check_token()
+RBAC: using auth context from the request environment
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dbcc250> acquired
+Calling creation function
+Released creation lock
+enforce identity:check_token: {'is_delegated_auth': False, 'access_token_id': None, 'user_id': u'482c543ed4fd4c098314915c973f1884', 'account_id': '4010edb05aba479581b7582310584092', 'trustee_id': None, 'trustor_id': None, 'consumer_id': None, 'token': <KeystoneToken (audit_id=FN-2vzerQbqlyy_lAV5lTQ, audit_chain_id=FN-2vzerQbqlyy_lAV5lTQ) at 0x7f106eab23c8>, 'project_id': '4010edb05aba479581b7582310584092', 'trust_id': None}
+Reloading cached file /opt/stack/keystone/etc/policy.json
+Reloaded policy file: /opt/stack/keystone/etc/policy.json
+You are not authorized to perform the requested action: identity:check_token
+}}}
+
+Traceback (most recent call last):
+  File "keystone/tests/unit/test_v3_identity_root.py", line 168, in test_delete_user
+    expected_status=200)
+  File "keystone/tests/unit/test_v3.py", line 606, in head
+    r = self.v3_request(method='HEAD', path=path, **kwargs)
+  File "keystone/tests/unit/test_v3.py", line 597, in v3_request
+    return self.admin_request(path=path, token=token, **kwargs)
+  File "keystone/tests/unit/rest.py", line 207, in admin_request
+    return self._request(app=self.admin_app, **kwargs)
+  File "keystone/tests/unit/rest.py", line 196, in _request
+    response = self.restful_request(**kwargs)
+  File "keystone/tests/unit/rest.py", line 182, in restful_request
+    **kwargs)
+  File "keystone/tests/unit/rest.py", line 90, in request
+    **kwargs)
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 567, in request
+    expect_errors=expect_errors,
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 632, in do_request
+    self._check_status(status, res)
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 667, in _check_status
+    "Bad response: %s (not %s)", res_status, status)
+webtest.app.AppError: Bad response: 403 Forbidden (not 200)
+======================================================================
+ERROR: keystone.tests.unit.test_v3_identity_root.IdentityTestCase.test_list_groups
+----------------------------------------------------------------------
+pythonlogging:'': {{{
+Adding cache-proxy 'keystone.tests.unit.test_cache.CacheIsolatingProxy' to backend.
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d2ac750> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d2b8690> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d2b8550> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d2b6f50> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d2b0b90> acquired
+Calling creation function
+Released creation lock
+Auth token not in the request header. Will not build auth context.
+/v3/auth/tokens
+calling verify signature
+None
+POST http://localhost:80/v3/auth/tokens
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d242290> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d2c2ad0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d2c2ad0> acquired
+Calling creation function
+Released creation lock
+RBAC: auth_context: {'is_delegated_auth': False, 'access_token_id': None, 'user_id': u'66d6746bb4a9468bbac5d9e8123f51c8', 'account_id': 'e71abeb4af9b4be3ad849520b7b7278d', 'trustee_id': None, 'trustor_id': None, 'consumer_id': None, 'token': <KeystoneToken (audit_id=nz_6pq-QQXKLVAfR3FxZ_A, audit_chain_id=nz_6pq-QQXKLVAfR3FxZ_A) at 0x7f106d71fd08>, 'project_id': 'e71abeb4af9b4be3ad849520b7b7278d', 'trust_id': None}
+GET http://localhost:80/v3/?Action=ListGroups
+Jio policy based authorization granted
+'Policy' object has no attribute 'get_group_policies'
+Traceback (most recent call last):
+  File "keystone/common/wsgi.py", line 238, in __call__
+    result = method(context, **params)
+  File "keystone/root/controllers.py", line 98, in genericmapper
+    return group_controller.list_groups(context)
+  File "keystone/common/controller.py", line 303, in wrapper
+    return f(self, context, filters, *args, **kwargs)
+  File "keystone/identity/controllers.py", line 385, in list_groups
+    policies = self.jio_policy_api.get_group_policies(groupid)
+  File "keystone/jio_policy/core.py", line 99, in get_group_policies
+    return self.driver.get_group_policies(groupid)
+AttributeError: 'Policy' object has no attribute 'get_group_policies'
+}}}
+
+Traceback (most recent call last):
+  File "keystone/tests/unit/test_v3_identity_root.py", line 203, in test_list_groups
+    r = self.get(resource_url)
+  File "keystone/tests/unit/test_v3.py", line 600, in get
+    r = self.v3_request(method='GET', path=path, **kwargs)
+  File "keystone/tests/unit/test_v3.py", line 597, in v3_request
+    return self.admin_request(path=path, token=token, **kwargs)
+  File "keystone/tests/unit/rest.py", line 207, in admin_request
+    return self._request(app=self.admin_app, **kwargs)
+  File "keystone/tests/unit/rest.py", line 196, in _request
+    response = self.restful_request(**kwargs)
+  File "keystone/tests/unit/rest.py", line 182, in restful_request
+    **kwargs)
+  File "keystone/tests/unit/rest.py", line 90, in request
+    **kwargs)
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 567, in request
+    expect_errors=expect_errors,
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 632, in do_request
+    self._check_status(status, res)
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 664, in _check_status
+    res)
+webtest.app.AppError: Bad response: 500 Internal Server Error (not 200 OK or 3xx redirect for http://localhost/v3/?Action=ListGroups)
+'{"error": {"message": "An unexpected error prevented the server from fulfilling your request.", "code": 500, "title": "Internal Server Error"}}'
+======================================================================
+ERROR: keystone.tests.unit.test_v3_identity_root.IdentityTestCase.test_list_groups_for_user
+----------------------------------------------------------------------
+pythonlogging:'': {{{
+Adding cache-proxy 'keystone.tests.unit.test_cache.CacheIsolatingProxy' to backend.
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106da07690> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106da073d0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dbfd610> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106de81dd0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d4e5150> acquired
+Calling creation function
+Released creation lock
+Auth token not in the request header. Will not build auth context.
+/v3/auth/tokens
+calling verify signature
+None
+POST http://localhost:80/v3/auth/tokens
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106e080110> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dfa4dd0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dfa4d90> acquired
+Calling creation function
+Released creation lock
+RBAC: auth_context: {'is_delegated_auth': False, 'access_token_id': None, 'user_id': u'913b7b37ab8a40569816629241977931', 'account_id': 'c6cb1ce224414457a9dc5e373a3deceb', 'trustee_id': None, 'trustor_id': None, 'consumer_id': None, 'token': <KeystoneToken (audit_id=-xZUsouXSgu4fDRrszCGAA, audit_chain_id=-xZUsouXSgu4fDRrszCGAA) at 0x7f107216e4f0>, 'project_id': 'c6cb1ce224414457a9dc5e373a3deceb', 'trust_id': None}
+GET http://localhost:80/v3/?Action=AssignUserToGroup&GroupId=c09794985c19421fb5a938199aaa69f6&UserId=913b7b37ab8a40569816629241977931
+Jio policy based authorization granted
+Auth token not in the request header. Will not build auth context.
+/v3/auth/tokens
+calling verify signature
+None
+POST http://localhost:80/v3/auth/tokens
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106df20490> acquired
+Calling creation function
+Released creation lock
+RBAC: auth_context: {'is_delegated_auth': False, 'access_token_id': None, 'user_id': u'913b7b37ab8a40569816629241977931', 'account_id': 'c6cb1ce224414457a9dc5e373a3deceb', 'trustee_id': None, 'trustor_id': None, 'consumer_id': None, 'token': <KeystoneToken (audit_id=xWKhm-PCTwS4feozha8UdQ, audit_chain_id=xWKhm-PCTwS4feozha8UdQ) at 0x7f106fa8ee30>, 'project_id': 'c6cb1ce224414457a9dc5e373a3deceb', 'trust_id': None}
+GET http://localhost:80/v3/?Action=ListGroupsForUser&Id=913b7b37ab8a40569816629241977931
+User id matched. No policy check done
+Could not find user: ['name']
+}}}
+
+Traceback (most recent call last):
+  File "keystone/tests/unit/test_v3_identity_root.py", line 109, in test_list_groups_for_user
+    r = self.get(resource_url)
+  File "keystone/tests/unit/test_v3.py", line 600, in get
+    r = self.v3_request(method='GET', path=path, **kwargs)
+  File "keystone/tests/unit/test_v3.py", line 597, in v3_request
+    return self.admin_request(path=path, token=token, **kwargs)
+  File "keystone/tests/unit/rest.py", line 207, in admin_request
+    return self._request(app=self.admin_app, **kwargs)
+  File "keystone/tests/unit/rest.py", line 196, in _request
+    response = self.restful_request(**kwargs)
+  File "keystone/tests/unit/rest.py", line 182, in restful_request
+    **kwargs)
+  File "keystone/tests/unit/rest.py", line 90, in request
+    **kwargs)
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 567, in request
+    expect_errors=expect_errors,
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 632, in do_request
+    self._check_status(status, res)
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 664, in _check_status
+    res)
+webtest.app.AppError: Bad response: 404 Not Found (not 200 OK or 3xx redirect for http://localhost/v3/?Action=ListGroupsForUser&Id=913b7b37ab8a40569816629241977931)
+'{"error": {"message": "Could not find user: [\'name\']", "code": 404, "title": "Not Found"}}'
+======================================================================
+ERROR: keystone.tests.unit.test_v3_identity_root.IdentityTestCase.test_list_users_in_group
+----------------------------------------------------------------------
+pythonlogging:'': {{{
+Adding cache-proxy 'keystone.tests.unit.test_cache.CacheIsolatingProxy' to backend.
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106de0f650> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106da8a9d0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106da1f550> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106da1f550> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106fff7fd0> acquired
+Calling creation function
+Released creation lock
+Auth token not in the request header. Will not build auth context.
+/v3/auth/tokens
+calling verify signature
+None
+POST http://localhost:80/v3/auth/tokens
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d642810> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f10702317d0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f10702317d0> acquired
+Calling creation function
+Released creation lock
+RBAC: auth_context: {'is_delegated_auth': False, 'access_token_id': None, 'user_id': u'8035e858c07944489fe4f28d3f1ba905', 'account_id': '9b8e9e55ddc04f0facd1fedc95bc5e18', 'trustee_id': None, 'trustor_id': None, 'consumer_id': None, 'token': <KeystoneToken (audit_id=s_T8xbQNT4y9XONj8hf1_w, audit_chain_id=s_T8xbQNT4y9XONj8hf1_w) at 0x7f106e0c7740>, 'project_id': '9b8e9e55ddc04f0facd1fedc95bc5e18', 'trust_id': None}
+GET http://localhost:80/v3/?Action=AssignUserToGroup&GroupId=e13470530e0f418da19c0db7ca5091ac&UserId=8035e858c07944489fe4f28d3f1ba905
+Jio policy based authorization granted
+Auth token not in the request header. Will not build auth context.
+/v3/auth/tokens
+calling verify signature
+None
+POST http://localhost:80/v3/auth/tokens
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f1070231510> acquired
+Calling creation function
+Released creation lock
+RBAC: auth_context: {'is_delegated_auth': False, 'access_token_id': None, 'user_id': u'8035e858c07944489fe4f28d3f1ba905', 'account_id': '9b8e9e55ddc04f0facd1fedc95bc5e18', 'trustee_id': None, 'trustor_id': None, 'consumer_id': None, 'token': <KeystoneToken (audit_id=jMjIVT0_Tg-mzsBimz9vfQ, audit_chain_id=jMjIVT0_Tg-mzsBimz9vfQ) at 0x7f106e0c7d08>, 'project_id': '9b8e9e55ddc04f0facd1fedc95bc5e18', 'trust_id': None}
+GET http://localhost:80/v3/?Action=ListUserInGroup&Id=e13470530e0f418da19c0db7ca5091ac
+Jio policy based authorization granted
+Incorrect number of values in identifier to formulate primary key for query.get(); primary key columns are 'group.id'
+Traceback (most recent call last):
+  File "keystone/common/wsgi.py", line 238, in __call__
+    result = method(context, **params)
+  File "keystone/root/controllers.py", line 113, in genericmapper
+    return user_controller.list_users_in_group(context,query_string['Id'])
+  File "keystone/common/controller.py", line 303, in wrapper
+    return f(self, context, filters, *args, **kwargs)
+  File "keystone/identity/controllers.py", line 264, in list_users_in_group
+    refs = self.identity_api.list_users_in_group(group_id, hints=hints)
+  File "keystone/common/manager.py", line 52, in wrapper
+    return f(self, *args, **kwargs)
+  File "keystone/identity/core.py", line 343, in wrapper
+    return f(self, *args, **kwargs)
+  File "keystone/identity/core.py", line 354, in wrapper
+    return f(self, *args, **kwargs)
+  File "keystone/identity/core.py", line 1066, in list_users_in_group
+    ref_list = driver.list_users_in_group(entity_id, hints)
+  File "keystone/identity/backends/sql.py", line 353, in list_users_in_group
+    self.get_group(group_id)
+  File "keystone/identity/backends/sql.py", line 414, in get_group
+    return self._get_group(session, group_id).to_dict()
+  File "keystone/identity/backends/sql.py", line 407, in _get_group
+    ref = session.query(Group).get(group_id)
+  File "/usr/local/lib/python2.7/dist-packages/sqlalchemy/orm/query.py", line 806, in get
+    ','.join("'%s'" % c for c in mapper.primary_key))
+InvalidRequestError: Incorrect number of values in identifier to formulate primary key for query.get(); primary key columns are 'group.id'
+}}}
+
+Traceback (most recent call last):
+  File "keystone/tests/unit/test_v3_identity_root.py", line 124, in test_list_users_in_group
+    r = self.get(resource_url)
+  File "keystone/tests/unit/test_v3.py", line 600, in get
+    r = self.v3_request(method='GET', path=path, **kwargs)
+  File "keystone/tests/unit/test_v3.py", line 597, in v3_request
+    return self.admin_request(path=path, token=token, **kwargs)
+  File "keystone/tests/unit/rest.py", line 207, in admin_request
+    return self._request(app=self.admin_app, **kwargs)
+  File "keystone/tests/unit/rest.py", line 196, in _request
+    response = self.restful_request(**kwargs)
+  File "keystone/tests/unit/rest.py", line 182, in restful_request
+    **kwargs)
+  File "keystone/tests/unit/rest.py", line 90, in request
+    **kwargs)
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 567, in request
+    expect_errors=expect_errors,
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 632, in do_request
+    self._check_status(status, res)
+  File "/usr/local/lib/python2.7/dist-packages/webtest/app.py", line 664, in _check_status
+    res)
+webtest.app.AppError: Bad response: 500 Internal Server Error (not 200 OK or 3xx redirect for http://localhost/v3/?Action=ListUserInGroup&Id=e13470530e0f418da19c0db7ca5091ac)
+'{"error": {"message": "An unexpected error prevented the server from fulfilling your request.", "code": 500, "title": "Internal Server Error"}}'
+======================================================================
+FAIL: keystone.tests.unit.test_v3_identity_root.IdentityTestCase.test_list_users
+----------------------------------------------------------------------
+pythonlogging:'': {{{
+Adding cache-proxy 'keystone.tests.unit.test_cache.CacheIsolatingProxy' to backend.
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106df18dd0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106e0d8590> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106e0d8590> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106df60d90> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106db084d0> acquired
+Calling creation function
+Released creation lock
+Auth token not in the request header. Will not build auth context.
+/v3/auth/tokens
+calling verify signature
+None
+POST http://localhost:80/v3/auth/tokens
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106d8b2790> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f107021a450> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f107021a810> acquired
+Calling creation function
+Released creation lock
+RBAC: auth_context: {'is_delegated_auth': False, 'access_token_id': None, 'user_id': u'219daa944a434ed9b667136d58b7bd1e', 'account_id': 'd69d5617c7e44ee9b9ae89ca210b1f24', 'trustee_id': None, 'trustor_id': None, 'consumer_id': None, 'token': <KeystoneToken (audit_id=bjYx6CwvTgujrd7gM0C6ug, audit_chain_id=bjYx6CwvTgujrd7gM0C6ug) at 0x7f106d7d6e30>, 'project_id': 'd69d5617c7e44ee9b9ae89ca210b1f24', 'trust_id': None}
+GET http://localhost:80/v3/?Action=ListUsers
+Jio policy based authorization granted
+}}}
+
+Traceback (most recent call last):
+  File "keystone/tests/unit/test_v3_identity_root.py", line 68, in test_list_users
+    resource_url=resource_url)
+  File "keystone/tests/unit/test_v3.py", line 1062, in assertValidUserListResponse
+    **kwargs)
+  File "keystone/tests/unit/test_v3.py", line 687, in assertValidListResponse
+    entity_validator(entity)
+  File "keystone/tests/unit/test_v3.py", line 1075, in assertValidUser
+    self.assertIsNone(entity.get('password'))
+  File "/usr/local/lib/python2.7/dist-packages/testtools/testcase.py", line 365, in assertIsNone
+    self.assertThat(observed, matcher, message)
+  File "/usr/local/lib/python2.7/dist-packages/testtools/testcase.py", line 435, in assertThat
+    raise mismatch_error
+testtools.matchers._impl.MismatchError: None is not u'Yes'
+======================================================================
+FAIL: keystone.tests.unit.test_v3_identity_root.IdentityTestCase.test_list_users_no_default_project
+----------------------------------------------------------------------
+pythonlogging:'': {{{
+Adding cache-proxy 'keystone.tests.unit.test_cache.CacheIsolatingProxy' to backend.
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dc676d0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dc42a50> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dc6f850> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dc3afd0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106dc54d50> acquired
+Calling creation function
+Released creation lock
+Auth token not in the request header. Will not build auth context.
+/v3/auth/tokens
+calling verify signature
+None
+POST http://localhost:80/v3/auth/tokens
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106da62a10> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106e0236d0> acquired
+Calling creation function
+Released creation lock
+NeedRegenerationException
+no value, waiting for create lock
+value creation lock <dogpile.cache.region._LockWrapper object at 0x7f106e0236d0> acquired
+Calling creation function
+Released creation lock
+RBAC: auth_context: {'is_delegated_auth': False, 'access_token_id': None, 'user_id': u'56615abb2f8e4aa7bfd830daa7a332c8', 'account_id': '275a17ce6194423e881c4036b4edeefe', 'trustee_id': None, 'trustor_id': None, 'consumer_id': None, 'token': <KeystoneToken (audit_id=pq8VcZW6SQqjI5pOCuxYBA, audit_chain_id=pq8VcZW6SQqjI5pOCuxYBA) at 0x7f106d3f3050>, 'project_id': '275a17ce6194423e881c4036b4edeefe', 'trust_id': None}
+GET http://localhost:80/v3/?Action=ListUsers
+Jio policy based authorization granted
+}}}
+
+Traceback (most recent call last):
+  File "keystone/tests/unit/test_v3_identity_root.py", line 84, in test_list_users_no_default_project
+    resource_url=resource_url)
+  File "keystone/tests/unit/test_v3.py", line 1062, in assertValidUserListResponse
+    **kwargs)
+  File "keystone/tests/unit/test_v3.py", line 687, in assertValidListResponse
+    entity_validator(entity)
+  File "keystone/tests/unit/test_v3.py", line 1075, in assertValidUser
+    self.assertIsNone(entity.get('password'))
+  File "/usr/local/lib/python2.7/dist-packages/testtools/testcase.py", line 365, in assertIsNone
+    self.assertThat(observed, matcher, message)
+  File "/usr/local/lib/python2.7/dist-packages/testtools/testcase.py", line 435, in assertThat
+    raise mismatch_error
+testtools.matchers._impl.MismatchError: None is not u'Yes'
+
+Ran 20 tests in 5.695s
+FAILED (failures=6)
