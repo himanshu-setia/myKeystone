@@ -170,7 +170,7 @@ def jio_policy_user_filterprotected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
-            """auth_context = self.get_auth_context(context)
+            auth_context = self.get_auth_context(context)
             user_id = auth_context.get('user_id')
             if 'Action' in context['query_string']:
                 action_name = context['query_string']['Action']
@@ -233,7 +233,7 @@ def jio_policy_user_filterprotected(**params):
                         LOG.debug('Jio policy based authorization failed')
                         raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
                                                %{'action':action, 'user_id':user_id, 'resource':r}))
-                LOG.debug('Jio policy based authorization granted')"""
+                LOG.debug('Jio policy based authorization granted')
             if 'filters' in params:
                 filters = params.get('filters')
                 return f(self, context, filters, *args, **kwargs)
@@ -246,7 +246,7 @@ def jio_policy_filterprotected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
-            """if 'is_admin' in context and context['is_admin']:
+            if 'is_admin' in context and context['is_admin']:
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
             else:
                 if 'Action' in context['query_string']:
@@ -297,7 +297,7 @@ def jio_policy_filterprotected(**params):
                         LOG.debug('Jio policy based authorization failed')
                         raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
                                                %{'action':action, 'user_id':user_id, 'resource':r}))
-                LOG.debug('Jio policy based authorization granted')"""
+                LOG.debug('Jio policy based authorization granted')
             if 'filters' in params:
                 filters = params.get('filters')
                 return f(self, context, filters, *args, **kwargs)
