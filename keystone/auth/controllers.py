@@ -603,7 +603,6 @@ class Auth(controller.V3Controller):
         import pdb;pdb.set_trace()
         token_data = self.validate_token_data(context)
         act_res_list = kwargs.get('action_resource_list', None)
-        res_acc_id = kwargs.get('res_acc_id',None)
         if not act_res_list:
             raise exception.ValidationError(attribute="action and resource",
                                             target="body")
@@ -620,13 +619,13 @@ class Auth(controller.V3Controller):
         user_id = token_data["token"]["user"]["id"]
         account_id = token_data["token"]["project"]["id"]
         self._validate_cross_account_with_token(
-                    user_id, account_id, resource, res_acc_id, action, is_implicit_allow, context)
+                    user_id, account_id, resource, action, is_implicit_allow, context)
         return self.render_response(token_data,context)
 
 
 
     def _validate_cross_account_with_token(self, user_id, user_acc_id,
-                                           resource, res_acc_id, action, is_implicit_allow, context):
+                                           resource, action, is_implicit_allow, context):
 
         is_authorized = True
         if len(action) != len(resource) or len(is_implicit_allow) != len(resource):
@@ -639,7 +638,7 @@ class Auth(controller.V3Controller):
             else:
                 imp_allow = False
             is_authorized = is_authorized and self.jio_policy_api.\
-                 is_cross_account_access_auth(user_id, user_acc_id, res, res_acc_id, act, imp_allow)
+                 is_cross_account_access_auth(user_id, user_acc_id, res, act, imp_allow)
 
         if not is_authorized:
             raise exception.Forbidden(

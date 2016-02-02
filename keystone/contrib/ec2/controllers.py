@@ -299,7 +299,6 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             action = query_string.pop('action', None)
             resource = query_string.pop('resource', None)
             imp_allow = query_string.pop('implicit_allow', False)
-            res_acc_id = query_string.pop('res_acc_id', False)
 
             if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
                 imp_allow = True
@@ -307,7 +306,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                 imp_allow = False
             if action and resource:
                 is_authorized = self.jio_policy_api.\
-                    is_cross_account_access_auth(user_id, account_id, resource, res_acc_id, action, imp_allow)
+                    is_cross_account_access_auth(user_id, account_id, resource, action, imp_allow)
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
@@ -318,10 +317,8 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
             act_res_list = None
             if ec2Credentials:
                 act_res_list = ec2Credentials.get("action_resource_list", None)
-                res_acc_id = ec2Credentials.get('res_acc_id', False)
             if not act_res_list and credentials:
                 act_res_list = credentials.get("action_resource_list",None)
-                res_acc_id = credentials.get('res_acc_id', False)
             if not act_res_list:
                 raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
             #act_res_list = json.loads(act_res_list)
@@ -339,7 +336,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                 else:
                     imp_allow = False
                 is_authorized = is_authorized and self.jio_policy_api.\
-                    is_cross_account_access_auth(user_id, account_id, res, res_acc_id, act, imp_allow)
+                    is_cross_account_access_auth(user_id, account_id, res, act, imp_allow)
 
             if not is_authorized:
                 raise exception.Forbidden(message='Policy does not allow to'
@@ -566,7 +563,6 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
             action = query_string.pop('action', None)
             resource = query_string.pop('resource', None)
             imp_allow = query_string.pop('implicit_allow', False)
-            res_acc_id = query_string.pop('res_acc_id', False)
 
             if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
                 imp_allow = True
@@ -574,7 +570,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
                 imp_allow = False
             if action and resource:
                 is_authorized = self.jio_policy_api.\
-                    is_cross_account_access_auth(user_id, account_id, resource, res_acc_id, action, imp_allow)
+                    is_cross_account_access_auth(user_id, account_id, resource, action, imp_allow)
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
@@ -606,7 +602,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
                 else:
                     imp_allow = False
                 is_authorized = is_authorized and self.jio_policy_api.\
-                    is_cross_account_access_auth(user_id, account_id, res, res_acc_id, act, imp_allow)
+                    is_cross_account_access_auth(user_id, account_id, res, act, imp_allow)
 
             if not is_authorized:
                 raise exception.Forbidden(message='Policy does not allow to'

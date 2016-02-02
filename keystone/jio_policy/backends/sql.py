@@ -483,9 +483,9 @@ class Policy(jio_policy.Driver):
                                 principle_id = None
 
                             principle_acc_id = principle_list[0]
-                            if principle_acc_id == project_id:
-                                 raise exception.ValidationError(
-                                         attribute='valid account id', target='principle')
+                            #if principle_acc_id == project_id:
+                             #    raise exception.ValidationError(
+                              #           attribute='valid account id', target='principle')
 
                             if principle_type == 'User' and principle_id !='*':
                                 self.identity_api.get_user(principle_id)
@@ -540,12 +540,15 @@ class Policy(jio_policy.Driver):
             session.delete(policy_ref)
 
 
-    def is_cross_account_access_auth(self, user_id, group_ids, user_acc_id, res_id, res_acc_id, action, is_impl_allow):
+    def is_cross_account_access_auth(self, user_id, group_ids, user_acc_id, res_id, action, is_impl_allow):
         session = sql.get_session()
 
         if len(res_id.split(':')) < 6:
             raise exception.ResourceNotFound(resource=res_id)  
 
+        resource = Policy._get_resource_list(res_id)
+        res_acc_id = resource[3]
+        
         resource = session.query(ResourceModel.id).\
             filter(ResourceModel.name == res_id).all()
 
