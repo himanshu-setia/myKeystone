@@ -122,9 +122,9 @@ class AccountV3(controller.V3Controller):
         super(AccountV3, self).__init__()
         self.get_member_from_driver = self.resource_api.get_account
 
-    def attach_root_policy(self, user_id):
+    def attach_root_policy(self, user_id, account_id):
         # For root user, account id is same as user id
-        resource = root_resource + user_id+':*'
+        resource = root_resource + account_id +':*'
         jio_policy = dict()
         jio_policy['id'] = uuid.uuid4().hex
         jio_policy['name'] = 'root_policy_'+user_id
@@ -133,7 +133,7 @@ class AccountV3(controller.V3Controller):
         statement['resource'] =[resource]
         statement['effect'] = 'allow'
         jio_policy['statement'] = [statement]
-        policy = self.jio_policy_api.create_policy(user_id, jio_policy.get('id'), jio_policy)
+        policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy)
         self.jio_policy_api.attach_policy_to_user(policy.get('id'), user_id)
 
     @controller.protected()
@@ -160,7 +160,7 @@ class AccountV3(controller.V3Controller):
         if 'password' in account and account.get('password') is not None:
             user_ref['password'] = account.get('password')
         user = self.identity_api.create_user(user_ref, initiator=None)
-        self.attach_root_policy(user.get('id'))
+        self.attach_root_policy(user.get('id'), user_ref['account_id'])
         return AccountV3.wrap_member(context, ref)
 
     @controller.filterprotected('enabled', 'name')
