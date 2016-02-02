@@ -42,16 +42,12 @@ class RootV3(controller.V3Controller):
         jio_policy_controller = jio_policy.controllers.JioPolicyV3()
         if Action == 'CreateUser':
             user = {}
-            if 'DefaultProjectId' in query_string:
-                user['default_project_id'] = query_string['DefaultProjectId']
-            if 'Description' in query_string:
-                user['description'] = query_string['Description']
-            if 'AccountId' in query_string:
-                user['account_id'] = query_string['AccountId']
             if 'Email' in query_string:
                 user['email'] = query_string['Email']
             if 'Enabled' in query_string:
                 user['enabled'] = (False, True) [query_string['Enabled'] == 'Yes']
+            else:
+                user['enabled'] = True
             if 'Name' in query_string:
                 user['name'] = query_string['Name']
             if 'Password' in query_string:
@@ -64,8 +60,6 @@ class RootV3(controller.V3Controller):
             return user_controller.list_users(context)
         elif Action == 'UpdateUser':
             user = {}
-            if 'Description' in query_string:
-                user['description'] = query_string['Description']
             if 'Email' in query_string:
                 user['email'] = query_string['Email']
             if 'Enabled' in query_string:
@@ -87,8 +81,6 @@ class RootV3(controller.V3Controller):
             group = {}
             if 'Description' in query_string:
                 group['description'] = query_string['Description']
-            if 'AccountId' in query_string:
-                group['account_id'] = query_string['AccountId']
             if 'Name' in query_string:
                 group['name'] = query_string['Name']
 

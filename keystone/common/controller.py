@@ -596,7 +596,7 @@ class V3Controller(wsgi.Application):
 
     @classmethod
     def wrap_member(cls, context, ref):
-        cls._add_self_referential_link(context, ref)
+        #cls._add_self_referential_link(context, ref)
         return {cls.member_name: ref}
 
     @classmethod
@@ -630,10 +630,10 @@ class V3Controller(wsgi.Application):
             cls.wrap_member(context, ref)
 
         container = {cls.collection_name: refs}
-        container['links'] = {
-            'next': None,
-            'self': cls.full_url(context, path=context['path']),
-            'previous': None}
+        #container['links'] = {
+        #    'next': None,
+        #    'self': cls.full_url(context, path=context['path']),
+        #    'previous': None}
 
         if list_limited:
             container['truncated'] = True

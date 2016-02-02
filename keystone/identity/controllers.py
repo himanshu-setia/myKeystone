@@ -1,6 +1,4 @@
-# Copyright 2012 OpenStack Foundation
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
+#f Copyright 2012 OpenStack Foundation
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
@@ -232,6 +230,25 @@ class UserV3(controller.V3Controller):
 
         return True
 
+    def updated_ref_list(self,refs):
+        attrs_to_return = ['id', 'name', 'account_id', 'email', 'enabled', 'expiry']
+        ret = []
+        for ref in refs:
+            new_ref = {}
+            for r in attrs_to_return:
+                if r in ref:
+                    new_ref[r] = ref.get(r)
+            ret.append(new_ref)
+        return ret
+
+    def updated_ref(self,ref):
+        attrs_to_return = ['id', 'name', 'account_id', 'email', 'enabled', 'expiry']
+        new_ref = {}
+        for r in attrs_to_return:
+            if r in ref:
+                new_ref[r] = ref.get(r)
+        return new_ref
+
     @controller.jio_policy_filterprotected(args='User')
     def create_user(self, context, user):
         self._require_attribute(user, 'name')
@@ -248,7 +265,8 @@ class UserV3(controller.V3Controller):
                                                 attribute='password',
                                                 message='password does not validate password policy')
         ref = self.identity_api.create_user(ref, initiator)
-        return UserV3.wrap_member(context, ref)
+        new_ref = self.updated_ref(ref)
+        return UserV3.wrap_member(context, new_ref)
 
     @controller.jio_policy_filterprotected(args='User', filters=['account_id', 'enabled', 'name'])
     def list_users(self, context, filters):
@@ -256,18 +274,22 @@ class UserV3(controller.V3Controller):
         refs = self.identity_api.list_users(
             account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
-        return UserV3.wrap_collection(context, refs, hints=hints)
+        
+        new_refs = self.updated_ref_list(refs)
+        return UserV3.wrap_collection(context, new_refs, hints=hints)
 
     @controller.jio_policy_filterprotected(args=['Group'], filters=['account_id', 'enabled', 'name'])
     def list_users_in_group(self, context,group_id,filters={'account_id', 'enabled', 'name'}):
         hints = UserV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_users_in_group(group_id, hints=hints)
-        return UserV3.wrap_collection(context, refs, hints=hints)
+        new_refs = self.updated_ref_list(refs)
+        return UserV3.wrap_collection(context, new_refs, hints=hints)
 
     @controller.jio_policy_user_filterprotected(args='User')
     def get_user(self, context, user_id):
         ref = self.identity_api.get_user(user_id)
-        return UserV3.wrap_member(context, ref)
+        new_ref = self.updated_ref(ref)
+        return UserV3.wrap_member(context, new_ref)
 
     def _update_user(self, context, user_id, user):
         self._require_matching_id(user_id, user)
@@ -275,7 +297,8 @@ class UserV3(controller.V3Controller):
             user_id, user, self.identity_api.get_user)
         initiator = notifications._get_request_audit_info(context)
         ref = self.identity_api.update_user(user_id, user, initiator)
-        return UserV3.wrap_member(context, ref)
+        new_ref = self.updated_ref(ref)
+        return UserV3.wrap_member(context, new_ref)
 
     @controller.jio_policy_user_filterprotected(args='User')
     def update_user(self, context, user_id, user):
@@ -386,7 +409,7 @@ class GroupV3(controller.V3Controller):
             if not policies: 
                 refs[indx]['Policies'] = '' 
             else:
-                    refs[indx]['Policies'] = policies
+                refs[indx]['Policies'] = policies
 
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
