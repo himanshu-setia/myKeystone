@@ -807,7 +807,7 @@ class Manager(manager.Manager):
             # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter.
             self._mark_account_id_filter_satisfied(hints)
- 	    ref_list = driver.list_user_summary_for_group(hints,group_id)
+        ref_list = driver.list_user_summary_for_group(hints,group_id)
         return self._set_account_id_and_mapping(
             ref_list, account_scope, driver, mapping.EntityType.USER)
 

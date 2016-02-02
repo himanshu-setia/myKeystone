@@ -37,7 +37,7 @@ class JioPolicyV3(controller.V3Controller):
             project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
                 'project_id']
         except KeyError:
-            raise exception.Forbidden()
+            raise exception.Forbidden('Cannot find project_id in context.')
         policy = self.jio_policy_api.create_policy(project_id, policy_id,
                                                    policy)
         return JioPolicyV3.wrap_member(context, policy)
@@ -48,7 +48,7 @@ class JioPolicyV3(controller.V3Controller):
             project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
                 'project_id']
         except KeyError:
-            raise exception.Forbidden()
+            raise exception.Forbidden('Cannot find project_id in context.')
         ref = self.jio_policy_api.list_policies(project_id)
         return JioPolicyV3.wrap_collection(context, ref)
 

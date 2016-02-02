@@ -629,13 +629,6 @@ class V3Controller(wsgi.Application):
             cls.wrap_member(context, ref)
 
         container = {cls.collection_name: refs}
-<<<<<<< HEAD
-        #container['links'] = {
-        #    'next': None,
-        #    'self': cls.full_url(context, path=context['path']),
-        #    'previous': None}
-=======
->>>>>>> Changed in update policy. Changes in the Unit test.
 
         if list_limited:
             container['truncated'] = True
