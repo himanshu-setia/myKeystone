@@ -33,7 +33,6 @@ class JioPolicyV3(controller.V3Controller):
     #@controller.jio_policy_filterprotected(args='Policy')
     @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
-        import pdb;pdb.set_trace()
         try:
             project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
                 'project_id']
