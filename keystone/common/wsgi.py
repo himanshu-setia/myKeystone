@@ -304,15 +304,15 @@ class Application(BaseApplication):
                 LOG.debug('Invalid user')
                 raise exception.Unauthorized()
 
-            if user_token_ref.project_scoped:
-                creds['tenant_id'] = user_token_ref.project_id
+            if user_token_ref.domain_scoped:
+                creds['tenant_id'] = user_token_ref.domain_id
             else:
                 LOG.debug('Invalid tenant')
                 raise exception.Unauthorized()
 
             creds['roles'] = user_token_ref.role_names
             # Accept either is_admin or the admin role
-            self.policy_api.enforce(creds, 'admin_required', {})
+            #self.policy_api.enforce(creds, 'admin_required', {})
 
     def _attribute_is_empty(self, ref, attribute):
         """Returns true if the attribute in the given ref (which is a
