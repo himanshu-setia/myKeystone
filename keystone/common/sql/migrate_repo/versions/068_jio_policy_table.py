@@ -51,7 +51,7 @@ def upgrade(migrate_engine):
             'jio_policy', meta,
             sql.Column('id', sql.String(length=64), primary_key=True),
             sql.Column('name', sql.String(length=255), nullable=False),
-            sql.Column('project_id', sql.String(length=64), nullable=False),
+            sql.Column('account_id', sql.String(length=64), nullable=False),
             sql.Column('created_at', sql.DateTime, nullable=False),
             sql.Column('updated_at', sql.DateTime),
             sql.Column('deleted_at', sql.DateTime),
