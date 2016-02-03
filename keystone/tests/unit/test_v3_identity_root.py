@@ -51,20 +51,17 @@ class IdentityTestCase(test_v3.RestfulTestCase):
     # user crud tests
 
     def test_create_user(self):
-        """Call ``POST /users``."""
         ref = self.new_user_ref(account_id=self.account_id)
-	user = '/?Action=CreateUser' + '&Name=' + ref['name'] + '&Description=' + ref['description'] + '&Password='+ ref['password']+'&Email='+ ref['email'] + '&AccountId=' + ref['account_id'] 
-	r = self.get(
-            user)
-	return self.assertValidUserResponse(r, ref)
+        user = '/?Action=CreateUser' + '&Name=' + ref['name'] + \
+               '&Description=' + ref['description'] + '&Password='+ \
+               ref['password']+'&Email='+ ref['email'] + '&AccountId=' + ref['account_id'] 
+        r = self.get(user)
+        return self.assertValidUserResponse(r, ref)
 
     def test_create_user_400(self):
-        """Call ``POST /users``."""
         self.get('/?Action=CreateUser', expected_status=400)
 
-
     def test_list_users(self):
-        """Call ``GET /users``."""
         resource_url = '/?Action=ListUsers'
         r = self.get(resource_url)
         self.assertValidUserListResponse(r, ref=self.user,
@@ -79,7 +76,6 @@ class IdentityTestCase(test_v3.RestfulTestCase):
                  expected_status=exception.Unauthorized.code)
 
     def test_list_users_no_default_project(self):
-        """Call ``GET /users`` making sure no default_project_id."""
         user = self.new_user_ref(self.account_id)
         user = self.identity_api.create_user(user)
         resource_url = '/?Action=ListUsers'
@@ -88,13 +84,11 @@ class IdentityTestCase(test_v3.RestfulTestCase):
                                          resource_url=resource_url)
 
     def test_get_user(self):
-        """Call ``GET /users/{user_id}``."""
         ref = '/?Action=GetUser' + '&Id=' + self.user['id']
         r = self.get(ref)
         self.assertValidUserResponse(r, self.user)
 
     def test_get_user_with_default_project(self):
-        """Call ``GET /users/{user_id}`` making sure of default_project_id."""
         user = self.new_user_ref(account_id=self.account_id,
                                  project_id=self.project_id)
         user = self.identity_api.create_user(user)
@@ -103,13 +97,10 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         self.assertValidUserResponse(r, user)
 
     def test_add_user_to_group(self):
-        """Call ``PUT /groups/{group_id}/users/{user_id}``."""
         ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
         self.get(ref,expected_status=204)
 
     def test_list_groups_for_user(self):
-        """Call ``GET /users/{user_id}/groups``."""
-
         # Administrator is allowed to list others' groups
         ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
         self.get(ref,expected_status=204)
@@ -120,7 +111,6 @@ class IdentityTestCase(test_v3.RestfulTestCase):
                                           resource_url=resource_url)
 
     def test_check_user_in_group(self):
-        """Call ``HEAD /groups/{group_id}/users/{user_id}``."""
         ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
         self.get(ref,expected_status=204)
 
@@ -128,43 +118,29 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         self.get(ref,expected_status=204)
 
     def test_list_users_in_group(self):
-        """Call ``GET /groups/{group_id}/users``."""
         ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
         self.get(ref,expected_status=204)
-
         resource_url= '/?Action=ListUserInGroup' + '&Id=' + self.group_id
         r = self.get(resource_url)
-
         self.assertValidUserListResponse(r, ref=self.user,
                                          resource_url=resource_url)
 
     def test_remove_user_from_group(self):
-        """Call ``DELETE /groups/{group_id}/users/{user_id}``."""
         ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
         self.get(ref,expected_status=204)
-
         ref= '/?Action=RemoveUserFromGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
         self.get(ref,expected_status=204)
 
     def test_update_user(self):
-        """Call ``PATCH /users/{user_id}``."""
         ref = self.new_user_ref(account_id=self.account_id)
         del ref['id']
-        user = '/?Action=UpdateUser' + '&Name=' + ref['name'] + '&Id=' + self.user['id'] + '&Description=' + ref['description'] +'&Email='+ ref['email'] + '&AccountId=' + ref['account_id']
+        user = '/?Action=UpdateUser' + '&Name=' + ref['name'] + \
+               '&Id=' + self.user['id'] + '&Description=' + ref['description'] + \
+               '&Email='+ ref['email'] + '&AccountId=' + ref['account_id']
         r = self.get(user)
-        print r
         self.assertValidUserResponse(r, ref)
 
-
     def test_delete_user(self):
-        """Call ``DELETE /users/{user_id}``.
-
-        As well as making sure the delete succeeds, we ensure
-        that any credentials that reference this user are
-        also deleted, while other credentials are unaffected.
-        In addition, no tokens should remain valid for this user.
-
-        """
         # First check the credential for this user is present
         r = self.credential_api.get_credential(self.credential['id'])
         self.assertDictEqual(r, self.credential)
@@ -211,34 +187,29 @@ class IdentityTestCase(test_v3.RestfulTestCase):
     # group crud tests
 
     def test_create_group(self):
-        """Call ``POST /groups``."""
         ref = self.new_group_ref(account_id=self.account_id)
-        group = '/?Action=CreateGroup' + '&Name=' + ref['name'] + '&Description=' + ref['description'] +'&AccountId=' + ref['account_id'] 
+        group = '/?Action=CreateGroup' + '&Name=' + ref['name'] + '&Description=' + \
+                ref['description'] +'&AccountId=' + ref['account_id'] 
         self.get(group, expected_status=200)
     
     def test_create_group_400(self):
-        """Call ``POST /groups``."""
         self.get('/?Action=CreateGroup', expected_status=400)
 
-        """Call ``DELETE /groups/{group_id}``."""
         self.delete('/groups/%(group_id)s' % {
             'group_id': self.group_id})
 
     def test_list_groups(self):
-        """Call ``GET /groups``."""
         resource_url = '/?Action=ListGroups'
         r = self.get(resource_url)
         self.assertValidGroupListResponse(r, ref=self.group,
                                           resource_url=resource_url)
 
     def test_get_group(self):
-        """Call ``GET /groups/{group_id}``."""
         ref = '/?Action=GetGroup' + '&Id=' + self.group_id
         r = self.get(ref)
         self.assertValidGroupResponse(r, self.group)
 
     def test_update_group(self):
-        """Call ``PATCH /groups/{group_id}``."""
         ref = self.new_group_ref(account_id=self.account_id)
         del ref['id']
         group = '/?Action=UpdateGroup' + '&Name=' + ref['name'] + '&Id=' + self.group_id + '&Description=' + ref['description']
@@ -247,6 +218,5 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         self.assertValidGroupResponse(r, ref)
 
     def test_delete_group(self):
-        """Call ``DELETE /groups/{group_id}``."""
         group = '/?Action=DeleteGroup' + '&Id=' + self.group_id
         self.get(group,expected_status=204)

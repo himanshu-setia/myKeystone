@@ -88,7 +88,7 @@ class Routers(wsgi.RoutersBase):
                     'config_option')
             })
 
-        routers.append(
-            router.Router(controllers.ProjectV3(),
-                          'projects', 'project',
-                          resource_descriptions=self.v3_resources))
+        #routers.append(
+            #router.Router(controllers.ProjectV3(),
+            #              'projects', 'project',
+            #              resource_descriptions=self.v3_resources))

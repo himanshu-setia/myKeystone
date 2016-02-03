@@ -59,24 +59,39 @@ class CredentialV3(controller.V3Controller):
             return ret_ref
         else:
             return super(CredentialV3, self)._assign_unique_id(ref)
+    
+    @staticmethod
+    def _improve_response(ref):
+        ref.pop('project_id')
+        ref.pop('type')
 
-    #@controller.jio_policy_filterprotected(args='Credential')
-    @validation.validated(schema.credential_create, 'credential')
+
+    @controller.jio_policy_filterprotected(args='Credential')
     def create_credential(self, context, credential):
         trust_id = self._get_trust_id_for_request(context)
         ref = self._assign_unique_id(self._normalize_dict(credential),
                                      trust_id)
+        ref['type']=ref.get('type','ec2')
         ref = self.credential_api.create_credential(ref['id'], ref)
+        self._improve_response(ref)
         return CredentialV3.wrap_member(context, ref)
 
     @staticmethod
     def _blob_to_json(ref):
         # credentials stored via ec2tokens before the fix for #1259584
         # need json serializing, as that's the documented API format
-        blob = ref.get('blob')
-        if isinstance(blob, dict):
+        if ref.get('type', '').lower() == 'ec2':
+            try:
+                blob = jsonutils.loads(ref.get('blob'))
+            except (ValueError, TypeError):
+                raise exception.ValidationError(
+                message=_('Invalid blob in credential'))
+            if not blob or not isinstance(blob, dict):
+                raise exception.ValidationError(attribute='blob',                                                                           
+                                                target='credential')
             new_ref = ref.copy()
-            new_ref['blob'] = jsonutils.dumps(blob)
+            blob.pop('secret')
+            new_ref['blob'] = blob
             return new_ref
         else:
             return ref
@@ -86,6 +101,8 @@ class CredentialV3(controller.V3Controller):
         hints = CredentialV3.build_driver_hints(context, filters)
         refs = self.credential_api.list_credentials(hints)
         ret_refs = [self._blob_to_json(r) for r in refs]
+        for ref in ret_refs:
+            self._improve_response(ref)
         return CredentialV3.wrap_collection(context, ret_refs,
                                             hints=hints)
 
@@ -93,15 +110,8 @@ class CredentialV3(controller.V3Controller):
     def get_credential(self, context, credential_id):
         ref = self.credential_api.get_credential(credential_id)
         ret_ref = self._blob_to_json(ref)
+        self._improve_response(ref)
         return CredentialV3.wrap_member(context, ret_ref)
-
-    @controller.jio_policy_user_filterprotected(args='Credential')
-    @validation.validated(schema.credential_update, 'credential')
-    def update_credential(self, context, credential_id, credential):
-        self._require_matching_id(credential_id, credential)
-
-        ref = self.credential_api.update_credential(credential_id, credential)
-        return CredentialV3.wrap_member(context, ref)
 
     @controller.jio_policy_user_filterprotected(args='Credential')
     def delete_credential(self, context, credential_id):

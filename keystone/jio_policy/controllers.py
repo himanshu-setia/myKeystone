@@ -19,7 +19,7 @@ from keystone.common import dependency
 from keystone.common import validation
 from keystone import notifications
 from keystone.jio_policy import schema
-
+from keystone import exception
 
 @dependency.requires('jio_policy_api','identity_api')
 class JioPolicyV3(controller.V3Controller):
@@ -33,12 +33,11 @@ class JioPolicyV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='Policy')
     @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
-        policy_id = uuid.uuid4().hex
         try:
             project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
                 'project_id']
         except KeyError:
-            raise exceptions.Forbidden()
+            raise exception.Forbidden('Cannot find project_id in context.')
         policy = self.jio_policy_api.create_policy(project_id, policy_id,
                                                    policy)
         return JioPolicyV3.wrap_member(context, policy)
@@ -49,7 +48,7 @@ class JioPolicyV3(controller.V3Controller):
             project_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
                 'project_id']
         except KeyError:
-            raise exceptions.Forbidden()
+            raise exception.Forbidden('Cannot find project_id in context.')
         ref = self.jio_policy_api.list_policies(project_id)
         return JioPolicyV3.wrap_collection(context, ref)
 
@@ -88,7 +87,7 @@ class JioPolicyV3(controller.V3Controller):
         return self.jio_policy_api.detach_policy_from_group(jio_policy_id,
                                                             group_id)
 
-    @controller.protected()
+    @controller.jio_policy_filterprotected(args='Policy')
     def get_policy_summary(self, context, jio_policy_id):
         refs = self.jio_policy_api.list_policy_summary(jio_policy_id)
 

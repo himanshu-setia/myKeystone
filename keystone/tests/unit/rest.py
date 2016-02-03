@@ -104,7 +104,7 @@ class RestfulTestCase(tests.TestCase):
         self.assertTrue(
             response.status_code >= 200 and response.status_code <= 299,
             'Status code %d is outside of the expected range (2xx)\n\n%s' %
-            (response.status, response.body))
+            (response.status_code, response.body))
 
     def assertResponseStatus(self, response, expected_status):
         """Asserts a specific status code on the response.
