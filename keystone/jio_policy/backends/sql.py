@@ -310,6 +310,42 @@ class Policy(jio_policy.Driver):
                     policy_id=row.id).delete()
             session.delete(policy_ref)
 
+    def get_group_policies(self,groupid):
+        session = sql.get_session()
+
+        group_query = session.query(JioPolicyModel.name,PolicyUserGroupModel)
+        group_query = group_query.filter(PolicyUserGroupModel.policy_id==JioPolicyModel.id)
+        group_query = group_query.filter(PolicyUserGroupModel.user_group_id==groupid)
+        group_query = group_query.filter(PolicyUserGroupModel.type == 'GroupPolicy').all()
+        #if group_query.count() == 0:
+          #  return
+
+        if not group_query:
+            return False
+        policy_list = []
+        for row in group_query:
+            policy_list.append(row.name)
+
+        return policy_list
+
+    def get_user_policies(self,userid):
+        session = sql.get_session()
+
+        group_query = session.query(JioPolicyModel.name,PolicyUserGroupModel)
+        group_query = group_query.filter(PolicyUserGroupModel.policy_id==JioPolicyModel.id)
+        group_query = group_query.filter(PolicyUserGroupModel.user_group_id==userid)
+        group_query = group_query.filter(PolicyUserGroupModel.type == 'UserPolicy').all()
+        #if group_query.count() == 0:
+          #  return
+
+        if not group_query:
+            return False
+        policy_list = []
+        for row in group_query:
+            policy_list.append(row.name)
+
+        return policy_list
+
     def is_user_authorized(self, user_id, group_id, account_id, action, resource, is_implicit_allow):
         session = sql.get_session()
         # resource name must have 5 separators (:) e.g. 
