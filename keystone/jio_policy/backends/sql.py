@@ -841,11 +841,20 @@ class Policy(jio_policy.Driver):
                     attribute='valid action', target='policy')
 
 
-    def detach_policy_from_resource(self, policy_id, resource_id):
+    def detach_policy_from_resource(self, policy_id, resources):
         session = sql.get_session()
         self._get_policy(session, policy_id)
-        session.query(PolicyResourceModel).filter_by(
-            resource_id=resource_id).filter_by(policy_id=policy_id).delete()
+
+        for res in resources:
+            resource = (session.query(ResourceModel.id).\
+                filter(ResourceModel.name == res).all())
+            print resource
+            resource_ids = [x[0] for x in resource]
+            print resource_ids
+            session.query(PolicyResourceModel)\
+               .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
+               .filter(PolicyResourceModel.policy_id==policy_id)\
+               .delete(synchronize_session='fetch')
 
     def list_actions(self, hints):
         session = sql.get_session()

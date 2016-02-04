@@ -432,7 +432,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         ref['id'] = uuid.uuid4().hex
         ref['service'] = self.service.get('type')
         ref['name'] = uuid.uuid4().hex
-        ref['type'] = 'UserBased'
         action = self.new_action_ref()
         resource_type = self.new_resource_type_ref()
         self.action_resource_type_mapping(action.get('id'), resource_type.get('id'))
@@ -445,18 +444,24 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         ref['statement'] = [statement1]
         return ref
 
+    def new_resource(self, resource_type):
+        resource = dict()
+        res = 'jrn:jcs:'+self.service.get('type')+':'+self.project_id+':'+resource_type +':'+uuid.uuid4().hex
+        resource['resource'] = [res]
+
+        return resource
+
     def new_resource_jio_policy_ref(self):
         ref = dict()
         ref['id'] = uuid.uuid4().hex
         ref['service'] = self.service.get('type')
         ref['name'] = uuid.uuid4().hex
-        ref['type'] = 'ResourceBased'
         action = self.new_action_ref()
         resource_type = self.new_resource_type_ref()
         self.action_resource_type_mapping(action.get('id'), resource_type.get('id'))
+        ref['res_type'] = resource_type.get('name')
         statement1 = dict()
         statement1['action'] = [action.get('name')]
-        #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
         principle = uuid.uuid4().hex + ':'+ 'User'+':'+ '*'
         statement1['principle'] =[principle]
         statement1['effect'] = 'allow'

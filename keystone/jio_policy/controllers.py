@@ -113,13 +113,11 @@ class JioPolicyV3(controller.V3Controller):
 
     #@controller.jio_policy_filterprotected(args=['Policy','User'])
     def attach_policy_to_resource(self, context, jio_policy_id, resource):
-        import pdb;pdb.set_trace()
         return self.jio_policy_api.attach_policy_to_resource(jio_policy_id,
                                                          resource)
 
     #@controller.jio_policy_filterprotected(args=['Policy','User'])
     def detach_policy_from_resource(self, context, jio_policy_id, resource_id):
-        import pdb;pdb.set_trace()
         return self.jio_policy_api.detach_policy_from_resource(jio_policy_id,
                                                            resource_id)
 

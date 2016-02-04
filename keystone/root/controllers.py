@@ -207,8 +207,8 @@ class RootV3(controller.V3Controller):
             return jio_policy_controller.attach_policy_to_resource(context, jio_policy_id, resource['resource'])
         elif Action == 'DetachPolicyFromResource':
             jio_policy_id = query_string['PolicyId']
-            resource_id = query_string['ResourceId']
-            jio_policy_controller.detach_policy_from_resource(context, jio_policy_id, resource_id)        
+            resource = json.loads(query_string['Resource'])
+            jio_policy_controller.detach_policy_from_resource(context, jio_policy_id, resource['resource'])        
 
         else:
             raise exception.ActionNotFound(action = Action)
