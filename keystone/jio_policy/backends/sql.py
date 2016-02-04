@@ -30,7 +30,7 @@ class JioPolicyModel(sql.ModelBase, sql.DictBase):
     attributes = ['id', 'project_id', 'created_at', 'deleted_at']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
-    type = sql.Column(sql.Enum('UserPolicy', 'ResourcePolicy'), nullable=False)
+    type = sql.Column(sql.Enum('UserBased', 'ResourceBased'), nullable=False)
     project_id = sql.Column(sql.String(64), nullable=False)
     created_at = sql.Column(sql.DateTime, nullable=False)
     updated_at = sql.Column(sql.DateTime)
@@ -141,7 +141,7 @@ class Policy(jio_policy.Driver):
 
     @sql.handle_conflicts(conflict_type='policy')
     def create_policy(self, project_id, policy_id, policy):
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.get('name', None)
@@ -150,7 +150,7 @@ class Policy(jio_policy.Driver):
 
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
-                        project_id=project_id, type='UserPolicy',
+                        project_id=project_id, type='UserBased',
                         created_at=created_at,
                         updated_at=created_at,
                         policy_blob=jsonutils.dumps(ref)))
@@ -258,7 +258,7 @@ class Policy(jio_policy.Driver):
 
     @sql.handle_conflicts(conflict_type='policy')
     def create_resource_based_policy(self, project_id, policy_id, policy):
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.get('name', None)
@@ -267,7 +267,7 @@ class Policy(jio_policy.Driver):
 
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
-                        type='ResourcePolicy',
+                        type='ResourceBased',
                         project_id=project_id,
                         created_at=created_at,
                         updated_at=created_at,
@@ -439,7 +439,7 @@ class Policy(jio_policy.Driver):
     @sql.handle_conflicts(conflict_type='policy')
     def update_resource_based_policy(self, policy_id, policy):
         session = sql.get_session()
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         # TODO(ajayaa) sql optimizations.
         with session.begin():
             ref = self._get_policy(session, policy_id)
@@ -809,7 +809,7 @@ class Policy(jio_policy.Driver):
 
     def attach_policy_to_resource(self, policy_id, resource):
         session = sql.get_session()
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         with session.begin():
             resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
             action_tuple = session.query(ActionModel).join(PolicyActionPrincipleModel)\

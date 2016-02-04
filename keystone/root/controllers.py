@@ -159,19 +159,19 @@ class RootV3(controller.V3Controller):
         if Action == 'ListActions':
             return jio_policy_controller.list_actions(context)
         elif Action == 'CreatePolicy':
-            policy_document = json.loads(query_string['PolicyDocument'])['policy']
+            policy_document = json.loads(query_string['PolicyDocument'])
             return jio_policy_controller.create_policy(context, policy_document)
         elif Action == 'ListPolicies':
             return jio_policy_controller.list_policies(context)
         elif Action == 'GetPolicy':
-            jio_policy_id = query_string['PolicyId']
+            jio_policy_id = query_string['Id']
             return jio_policy_controller.get_policy(context, jio_policy_id)
         elif Action == 'DeletePolicy':
-            jio_policy_id = query_string['PolicyId']
+            jio_policy_id = query_string['Id']
             return jio_policy_controller.delete_policy(context, jio_policy_id)
         elif Action == 'UpdatePolicy':
-            policy_document = query_string['PolicyDocument']
-            jio_policy_id = query_string['PolicyId']
+            policy_document = json.loads(query_string['PolicyDocument'])
+            jio_policy_id = query_string['Id']
             return jio_policy_controller.update_policy(context, jio_policy_id, policy_document)
         elif Action == 'AttachPolicyToUser':
             jio_policy_id = query_string['PolicyId']
@@ -191,7 +191,7 @@ class RootV3(controller.V3Controller):
             jio_policy_controller.detach_policy_from_group(context, jio_policy_id,group_id)
 
         elif Action == 'CreateResourceBasedPolicy':
-            import pdb;pdb.set_trace()
+            #import pdb;pdb.set_trace()
             policy_document = json.loads(query_string['PolicyDocument'])
             return jio_policy_controller.create_resource_based_policy(context, policy_document)
         elif Action == 'UpdateResourceBasedPolicy':

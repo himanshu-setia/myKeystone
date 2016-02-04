@@ -14,6 +14,7 @@
 
 import datetime
 import uuid
+import copy
 
 from oslo_config import cfg
 from oslo_serialization import jsonutils
@@ -257,6 +258,10 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             self.service_id,
             self.service.copy())
 
+        self.jio_root_policy = self.new_jio_policy_root_ref()
+        self.jio_policy_api.create_policy(self.project_id, self.jio_root_policy.get('id'), copy.deepcopy(self.jio_root_policy))
+        self.jio_policy_api.attach_policy_to_user(self.jio_root_policy.get('id'), self.user_id)
+
         self.endpoint_id = uuid.uuid4().hex
         self.endpoint = self.new_endpoint_ref(service_id=self.service_id)
         self.endpoint['id'] = self.endpoint_id
@@ -427,6 +432,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         ref['id'] = uuid.uuid4().hex
         ref['service'] = self.service.get('type')
         ref['name'] = uuid.uuid4().hex
+        ref['type'] = 'UserBased'
         action = self.new_action_ref()
         resource_type = self.new_resource_type_ref()
         self.action_resource_type_mapping(action.get('id'), resource_type.get('id'))
@@ -435,6 +441,24 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
         resource = 'jrn:jcs:'+self.service.get('type')+':'+self.project_id+':'+resource_type.get('name')+':'+uuid.uuid4().hex
         statement1['resource'] =[resource]
+        statement1['effect'] = 'allow'
+        ref['statement'] = [statement1]
+        return ref
+
+    def new_resource_jio_policy_ref(self):
+        ref = dict()
+        ref['id'] = uuid.uuid4().hex
+        ref['service'] = self.service.get('type')
+        ref['name'] = uuid.uuid4().hex
+        ref['type'] = 'ResourceBased'
+        action = self.new_action_ref()
+        resource_type = self.new_resource_type_ref()
+        self.action_resource_type_mapping(action.get('id'), resource_type.get('id'))
+        statement1 = dict()
+        statement1['action'] = [action.get('name')]
+        #TODO (roopali) ; Change of project_id to domain_id. and change of format of resourceid; change to resource type
+        principle = uuid.uuid4().hex + ':'+ 'User'+':'+ '*'
+        statement1['principle'] =[principle]
         statement1['effect'] = 'allow'
         ref['statement'] = [statement1]
         return ref
