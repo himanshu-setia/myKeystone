@@ -26,10 +26,10 @@ from sqlalchemy import and_
 
 class JioPolicyModel(sql.ModelBase, sql.DictBase):
     __tablename__ = 'jio_policy'
-    attributes = ['id', 'project_id', 'created_at', 'deleted_at']
+    attributes = ['id', 'account_id', 'created_at', 'deleted_at']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
-    project_id = sql.Column(sql.String(64), nullable=False)
+    account_id = sql.Column(sql.String(64), nullable=False)
     created_at = sql.Column(sql.DateTime, nullable=False)
     updated_at = sql.Column(sql.DateTime)
     deleted_at = sql.Column(sql.DateTime)
@@ -108,7 +108,7 @@ class Policy(jio_policy.Driver):
         return ls[4]
 
     @sql.handle_conflicts(conflict_type='policy')
-    def create_policy(self, project_id, policy_id, policy):
+    def create_policy(self, account_id, policy_id, policy):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.get('name', None)
@@ -117,7 +117,7 @@ class Policy(jio_policy.Driver):
 
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
-                        project_id=project_id, created_at=created_at,
+                        account_id=account_id, created_at=created_at,
                         updated_at=created_at,
                         policy_blob=jsonutils.dumps(ref)))
             for stmt in statement:
@@ -126,11 +126,10 @@ class Policy(jio_policy.Driver):
                 resource = stmt.get('resource', None)
 
                 # Autofill account id in resource
-                # Assumption account_id == account_id == project_id
                 for index, item in enumerate(resource):
                     if len(item.split(':')) > 4 and item.split(':')[3]=='':
                         var=item.split(':')
-                        var[3]=project_id
+                        var[3]=account_id
                         resource[index]=':'.join(var)
 
                 if effect == 'allow':
@@ -175,10 +174,10 @@ class Policy(jio_policy.Driver):
         ref['updated_at'] = created_at
         return ref
 
-    def list_policies(self, project_id):
+    def list_policies(self, account_id):
         session = sql.get_session()
 
-        refs = session.query(JioPolicyModel).filter_by(project_id=project_id)\
+        refs = session.query(JioPolicyModel).filter_by(account_id=account_id)\
             .with_entities(
                     JioPolicyModel.id, JioPolicyModel.name,
                     JioPolicyModel.created_at, JioPolicyModel.updated_at)
@@ -248,11 +247,10 @@ class Policy(jio_policy.Driver):
                     resource = stmt.get('resource', None)
 
                     # Autofill account id in resource
-                    # Assumption account_id == account_id == project_id
                     for index, item in enumerate(resource):
                         if len(item.split(':')) > 4 and item.split(':')[3]=='':
                             var=item.split(':')
-                            var[3]=project_id
+                            var[3]=account_id
                             resource[index]=':'.join(var)
 
                     if effect == 'allow':
@@ -312,7 +310,7 @@ class Policy(jio_policy.Driver):
                     policy_id=row.id).delete()
             session.delete(policy_ref)
 
-    def is_user_authorized(self, user_id, group_id, project_id, action, resource, is_implicit_allow):
+    def is_user_authorized(self, user_id, group_id, account_id, action, resource, is_implicit_allow):
         session = sql.get_session()
         # resource name must have 5 separators (:) e.g. 
         # 'jrn:jcs:service:tenantid:rtype:res' is a valid resource name
@@ -323,7 +321,7 @@ class Policy(jio_policy.Driver):
         # in case tenantid is not present in resource, update it
         if resource.split(':')[3] == '':
             var = resource.split(':')
-            var[3] = project_id
+            var[3] = account_id
             resource = ':'.join(var)
 
         # query action id from action name in action table
@@ -393,7 +391,7 @@ class Policy(jio_policy.Driver):
         user_query = user_query.\
             filter(PolicyActionResourceModel.policy_id == JioPolicyModel.id)
         user_query = user_query.\
-            filter(JioPolicyModel.project_id == project_id)
+            filter(JioPolicyModel.account_id == account_id)
         user_query = user_query.\
             filter(PolicyUserGroupModel.user_group_id == user_id)
         if action_direct != [] and action_indirect != []:
@@ -441,7 +439,7 @@ class Policy(jio_policy.Driver):
                 filter(PolicyActionResourceModel.policy_id ==
                        JioPolicyModel.id)
             group_query = group_query.\
-                filter(JioPolicyModel.project_id == project_id)
+                filter(JioPolicyModel.account_id == account_id)
             group_query = group_query.\
                 filter(PolicyUserGroupModel.user_group_id.
                        in_(group_id))

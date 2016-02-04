@@ -259,7 +259,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             self.service.copy())
 
         self.jio_root_policy = self.new_jio_policy_root_ref()
-        self.jio_policy_api.create_policy(self.project_id, self.jio_root_policy.get('id'), copy.deepcopy(self.jio_root_policy))
+        self.jio_policy_api.create_policy(self.account_id, self.jio_root_policy.get('id'), copy.deepcopy(self.jio_root_policy))
         self.jio_policy_api.attach_policy_to_user(self.jio_root_policy.get('id'), self.user_id)
 
 
@@ -677,9 +677,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             # we're at least expecting the ref
             self.assertNotEmpty(entities)
 
-        # collections should have relational links
-        self.assertValidListLinks(resp.result.get('links'),
-                                  resource_url=resource_url)
 
         for entity in entities:
             self.assertIsNotNone(entity)
@@ -716,12 +713,6 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         for k in ['id'] + keys:
             msg = '%s unexpectedly None in %s' % (k, entity)
             self.assertIsNotNone(entity.get(k), msg)
-
-        self.assertIsNotNone(entity.get('links'))
-        self.assertIsNotNone(entity['links'].get('self'))
-        self.assertThat(entity['links']['self'],
-                        matchers.StartsWith('http://localhost'))
-        self.assertIn(entity['id'], entity['links']['self'])
 
         if ref:
             for k in keys:
