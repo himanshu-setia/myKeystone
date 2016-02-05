@@ -200,7 +200,7 @@ class Policy(jio_policy.Driver):
                             policy_ids = session.query(JioPolicyModel).join(PolicyResourceModel)\
                                  .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
                                  .filter(JioPolicyModel.project_id == account_id)\
-                                 .filter(JioPolicyModel.type == 'ResourcePolicy')\
+                                 .filter(JioPolicyModel.type == 'ResourceBased')\
                                  .with_entities(JioPolicyModel.id).all()
 
                             for policy in policy_ids:
@@ -556,7 +556,7 @@ class Policy(jio_policy.Driver):
         policy_ids = session.query(JioPolicyModel).join(PolicyResourceModel)\
                         .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
                         .filter(JioPolicyModel.project_id == res_acc_id)\
-                        .filter(JioPolicyModel.type == 'ResourcePolicy')\
+                        .filter(JioPolicyModel.type == 'ResourceBased')\
                         .with_entities(JioPolicyModel.id).all()
 
         group_ids.append('*')
