@@ -604,8 +604,7 @@ class Auth(controller.V3Controller):
         token_data = self.validate_token_data(context)
         act_res_list = kwargs.get('action_resource_list', None)
         if not act_res_list:
-            raise exception.ValidationError(attribute="action and resource",
-                                            target="body")
+            return self.render_response(token_data,context)       
         try:
             action = [item['action'] for item in act_res_list]
             resource = [item['resource'] for item in act_res_list]
@@ -648,8 +647,7 @@ class Auth(controller.V3Controller):
         token_data = self.validate_token_data(context)
         act_res_list = kwargs.get('action_resource_list', None)
         if not act_res_list:
-            raise exception.ValidationError(attribute="action and resource",
-                                            target="body")
+            return self.render_response(token_data,context)
         try:
             action = [item['action'] for item in act_res_list]
             resource = [item['resource'] for item in act_res_list]

@@ -110,10 +110,10 @@ class Ec2ControllerCommon(object):
 
     def _authenticate(self, credentials=None, ec2credentials=None):
         """Common code shared between the V2 and V3 authenticate methods.
-
         :returns: user_ref, tenant_ref, metadata_ref, roles_ref, catalog_ref
         """
 
+        import pdb;pdb.set_trace()
         # FIXME(ja): validate that a service token was used!
 
         # NOTE(termie): backwards compat hack
@@ -291,8 +291,6 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                            ec2credentials=ec2Credentials)
         user_id = user_ref["id"]
         account_id = tenant_ref["id"]
-        import pdb;pdb.set_trace()
-        #user_id= 'c68b22593d82449f9b971fd50d3a326d'
         query_string = context.get('query_string', None)
 
         if query_string:
@@ -319,27 +317,25 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                 act_res_list = ec2Credentials.get("action_resource_list", None)
             if not act_res_list and credentials:
                 act_res_list = credentials.get("action_resource_list",None)
-            if not act_res_list:
-                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
-            #act_res_list = json.loads(act_res_list)
-            try:
-                action = [item['action'] for item in act_res_list]
-                resource = [item['resource'] for item in act_res_list]
-                is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
-            except KeyError as e:
-                raise exception.ValidationError(attribute="action and resource",
+            if act_res_list:
+                try:
+                    action = [item['action'] for item in act_res_list]
+                    resource = [item['resource'] for item in act_res_list]
+                    is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
+                except KeyError as e:
+                    raise exception.ValidationError(attribute="action and resource",
                                             target="body")
-            is_authorized = True
-            for act, res, imp_allow in zip(action, resource, is_implicit_allow):
-                if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
-                    imp_allow = True
-                else:
-                    imp_allow = False
-                is_authorized = is_authorized and self.jio_policy_api.\
-                    is_cross_account_access_auth(user_id, account_id, res, act, imp_allow)
+                is_authorized = True
+                for act, res, imp_allow in zip(action, resource, is_implicit_allow):
+                    if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                        imp_allow = True
+                    else:
+                        imp_allow = False
+                    is_authorized = is_authorized and self.jio_policy_api.\
+                        is_cross_account_access_auth(user_id, account_id, res, act, imp_allow)
 
-            if not is_authorized:
-                raise exception.Forbidden(message='Policy does not allow to'
+                if not is_authorized:
+                    raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
 
 
@@ -392,27 +388,25 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                 act_res_list = ec2Credentials.get("action_resource_list", None)
             if not act_res_list and credentials:
                 act_res_list = credentials.get("action_resource_list",None)
-            if not act_res_list:
-                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
-            #act_res_list = json.loads(act_res_list)
-            try:
-                action = [item['action'] for item in act_res_list]
-                resource = [item['resource'] for item in act_res_list]
-                is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
-            except KeyError as e:
-                raise exception.ValidationError(attribute="action and resource",
+            if act_res_list:
+                try:
+                    action = [item['action'] for item in act_res_list]
+                    resource = [item['resource'] for item in act_res_list]
+                    is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
+                except KeyError as e:
+                    raise exception.ValidationError(attribute="action and resource",
                                             target="body")
-            is_authorized = True
-            for act, res, imp_allow in zip(action, resource, is_implicit_allow):
-                if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
-                    imp_allow = True
-                else:
-                    imp_allow = False
-                is_authorized = is_authorized and self.jio_policy_api.\
-                    is_user_authorized(user_id, project_id, act, res, imp_allow)
+                is_authorized = True
+                for act, res, imp_allow in zip(action, resource, is_implicit_allow):
+                    if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                        imp_allow = True
+                    else:
+                        imp_allow = False
+                    is_authorized = is_authorized and self.jio_policy_api.\
+                        is_user_authorized(user_id, project_id, act, res, imp_allow)
 
-            if not is_authorized:
-                raise exception.Forbidden(message='Policy does not allow to'
+                if not is_authorized:
+                    raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
         
 
@@ -550,13 +544,11 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
 
 
     def validate_cross_account_with_sign(self,context, credentials=None, ec2Credentials=None):
-        import pdb;pdb.set_trace()
         (user_ref, project_ref, metadata_ref, roles_ref,
          catalog_ref) = self._authenticate(credentials=credentials,
                                            ec2credentials=ec2Credentials)
         user_id = user_ref["id"]
         account_id = project_ref['id']
-        #user_id= 'c68b22593d82449f9b971fd50d3a326d'
         query_string = context.get('query_string', None)
 
         if query_string:
@@ -585,27 +577,25 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
             if not act_res_list and credentials:
                 act_res_list = credentials.get("action_resource_list",None)
                 res_acc_id = credentials.get('res_acc_id', False)
-            if not act_res_list:
-                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
-            #act_res_list = json.loads(act_res_list)
-            try:
-                action = [item['action'] for item in act_res_list]
-                resource = [item['resource'] for item in act_res_list]
-                is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
-            except KeyError as e:
-                raise exception.ValidationError(attribute="action and resource",
+            if act_res_list:
+                try:
+                    action = [item['action'] for item in act_res_list]
+                    resource = [item['resource'] for item in act_res_list]
+                    is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
+                except KeyError as e:
+                    raise exception.ValidationError(attribute="action and resource",
                                             target="body")
-            is_authorized = True
-            for act, res, imp_allow in zip(action, resource, is_implicit_allow):
-                if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
-                    imp_allow = True
-                else:
-                    imp_allow = False
-                is_authorized = is_authorized and self.jio_policy_api.\
-                    is_cross_account_access_auth(user_id, account_id, res, act, imp_allow)
+                is_authorized = True
+                for act, res, imp_allow in zip(action, resource, is_implicit_allow):
+                    if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                        imp_allow = True
+                    else:
+                        imp_allow = False
+                    is_authorized = is_authorized and self.jio_policy_api.\
+                        is_cross_account_access_auth(user_id, account_id, res, act, imp_allow)
 
-            if not is_authorized:
-                raise exception.Forbidden(message='Policy does not allow to'
+                if not is_authorized:
+                     raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
 
         method_names = ['ec2credential']
@@ -653,27 +643,25 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
                 act_res_list = ec2Credentials.get("action_resource_list", None)
             if not act_res_list and credentials:
                 act_res_list = credentials.get("action_resource_list",None)
-            if not act_res_list:
-                raise exception.ValidationError(attribute='action_resource_list', target='ec2Credentials,credentials')
-            #act_res_list = json.loads(act_res_list)
-            try:
-                action = [item['action'] for item in act_res_list]
-                resource = [item['resource'] for item in act_res_list]
-                is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
-            except KeyError as e:
-                raise exception.ValidationError(attribute="action and resource",
+            if act_res_list:
+                try:
+                    action = [item['action'] for item in act_res_list]
+                    resource = [item['resource'] for item in act_res_list]
+                    is_implicit_allow = [item.get('implicit_allow', False) for item in act_res_list]
+                except KeyError as e:
+                    raise exception.ValidationError(attribute="action and resource",
                                             target="body")
-            is_authorized = True
-            for act, res, imp_allow in zip(action, resource, is_implicit_allow):
-                if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
-                    imp_allow = True
-                else:
-                    imp_allow = False
-                is_authorized = is_authorized and self.jio_policy_api.\
-                    is_user_authorized(user_id, project_id, act, res, imp_allow)
+                is_authorized = True
+                for act, res, imp_allow in zip(action, resource, is_implicit_allow):
+                    if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                        imp_allow = True
+                    else:
+                        imp_allow = False
+                    is_authorized = is_authorized and self.jio_policy_api.\
+                        is_user_authorized(user_id, project_id, act, res, imp_allow)
 
-            if not is_authorized:
-                raise exception.Forbidden(message='Policy does not allow to'
+                if not is_authorized:
+                    raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
         
         method_names = ['ec2credential']
