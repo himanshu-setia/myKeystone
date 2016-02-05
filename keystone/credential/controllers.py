@@ -13,18 +13,20 @@
 # under the License.
 
 import hashlib
+import uuid
 
 from oslo_serialization import jsonutils
 
 from keystone.common import controller
 from keystone.common import dependency
 from keystone.common import validation
+from keystone.common import utils
 from keystone.credential import schema
 from keystone import exception
 from keystone.i18n import _
 
 
-@dependency.requires('credential_api')
+@dependency.requires('credential_api','identity_api')
 class CredentialV3(controller.V3Controller):
     collection_name = 'credentials'
     member_name = 'credential'
@@ -65,16 +67,45 @@ class CredentialV3(controller.V3Controller):
         ref.pop('project_id')
         ref.pop('type')
 
+    def _get_credentials_count(self, user_id):
+        """Get number of credentials for a user.
 
-    @controller.jio_policy_filterprotected(args='Credential')
+        :param user_id: id of user
+        :returns: credentials: number of ec2 credential for the given user
+        """
+        self.identity_api.get_user(user_id)
+        credential_refs = self.credential_api.list_credentials_for_user(
+            user_id)
+        return len(credential_refs)
+
+    #@controller.jio_policy_filterprotected(args='Credential')
+    @validation.validated(schema.credential_create, 'credential')
     def create_credential(self, context, credential):
-        trust_id = self._get_trust_id_for_request(context)
-        ref = self._assign_unique_id(self._normalize_dict(credential),
-                                     trust_id)
-        ref['type']=ref.get('type','ec2')
-        ref = self.credential_api.create_credential(ref['id'], ref)
-        self._improve_response(ref)
-        return CredentialV3.wrap_member(context, ref)
+        if 'user_id' not in credential:
+            user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
+            account_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["account_id"]
+        else:
+            user_id = credential['user_id']
+            user_ref = self.identity_api.get_user(user_id)
+            account_id = user_ref['account_id']
+        count = self._get_credentials_count(user_id)
+        if count >= 2:
+            e = "Not allowed to create more than two access-secret pairs."
+            raise exception.Forbidden(message=e)
+
+        blob = {'access': uuid.uuid4().hex,
+                'secret': uuid.uuid4().hex }
+        credential_id = utils.hash_access_key(blob['access'])
+        cred_ref = {'user_id': user_id,
+                    'project_id': account_id,
+                    'blob': jsonutils.dumps(blob),
+                    'id': credential_id,
+                    'type': 'ec2'}
+
+        self.credential_api.create_credential(credential_id, cred_ref)
+        self._improve_response(cred_ref)
+        return cred_ref
+
 
     @staticmethod
     def _blob_to_json(ref):
