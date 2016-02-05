@@ -242,14 +242,20 @@ class Resource(keystone_resource.Driver):
             ref = self._get_account(session, account_id)
             session.delete(ref)
 
+    def is_account_console(self, account_id):
+        with sql.transaction() as session:
+           account = self._get_account(session, account_id).to_dict()
+           return account.get('type') == 'console'
+        return False
 
 class Account(sql.ModelBase, sql.DictBase):
     __tablename__ = 'account'
-    attributes = ['id', 'name', 'enabled']
+    attributes = ['id', 'name', 'enabled', 'extra', 'type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(64), nullable=False)
     enabled = sql.Column(sql.Boolean, default=True, nullable=False)
     extra = sql.Column(sql.JsonBlob())
+    type = sql.Column(sql.Enum('console'), nullable=True)
     __table_args__ = (sql.UniqueConstraint('name'), {})
 
 

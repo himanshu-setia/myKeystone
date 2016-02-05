@@ -166,6 +166,30 @@ def protected(callback=None):
         return inner
     return wrapper
 
+def console_protected(**params):
+    def _filterprotected(f):
+        @functools.wraps(f)
+        def wrapper(self, context, *args, **kwargs):
+            auth_context = self.get_auth_context(context)
+            account_id = auth_context.get('account_id')
+
+            if 'is_admin' in context and context['is_admin']:
+                LOG.warning(_LW('User is admin; Bypassing authorization'))
+            elif self.resource_api.is_account_console(account_id):
+                if 'account' in kwargs and 'type' in kwargs.get('account') and kwargs.get('account').get('type') == 'console':
+                    kwargs.get('account').pop('type')
+                LOG.warning(_LW('User is Jio admin; Bypassing authorization'))
+
+            if 'filters' in params:
+                filters = params.get('filters')
+                return f(self, context, filters, *args, **kwargs)
+            else:
+                return f(self, context, *args, **kwargs)
+        return wrapper
+    return _filterprotected
+
+
+
 def jio_policy_user_filterprotected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
@@ -524,7 +548,7 @@ class V2Controller(wsgi.Application):
         return o
 
 
-@dependency.requires('policy_api', 'token_provider_api', 'jio_policy_api')
+@dependency.requires('policy_api', 'token_provider_api', 'jio_policy_api', 'resource_api')
 class V3Controller(wsgi.Application):
     """Base controller class for Identity API v3.
 

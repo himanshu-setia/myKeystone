@@ -458,6 +458,9 @@ class Manager(manager.Manager):
         self.get_account.invalidate(self, account_id)
         self.get_account_by_name.invalidate(self, account['name'])
 
+    def is_account_console(self, account_id):
+        return self.driver.is_account_console(account_id)
+
     def _delete_account_contents(self, account_id):
         """Delete the contents of a account.
 

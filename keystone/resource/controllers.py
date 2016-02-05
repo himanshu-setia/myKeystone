@@ -136,7 +136,7 @@ class AccountV3(controller.V3Controller):
         policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy)
         self.jio_policy_api.attach_policy_to_user(policy.get('id'), user_id)
 
-    @controller.protected()
+    @controller.console_protected()
     @validation.validated(schema.account_create, 'account')
     def create_account(self, context, account):
         ref = self._assign_unique_id(self._normalize_dict(account))
@@ -159,8 +159,11 @@ class AccountV3(controller.V3Controller):
         user_ref['name'] = ref['name']
         if 'password' in account and account.get('password') is not None:
             user_ref['password'] = account.get('password')
+        user_ref['type'] = 'root'
         user = self.identity_api.create_user(user_ref, initiator=None)
         self.attach_root_policy(user.get('id'), user_ref['account_id'])
+        if ref.get('type') == None:
+            ref.pop('type')
         return AccountV3.wrap_member(context, ref)
 
     @controller.filterprotected('enabled', 'name')
