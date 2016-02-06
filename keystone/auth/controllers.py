@@ -13,6 +13,7 @@
 # under the License.
 
 import sys
+from datetime import datetime, timedelta
 
 from keystoneclient.common import cms
 from oslo_config import cfg
@@ -382,10 +383,13 @@ class Auth(controller.V3Controller):
             (account_id, project_id, trust, unscoped) = auth_info.get_scope()
 
             method_names = auth_info.get_method_names()
+            if 'token' in method_names:
+                expires_at = datetime.utcnow() + timedelta(hours=1)
+            else:
+                expires_at = auth_context.get('expires_at')
             method_names += auth_context.get('method_names', [])
             # make sure the list is unique
             method_names = list(set(method_names))
-            expires_at = auth_context.get('expires_at')
             # NOTE(morganfainberg): define this here so it is clear what the
             # argument is during the issue_v3_token provider call.
             metadata_ref = None
