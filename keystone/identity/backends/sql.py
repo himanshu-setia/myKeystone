@@ -36,7 +36,7 @@ class User(sql.ModelBase, sql.DictBase):
     extra = sql.Column(sql.JsonBlob())
     default_project_id = sql.Column(sql.String(64))
     expiry = sql.Column(sql.DateTime)
-    type = sql.Column(sql.Enum('root'), nullable=True)
+    type = sql.Column(sql.Enum('regular', 'root'), nullable=False)
     # Unique constraint across two columns to create the separation
     # rather than just only 'name' being unique
     __table_args__ = (sql.UniqueConstraint('account_id', 'name'), {})
@@ -126,6 +126,7 @@ class Identity(identity.Driver):
     @sql.handle_conflicts(conflict_type='user')
     def create_user(self, user_id, user):
         user = utils.hash_user_password(user)
+        user['type']=user.get('type', 'regular')
         session = sql.get_session()
         with session.begin():
             user_ref = User.from_dict(user)
@@ -217,7 +218,7 @@ class Identity(identity.Driver):
     @sql.handle_conflicts(conflict_type='user')
     def update_user(self, user_id, user):
         session = sql.get_session()
-
+        user['type']=user.get('type', 'regular')
         with session.begin():
             user_ref = self._get_user(session, user_id)
             old_user_dict = user_ref.to_dict()

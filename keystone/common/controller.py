@@ -176,8 +176,9 @@ def console_protected(**params):
             if 'is_admin' in context and context['is_admin']:
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
             elif self.resource_api.is_account_console(account_id):
-                if 'account' in kwargs and 'type' in kwargs.get('account') and kwargs.get('account').get('type') == 'console':
-                    kwargs.get('account').pop('type')
+                # console account can create only ca accounts
+                if 'account' in kwargs:
+                    kwargs.get('account')['type'] = 'ca'
                 LOG.warning(_LW('User is Jio admin; Bypassing authorization'))
 
             if 'filters' in params:
@@ -187,8 +188,6 @@ def console_protected(**params):
                 return f(self, context, *args, **kwargs)
         return wrapper
     return _filterprotected
-
-
 
 def jio_policy_user_filterprotected(**params):
     def _filterprotected(f):
