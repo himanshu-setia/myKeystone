@@ -122,8 +122,7 @@ class PostParamsMiddleware(wsgi.Middleware):
             if k.startswith('_'):
                 continue
             params[k] = v
-
-        if 'auth' in params:
+        if 'auth' in params and 'password' in params['auth']['identity']['methods']:
             account_id = params["auth"]["identity"]["password"]["user"]["account"]["id"]
             params["auth"]["scope"] = {"account":{"id":account_id}}
         request.environ[PARAMS_ENV] = params
@@ -175,8 +174,7 @@ class JsonBodyMiddleware(wsgi.Middleware):
             if k.startswith('_'):
                 continue
             params[k] = v
-
-        if 'auth' in params:
+        if 'auth' in params and 'password' in params['auth']['identity']['methods']:
             account_id = params["auth"]["identity"]["password"]["user"]["account"]["id"]
             params["auth"]["scope"] = {"account":{"id":account_id}}
         request.environ[PARAMS_ENV] = params
@@ -314,11 +312,11 @@ class AuthContextMiddleware(wsgi.Middleware):
        LOG.warning(_LW( signature))
        if not signature:
            msg = ("Signature not provided")
-           return
+           return None, None
        access = self._get_access(req)
        if not access:
            msg = _("Access key not provided")
-           return 
+           return None, None
 
        if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
            params = {}
@@ -363,14 +361,17 @@ class AuthContextMiddleware(wsgi.Middleware):
        result = response.json() 
        LOG.debug(result)
        token_id = None
+       account_id = None
        if 'token' in result:
-                # NOTE(andrey-mp): response from keystone v3
            token_id = response.headers['x-subject-token']
        else: 
            token_id = result['access']['token']['id']
+           account_id = result['access']['token']['tenant']['account_id']
        req.headers[AUTH_TOKEN_HEADER] = token_id
-       return token_id
+       return token_id, account_id
+
     def process_request(self, request):
+        account_id = None
         if AUTH_TOKEN_HEADER not in request.headers:
             LOG.debug(('Auth token not in the request header. '
                        'Will not build auth context.'))
@@ -379,7 +380,7 @@ class AuthContextMiddleware(wsgi.Middleware):
                 return
             else:
                 LOG.warning("calling verify signature")
-                token_id = self._verify_signature(request)
+                token_id, account_id = self._verify_signature(request)
                 if not token_id:
                     return;
 #            return
@@ -387,8 +388,10 @@ class AuthContextMiddleware(wsgi.Middleware):
             msg = _LW('Auth context already exists in the request environment')
             LOG.warning(msg)
             return
-
         auth_context = self._build_auth_context(request)
+        if account_id is not None:
+            auth_context["project_id"] = account_id
+            auth_context["account_id"] = account_id
         LOG.debug('RBAC: auth_context: %s', auth_context)
         request.environ[authorization.AUTH_CONTEXT_ENV] = auth_context
 
