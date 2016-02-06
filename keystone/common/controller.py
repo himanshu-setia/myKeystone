@@ -257,7 +257,6 @@ def jio_policy_user_filterprotected(**params):
                 LOG.debug('User id matched. No policy check done')            
             else:
                 action = jio_namespace + jio_delimiter + action_default_service + jio_delimiter + action_name
-                
                 project_id = auth_context.get('project_id')
                 resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
                 resource = resource_pre + project_id  + jio_delimiter
@@ -952,13 +951,7 @@ class V3Controller(wsgi.Application):
         if token_ref.account_scoped:
             return token_ref.account_id
         else:
-            # TODO(henry-nash): We should issue an exception here since if
-            # a v3 call does not explicitly specify the account_id in the
-            # entity, it should be using a account scoped token.  However,
-            # the current tempest heat tests issue a v3 call without this.
-            # This is raised as bug #1283539.  Once this is fixed, we
-            # should remove the line below and replace it with an error.
-            return CONF.identity.default_account_id
+            return context['environment']['KEYSTONE_AUTH_CONTEXT']['account_id']
 
     def _normalize_account_id(self, context, ref):
         """Fill in account_id if not specified in a v3 call."""
