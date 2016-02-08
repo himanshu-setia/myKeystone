@@ -286,7 +286,7 @@ class AuthContextMiddleware(wsgi.Middleware):
         version 4 it is either an X-Amz-Credential parameter or a Credential=
         field in the 'Authorization' header string.
         """
-        access = req.params.get('AWSAccessKeyId')
+        access = req.params.get('JCSAccessKeyId')
         if access is not None:
             return access
 

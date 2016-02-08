@@ -50,7 +50,7 @@ class TestCredentialEc2(tests.TestCase):
         signer = ec2_utils.Ec2Signer(secret)
         params = {'SignatureMethod': 'HmacSHA256',
                   'SignatureVersion': '2',
-                  'AWSAccessKeyId': access}
+                  'JCSAccessKeyId': access}
         request = {'host': 'foo',
                    'verb': 'GET',
                    'path': '/bar',
@@ -80,7 +80,7 @@ class TestCredentialEc2(tests.TestCase):
         signer = ec2_utils.Ec2Signer(secret)
         params = {'SignatureMethod': 'HmacSHA256',
                   'SignatureVersion': '2',
-                  'AWSAccessKeyId': access}
+                  'JCSAccessKeyId': access}
         request = {'host': 'foo:8181',
                    'verb': 'GET',
                    'path': '/bar',
@@ -115,7 +115,7 @@ class TestCredentialEc2(tests.TestCase):
         signer = ec2_utils.Ec2Signer(secret)
         params = {'SignatureMethod': 'HmacSHA256',
                   'SignatureVersion': '2',
-                  'AWSAccessKeyId': access}
+                  'JCSAccessKeyId': access}
         # Omit the port to generate the signature.
         cnt_req = {'host': 'foo',
                    'verb': 'GET',
@@ -140,7 +140,7 @@ class TestCredentialEc2(tests.TestCase):
         access = self.blob['access']
         params = {'SignatureMethod': 'HmacSHA256',
                   'SignatureVersion': '2',
-                  'AWSAccessKeyId': access}
+                  'JCSAccessKeyId': access}
 
         sig_ref = {'access': access,
                    'signature': None,
@@ -168,7 +168,7 @@ class TestCredentialEc2(tests.TestCase):
         signer = ec2_utils.Ec2Signer(secret)
         params = {'SignatureMethod': 'HmacSHA256',
                   'SignatureVersion': '2',
-                  'AWSAccessKeyId': access}
+                  'JCSAccessKeyId': access}
         request = {'host': 'bar',
                    'verb': 'GET',
                    'path': '/bar',

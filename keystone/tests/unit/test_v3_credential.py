@@ -310,7 +310,7 @@ class TestCredentialEc2(CredentialBaseTestCase):
         signer = ec2_utils.Ec2Signer(secret)
         params = {'SignatureMethod': 'HmacSHA256',
                   'SignatureVersion': '2',
-                  'AWSAccessKeyId': access}
+                  'JCSAccessKeyId': access}
         request = {'host': 'foo',
                    'verb': 'GET',
                    'path': '/bar',
