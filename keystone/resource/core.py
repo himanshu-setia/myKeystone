@@ -461,6 +461,9 @@ class Manager(manager.Manager):
     def is_account_console(self, account_id):
         return self.driver.is_account_console(account_id)
 
+    def is_iam_special_account(self, account_id):
+        return self.driver.is_iam_special_account(account_id)
+
     def _delete_account_contents(self, account_id):
         """Delete the contents of a account.
 

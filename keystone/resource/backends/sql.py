@@ -250,7 +250,11 @@ class Resource(keystone_resource.Driver):
         with sql.transaction() as session:
            account = self._get_account(session, account_id).to_dict()
            return account.get('type') == 'console'
-        return False
+
+    def is_iam_special_account(self, account_id):
+        with sql.transaction() as session:
+            account = self._get_account(session, account_id).to_dict()
+            return account.get('type') == 'isa'
 
 class Account(sql.ModelBase, sql.DictBase):
     __tablename__ = 'account'

@@ -23,6 +23,7 @@ from keystone import notifications
 from keystone import identity
 from keystone import jio_policy
 from keystone import credential as cred
+from keystone import resource
 
 import json
 CONF = cfg.CONF
@@ -37,6 +38,7 @@ class RootV3(controller.V3Controller):
         group_controller = identity.controllers.GroupV3()
         credential_controller = cred.controllers.CredentialV3()
         jio_policy_controller = jio_policy.controllers.JioPolicyV3()
+        account_controller = resource.controllers.AccountV3()
         if Action == 'CreateUser':
             user = {}
             if 'Email' in query_string:
@@ -162,5 +164,17 @@ class RootV3(controller.V3Controller):
             jio_policy_id = query_string['PolicyId']
             group_id = query_string['GroupId']
             jio_policy_controller.detach_policy_from_group(context, jio_policy_id,group_id)
+        elif Action == 'CreateAction':
+            action_name = query_string['Action']
+            jio_policy_controller.create_action(action_name)
+        elif Action == 'UpdateServiceAccount':
+            user_ids = None
+            if 'UserIds' in query_string:
+                users_json = json.loads(query_string['UserIds'])
+                user_ids = users_json.get('userIds')
+            account_id = query_string['AccountId']
+            services_json = json.loads(query_string['Services'])
+            services = services_json.get('services')
+            account_controller.update_service_account(context, services, account_id, user_ids)
         else:
             raise exception.ActionNotFound(action = Action)

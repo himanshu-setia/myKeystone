@@ -204,6 +204,17 @@ class Identity(identity.Driver):
         session = sql.get_session()
         return identity.filter_user(self._get_user(session, user_id).to_dict())
 
+    def get_root_user(self, account_id):
+        session = sql.get_session()
+        query = session.query(User)
+        query = query.filter_by(account_id=account_id)
+        query = query.filter_by(type = 'root')
+        try:
+            user_ref = query.one()
+        except sql.NotFound:
+            raise exception.RootUserNotFound(account_id=account_id)
+        return identity.filter_user(user_ref.to_dict())
+
     def get_user_by_name(self, user_name, account_id):
         session = sql.get_session()
         query = session.query(User)

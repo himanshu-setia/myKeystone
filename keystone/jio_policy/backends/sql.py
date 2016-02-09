@@ -583,6 +583,20 @@ class Policy(jio_policy.Driver):
         rows = query.filter(ResourceTypeModel.name == resource_type).count()
         return True if rows > 0 else False
 
+    def create_action(self, action_id, action_name, service_type):
+        ref = dict()
+        ref['id'] = action_id
+        ref['name'] = action_name
+        ref['service_type'] = service_type
+        session = sql.get_session()
+        with session.begin():
+            try:
+                session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
+            except sql.DBReferenceError:
+                raise exception.ValidationError(attribute='valid service name', target='resource')
+        return ref
+
+
 def create_action(action_id, action_name, service_type):
     ref = dict()
     ref['id'] = action_id
