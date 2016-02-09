@@ -360,9 +360,17 @@ class Policy(jio_policy.Driver):
             var[3] = account_id
             resource = ':'.join(var)
 
+        if len(action.split(':')) < 4:
+            raise exception.ActionNotFound(action=action)
+        if action.split(':')[3] == '*':
+            raise exception.ActionNotFound(action=action)
+
         # query action id from action name in action table
         action_direct = session.query(ActionModel.id).\
             filter(ActionModel.action_name == action).all()
+        if action_direct==[]:
+            raise exception.ActionNotFound(action=action)
+
         action_generic = list()
         action_generic.append('jrn:jcs:*')
         if len(action.split(':')) > 3:
@@ -383,8 +391,8 @@ class Policy(jio_policy.Driver):
                 action_indirect[j] = i[0]
                 j = j+1
 
-        if action_direct == [] and action_indirect == []:
-            raise exception.ActionNotFound(action=action)
+        #if action_direct == [] and action_indirect == []:
+        #    raise exception.ActionNotFound(action=action)
 
         resource_direct = session.query(ResourceModel.id).\
             filter(ResourceModel.name == resource).all()
