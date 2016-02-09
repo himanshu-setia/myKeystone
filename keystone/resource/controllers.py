@@ -175,7 +175,9 @@ class AccountV3(controller.V3Controller):
             services = services.split()
 
         if user_ids == None:
+            user_ids = []
             user = self.identity_api.get_root_user(account_id)
+            user_ids.append(user.get('id'))
         actions = []
         resources = [] 
         for s in services:
@@ -194,7 +196,7 @@ class AccountV3(controller.V3Controller):
         policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy)
         for id in user_ids:
             self.jio_policy_api.attach_policy_to_user(policy.get('id'), id)
-
+        return self.resource_api.update_account_type(account_id, 'csa')
 
     @controller.filterprotected('enabled', 'name')
     def list_accounts(self, context, filters):

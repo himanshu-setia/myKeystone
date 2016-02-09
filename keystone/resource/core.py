@@ -405,6 +405,14 @@ class Manager(manager.Manager):
         """
         pass
 
+    def update_account_type(self, account_id, account_type, initiator=None):
+        original_account = self.driver.get_account(account_id)
+        account = dict()
+        account['type'] = account_type
+        ret = self.driver.update_account(account_id, account)
+        notifications.Audit.updated(self._ACCOUNT, account_id, initiator)
+        return ret
+
     def update_account(self, account_id, account, initiator=None):
         self.assert_account_not_federated(account_id, account)
         original_account = self.driver.get_account(account_id)
@@ -463,6 +471,9 @@ class Manager(manager.Manager):
 
     def is_iam_special_account(self, account_id):
         return self.driver.is_iam_special_account(account_id)
+
+    def is_service_account(self, account_id):
+        return self.driver.is_service_account(account_id)
 
     def _delete_account_contents(self, account_id):
         """Delete the contents of a account.
