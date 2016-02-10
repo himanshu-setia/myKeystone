@@ -113,14 +113,14 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
                 'policy_id': self.jio_policy_id, 'user_id': self.user_id}, expected_status = 204)
 
     def test_attach_policy_to_group(self):
-        new_group = {'domain_id': self.domain_id, 'name': uuid.uuid4().hex}
+        new_group = {'account_id': self.account_id, 'name': uuid.uuid4().hex}
         new_group = self.identity_api.create_group(new_group)
         r = self.get(
                 '/?Action=AttachPolicyToGroup&GroupId=%(group_id)s&PolicyId=%(policy_id)s' % {
                 'policy_id': self.jio_policy_id, 'group_id':  new_group['id']}, expected_status = 204)
 
     def test_detach_policy_from_group(self):
-        new_group = {'domain_id': self.domain_id, 'name': uuid.uuid4().hex}
+        new_group = {'account_id': self.account_id, 'name': uuid.uuid4().hex}
         new_group = self.identity_api.create_group(new_group)
         r = self.get(
                 '/?Action=DetachPolicyFromGroup&GroupId=%(group_id)s&PolicyId=%(policy_id)s' % {

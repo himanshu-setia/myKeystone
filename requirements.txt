@@ -1,6 +1,7 @@
 # The order of packages is significant, because pip processes them in the order
 # of appearance. Changing the order has an impact on the overall integration
-# process, which may cause wedges in the gate later!
+# process, which may cause wedges in the gate later.
+
 pbr!=0.7,<1.0,>=0.6
 WebOb>=1.2.3
 eventlet!=0.17.0,>=0.16.1
@@ -34,34 +35,3 @@ jsonschema<3.0.0,>=2.0.0
 pycadf<0.9.0,>=0.8.0
 posix-ipc
 msgpack-python>=0.4.0
-python-ldap>=2.4
-<<<<<<< HEAD
-python-ldappool>=1.0
-python-migrate>=0.9.1
-python-msgpack>=0.4.0
-python-netaddr>=0.7.12
-python-oauthlib>=0.6
-python-oslo-concurrency>=1.8.0
-python-oslo-config
-python-oslo-db>=1.7.0
-python-oslo-i18n>=1.5.0
-python-oslo-log>=1.0.0
-python-oslo-messaging>=1.8.0
-python-oslo-middleware>=1.0.0
-python-oslo-policy>=0.3.1
-python-oslo-serialization>=1.4.0
-python-oslo-utils>=1.4.0
-python-pam>=0.1.4
-python-passlib
-python-paste
-python-pastedeploy>=1.5.0
-python-pbr>=0.6
-python-posix-ipc
-python-pycadf>=0.8.0
-python-pysaml2
-python-routes>=1.12.3
-python-six>=1.9.0
-python-sqlalchemy>=0.9.7
-python-webob>=1.2.3
-=======
->>>>>>> 5909016083c36bbcd4054df7d693463d2ff97033

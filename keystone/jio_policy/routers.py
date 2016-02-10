@@ -34,7 +34,6 @@ class Routers(wsgi.RoutersBase):
             mapper, policy_controller,
             path='/jio_policies_rbd',
             post_action='create_resource_based_policy',
-            get_action='list_policies',
             rel=json_home.build_v3_resource_relation('jio_policies'),
             )
 
@@ -44,7 +43,6 @@ class Routers(wsgi.RoutersBase):
             delete_action='delete_policy',
             get_action='get_policy',
             patch_action='update_policy',
-            put_action='update_resource_based_policy',
             rel=json_home.build_v3_resource_relation('jio_policy'),
             path_vars={
                 'jio_policy_id': json_home.Parameters.JIO_POLICY_ID,
@@ -54,7 +52,7 @@ class Routers(wsgi.RoutersBase):
             mapper, policy_controller,
             path='/jio_policies_rbd/{jio_policy_id}',
             delete_action='delete_resource_based_policy',
-            put_action='update_resource_based_policy',
+            patch_action='update_resource_based_policy',
             rel=json_home.build_v3_resource_relation('jio_policy'),
             path_vars={
                 'jio_policy_id': json_home.Parameters.JIO_POLICY_ID,
@@ -84,19 +82,9 @@ class Routers(wsgi.RoutersBase):
 
         self._add_resource(
                 mapper, policy_controller,
-                path='/jio_policies/{jio_policy_id}/resources/{resource_id}',
-                put_action='attach_policy_to_resource',
-                delete_action='detach_policy_from_resource',
-                rel=json_home.build_v3_resource_relation('jio_policy_group'),
-                path_vars={
-                    'jio_policy_id': json_home.Parameters.JIO_POLICY_ID,
-                    'resource_id': json_home.Parameters.GROUP_ID
-                })
-
-        self._add_resource(
-                mapper, policy_controller,
                 path='/jio_policies/{jio_policy_id}/resources',
                 put_action='attach_policy_to_resource',
+                delete_action='detach_policy_from_resource',
                 rel=json_home.build_v3_resource_relation('jio_policy_group'),
                 path_vars={
                     'jio_policy_id': json_home.Parameters.JIO_POLICY_ID,

@@ -538,7 +538,6 @@ class Policy(jio_policy.Driver):
                     policy_id=row.id).delete()
             session.delete(policy_ref)
 
-<<<<<<< HEAD
     def get_group_policies(self,groupid):
         session = sql.get_session()
 
@@ -575,8 +574,6 @@ class Policy(jio_policy.Driver):
 
         return policy_list
 
-    def is_user_authorized(self, user_id, group_id, account_id, action, resource, is_implicit_allow):
-=======
     def delete_resource_based_policy(self, policy_id):
         session = sql.get_session()
 
@@ -866,7 +863,7 @@ class Policy(jio_policy.Driver):
         self._detach_policy_from_user_group(policy_id, group_id,
                                             type='GroupPolicy')
 
-    def attach_policy_to_resource(self, policy_id, resource):
+    def attach_policy_to_resource(self, policy_id, account_id, resource):
         session = sql.get_session()
         #import pdb;pdb.set_trace()
         with session.begin():
@@ -888,6 +885,13 @@ class Policy(jio_policy.Driver):
                                      attribute='valid resource type', target='resource')
 
                 for pair in zip_resource:
+                    resource = Policy._get_resource_list(pair[1])
+                    res_acc_id = resource[3]
+
+                    if res_acc_id != account_id:
+                        raise exception.ValidationError(
+                                     attribute='valid account id', target='resource')
+
                     session.add(ResourceModel(id=pair[0], name=pair[1],
                                     service_type=Policy._get_service_name(
                                         pair[1])))
@@ -907,9 +911,7 @@ class Policy(jio_policy.Driver):
         for res in resources:
             resource = (session.query(ResourceModel.id).\
                 filter(ResourceModel.name == res).all())
-            print resource
             resource_ids = [x[0] for x in resource]
-            print resource_ids
             session.query(PolicyResourceModel)\
                .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
                .filter(PolicyResourceModel.policy_id==policy_id)\

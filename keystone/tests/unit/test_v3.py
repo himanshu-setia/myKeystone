@@ -259,7 +259,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             self.service.copy())
 
         self.jio_root_policy = self.new_jio_policy_root_ref()
-        self.jio_policy_api.create_policy(self.project_id, self.jio_root_policy.get('id'), copy.deepcopy(self.jio_root_policy))
+        self.jio_policy_api.create_policy(self.account_id, self.jio_root_policy.get('id'), copy.deepcopy(self.jio_root_policy))
         self.jio_policy_api.attach_policy_to_user(self.jio_root_policy.get('id'), self.user_id)
 
         self.endpoint_id = uuid.uuid4().hex

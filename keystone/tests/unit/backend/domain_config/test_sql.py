@@ -13,7 +13,7 @@
 
 from keystone.common import sql
 from keystone.tests.unit.backend import core_sql
-from keystone.tests.unit.backend.account_config import core
+from keystone.tests.unit.backend.domain_config import core
 
 
 class SqlAccountConfigModels(core_sql.BaseBackendSqlModels):

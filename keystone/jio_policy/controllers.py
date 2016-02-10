@@ -30,7 +30,7 @@ class JioPolicyV3(controller.V3Controller):
         ref = self.jio_policy_api.list_actions()
         return ref
 
-    #@controller.jio_policy_filterprotected(args='Policy')
+    @controller.jio_policy_filterprotected(args='Policy')
     @validation.validated(schema.policy_create, 'policy')
     def create_policy(self, context, policy):
         policy_id = uuid.uuid4().hex
@@ -111,17 +111,22 @@ class JioPolicyV3(controller.V3Controller):
         return self.jio_policy_api.detach_policy_from_group(jio_policy_id,
                                                             group_id)
 
-    @controller.jio_policy_filterprotected(args=['Policy','User'])
+    @controller.jio_policy_filterprotected(args=['Policy','Resource'])
     def attach_policy_to_resource(self, context, jio_policy_id, resource):
-        return self.jio_policy_api.attach_policy_to_resource(jio_policy_id,
+        try:
+            account_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'account_id']
+        except KeyError:
+            raise exception.Forbidden('Cannot find account_id in context.')
+        return self.jio_policy_api.attach_policy_to_resource(jio_policy_id, account_id,
                                                          resource)
 
-    @controller.jio_policy_filterprotected(args=['Policy','User'])
-    def detach_policy_from_resource(self, context, jio_policy_id, resource_id):
+    @controller.jio_policy_filterprotected(args=['Policy','Resource'])
+    def detach_policy_from_resource(self, context, jio_policy_id, resource):
         return self.jio_policy_api.detach_policy_from_resource(jio_policy_id,
-                                                           resource_id)
+                                                           resource)
 
-    @controller.protected()
+    @controller.jio_policy_filterprotected(args='Policy')
     def get_policy_summary(self, context, jio_policy_id):
         refs = self.jio_policy_api.list_policy_summary(jio_policy_id)
 

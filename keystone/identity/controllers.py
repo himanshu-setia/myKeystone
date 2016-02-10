@@ -230,7 +230,6 @@ class UserV3(controller.V3Controller):
 
         return True
 
-<<<<<<< HEAD
     def updated_ref_list(self,refs):
         attrs_to_return = ['id', 'name', 'account_id', 'email', 'enabled', 'expiry']
         ret = []
