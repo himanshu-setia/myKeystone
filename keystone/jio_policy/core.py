@@ -50,6 +50,10 @@ class Manager(manager.Manager):
         ref = self.driver.create_policy(project_id, policy_id, policy)
         return ref
 
+    def create_resource_based_policy(self, project_id, policy_id, policy):
+        ref = self.driver.create_resource_based_policy(project_id, policy_id, policy)
+        return ref
+
     def list_policies(self, project_id):
         # TODO(ajayaa) Check whether the user has permission to list policies
         # in the project.
@@ -63,16 +67,33 @@ class Manager(manager.Manager):
     def delete_policy(self, policy_id):
         ref = self.driver.delete_policy(policy_id)
 
+    def delete_resource_based_policy(self, policy_id):
+        ref = self.driver.delete_resource_based_policy(policy_id)
+
     def update_policy(self, policy_id, policy):
         return self.driver.update_policy(policy_id, policy)
+
+    def update_resource_based_policy(self, policy_id, policy):
+        return self.driver.update_resource_based_policy(policy_id, policy)
 
     def attach_policy_to_user(self, policy_id, user_id):
         self.identity_api.get_user(user_id)
         self.driver.attach_policy_to_user(policy_id, user_id)
 
+    def is_cross_account_access_auth(self, user_id, user_acc_id, resource, action, imp_allow):
+        group_ids = self._get_group_ids_for_user_id(user_id)
+        ref = self.driver.is_cross_account_access_auth(user_id, group_ids, user_acc_id, resource, action, imp_allow)
+        return ref
+
     def detach_policy_from_user(self, policy_id, user_id):
         self.identity_api.get_user(user_id)
         self.driver.detach_policy_from_user(policy_id, user_id)
+
+    def attach_policy_to_resource(self, policy_id, resource):
+        self.driver.attach_policy_to_resource(policy_id, resource)
+
+    def detach_policy_from_resource(self, policy_id, resource_id):
+        self.driver.detach_policy_from_resource(policy_id, resource_id)
 
     def attach_policy_to_group(self, policy_id, group_id):
         self.identity_api.get_group(group_id)
