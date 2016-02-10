@@ -606,7 +606,6 @@ class Auth(controller.V3Controller):
 
 
     def validate_cross_account_with_token(self,context, **kwargs):
-        import pdb;pdb.set_trace()
         token_data = self.validate_token_data(context)
         act_res_list = kwargs.get('action_resource_list', None)
         if not act_res_list:

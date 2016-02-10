@@ -113,7 +113,6 @@ class Ec2ControllerCommon(object):
         :returns: user_ref, tenant_ref, metadata_ref, roles_ref, catalog_ref
         """
 
-        import pdb;pdb.set_trace()
         # FIXME(ja): validate that a service token was used!
 
         # NOTE(termie): backwards compat hack
