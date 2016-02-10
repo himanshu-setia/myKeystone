@@ -165,14 +165,6 @@ class Policy(jio_policy.Driver):
                         var[3]=account_id
                         resource[index]=':'.join(var)
 
-                # Autofill account id in resource
-                # Assumption account_id == domain_id == project_id
-                for index, item in enumerate(resource):
-                    if len(item.split(':')) > 4 and item.split(':')[3]=='':
-                        var=resource.split(':')
-                        var[3]=project_id
-                        resource=':'.join(var)
-                # Autofill account id in resource
                 # Assumption account_id == domain_id == project_id
                 if effect == 'allow':
                     effect = True
@@ -195,9 +187,9 @@ class Policy(jio_policy.Driver):
                     
                     for pair in itertools.product(action, zip_resource):
                         resource = Policy._get_resource_list(pair[1][1])
-                        account_id = resource[3]
+                        res_acc_id = resource[3]
 
-                        if account_id != project_id:
+                        if res_acc_id != account_id:
                             #LOG.debug('Cross Account Policy')
 
                             resource = session.query(ResourceModel.id).\
@@ -206,7 +198,7 @@ class Policy(jio_policy.Driver):
                             resource_ids = [res[0] for res in resource]
                             policy_ids = session.query(JioPolicyModel).join(PolicyResourceModel)\
                                  .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
-                                 .filter(JioPolicyModel.project_id == account_id)\
+                                 .filter(JioPolicyModel.account_id == res_acc_id)\
                                  .filter(JioPolicyModel.type == 'ResourceBased')\
                                  .with_entities(JioPolicyModel.id).all()
 
@@ -214,7 +206,7 @@ class Policy(jio_policy.Driver):
                                 id = policy[0]
                                 effect = session.query(PolicyActionPrincipleModel).join(ActionModel)\
                                              .filter(PolicyActionPrincipleModel.policy_id == id).filter(ActionModel.action_name == pair[0])\
-                                             .filter(PolicyActionPrincipleModel.principle_acc_id == project_id)\
+                                             .filter(PolicyActionPrincipleModel.principle_acc_id == account_id)\
                                              .with_entities(PolicyActionPrincipleModel.effect).all()
 
                                 effect_list = [eff[0] for eff in effect]
@@ -264,7 +256,7 @@ class Policy(jio_policy.Driver):
 
 
     @sql.handle_conflicts(conflict_type='policy')
-    def create_resource_based_policy(self, project_id, policy_id, policy):
+    def create_resource_based_policy(self, account_id, policy_id, policy):
         #import pdb;pdb.set_trace()
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
@@ -275,7 +267,7 @@ class Policy(jio_policy.Driver):
         with sql.transaction() as session:
             session.add(JioPolicyModel(id=policy_id, name=name,
                         type='ResourceBased',
-                        project_id=project_id,
+                        account_id=account_id,
                         created_at=created_at,
                         updated_at=created_at,
                         policy_blob=jsonutils.dumps(ref)))
@@ -312,7 +304,7 @@ class Policy(jio_policy.Driver):
                                      attribute='valid principle type', target='principle')
 
                         principle_acc_id = principle_list[0]
-                        if principle_acc_id == project_id:
+                        if principle_acc_id == account_id:
                              raise exception.ValidationError(
                                      attribute='valid account id', target='principle')
 
@@ -614,7 +606,7 @@ class Policy(jio_policy.Driver):
         resource_ids = [x[0] for x in resource]
         policy_ids = session.query(JioPolicyModel).join(PolicyResourceModel)\
                         .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
-                        .filter(JioPolicyModel.project_id == res_acc_id)\
+                        .filter(JioPolicyModel.account_id == res_acc_id)\
                         .filter(JioPolicyModel.type == 'ResourceBased')\
                         .with_entities(JioPolicyModel.id).all()
 
@@ -647,7 +639,7 @@ class Policy(jio_policy.Driver):
             return is_impl_allow   
                 
     
-    def is_user_authorized(self, user_id, group_id, project_id, action, resource, is_implicit_allow):
+    def is_user_authorized(self, user_id, group_id, account_id, action, resource, is_implicit_allow):
         session = sql.get_session()
         # resource name must have 5 separators (:) e.g. 
         # 'jrn:jcs:service:tenantid:rtype:res' is a valid resource name
