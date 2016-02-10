@@ -215,6 +215,19 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         self.user['password'] = password
         self.user_id = self.user['id']
 
+        self._populate_default_account()
+        self.isa_account_id = uuid.uuid4().hex
+        self.isa_account = self.new_account_ref()
+        self.isa_account['type'] = 'isa'
+        self.isa_account['id'] = self.isa_account_id
+        self.resource_api.create_account(self.isa_account_id, self.isa_account)
+
+        self.isa_user = self.new_user_ref(account_id=self.isa_account_id)
+        password = self.isa_user['password']
+        self.isa_user = self.identity_api.create_user(self.isa_user)
+        self.isa_user['password'] = password
+        self.isa_user_id = self.isa_user['id']
+
         self.default_account_project_id = uuid.uuid4().hex
         self.default_account_project = self.new_project_ref(
           account_id=DEFAULT_ACCOUNT_ID)
@@ -560,6 +573,30 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
                 }
             })
         return r.headers.get('X-Subject-Token')
+
+    def get_isa_scoped_token(self):
+        """Convenience method so that we can test authenticated requests."""
+        r = self.admin_request(
+            method='POST',
+            path='/v3/auth/tokens',
+            body={
+                'auth': {
+                    'identity': {
+                        'methods': ['password'],
+                        'password': {
+                            'user': {
+                                'name': self.isa_user['name'],
+                                'password': self.isa_user['password'],
+                                'account': {
+                                    'id': self.isa_user['account_id']
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+        return r.headers.get('X-Subject-Token')
+
 
     def get_requested_token(self, auth):
         """Request the specific token we want."""

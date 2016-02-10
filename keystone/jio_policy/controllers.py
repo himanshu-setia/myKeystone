@@ -102,3 +102,18 @@ class JioPolicyV3(controller.V3Controller):
 
         return refs
 
+    @controller.iam_special_protected()
+    def create_action(self, action_name):
+        action_id = uuid.uuid4.hex()
+        ls = action_name.split(':')
+        if len(ls) < 4:
+            raise exception.ValidationError(attribute='action name', target='action_name')
+
+        service = ls[2]
+        if service != None or (service != '*' and (service.isalpha() is False or service.islower() is False)): 
+                raise exception.ValidationError(attribute='Service name cannot be null. Service name should contain only alphabet.', target = 'service')
+        action = ls[3]
+        if action != None or (action != '*' and (action.isalpha() is False or action[0].isupper() is False)):
+            raise exception.ValidationError(attribute='Action name should contain only alphabets and in pascal case.', target='action_name')
+
+        ref = self.jio_policy_api.create_action(action_id, action_name, service_type)

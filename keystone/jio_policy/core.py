@@ -108,6 +108,9 @@ class Manager(manager.Manager):
     def is_action_resource_type_allowed(self, action_name, resource_type):
         return self.driver.is_action_resource_type_allowed(self, action_name, resource_type)
 
+    def create_action(self, action_id, action_name, service_type):
+        return self.driver.create_action(action_id, action_name, service_type)
+
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
 

@@ -23,20 +23,32 @@ from keystone import notifications
 from keystone import identity
 from keystone import jio_policy
 from keystone import credential as cred
+from keystone import resource
+from keystone.common import dependency
 
 import json
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
+@dependency.requires('resource_api')
 class RootV3(controller.V3Controller):
 
     def genericmapper(self, context):
         query_string = context.get('query_string', None)
         Action = query_string['Action']
+
+        if 'RequestAccType' in query_string and query_string['RequestAccType'] == 'service':
+            # (roopali) This is a iam service account request. context's account needs to be replaced with the parameter accountid
+            if 'AccountId' not in query_string:
+                exception.ValidationError(attribute='Pass AccountId in query.', target='AccountId')
+            # check if account is service account
+            account_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['account_id']
+            if self.resource_api.is_service_account(account_id):
+                LOG.warning(_LW('user belongs to a service account'))
+                context['environment']['KEYSTONE_AUTH_CONTEXT']['account_id'] = query_string['AccountId']
+
         user_controller = identity.controllers.UserV3()
-        group_controller = identity.controllers.GroupV3()
-        credential_controller = cred.controllers.CredentialV3()
-        jio_policy_controller = jio_policy.controllers.JioPolicyV3()
+               
         if Action == 'CreateUser':
             user = {}
             if 'Email' in query_string:
@@ -60,7 +72,7 @@ class RootV3(controller.V3Controller):
             if 'Email' in query_string:
                 user['email'] = query_string['Email']
             if 'Enabled' in query_string:
-            	user['enabled'] = (False, True) [query_string['Enabled'] == 'Yes']
+                user['enabled'] = (False, True) [query_string['Enabled'] == 'Yes']
             if 'Name' in query_string:
                 user['name'] = query_string['Name']
             if 'Password' in query_string:
@@ -71,9 +83,9 @@ class RootV3(controller.V3Controller):
         elif Action == 'DeleteUser':
             return user_controller.delete_user(context,query_string['Id'])
 
-        elif Action == 'ListGroupsForUser':
+        group_controller = identity.controllers.GroupV3()
+        if Action == 'ListGroupsForUser':
             return group_controller.list_groups_for_user(context,query_string['Id'])
-
         elif Action == 'CreateGroup':
             group = {}
             if 'Description' in query_string:
@@ -113,7 +125,9 @@ class RootV3(controller.V3Controller):
         elif Action == 'CheckUserInGroup':
             return user_controller.check_user_in_group(context,query_string['UserId'],query_string['GroupId'])
 
-        elif Action == 'CreateCredential':
+        credential_controller = cred.controllers.CredentialV3()
+
+        if Action == 'CreateCredential':
             credential = {}
             if 'Type' in query_string:
                 credential['type'] = query_string['Type']
@@ -129,6 +143,9 @@ class RootV3(controller.V3Controller):
 
         elif Action == 'DeleteCredential':
             return credential_controller.delete_credential(context,query_string['Id'])
+
+        jio_policy_controller = jio_policy.controllers.JioPolicyV3()
+
         if Action == 'ListActions':
             return jio_policy_controller.list_actions(context)
         elif Action == 'CreatePolicy':
@@ -161,6 +178,20 @@ class RootV3(controller.V3Controller):
         elif Action == 'DetachPolicyFromGroup':
             jio_policy_id = query_string['PolicyId']
             group_id = query_string['GroupId']
-            jio_policy_controller.detach_policy_from_group(context, jio_policy_id,group_id)
-        else:
-            raise exception.ActionNotFound(action = Action)
+            return jio_policy_controller.detach_policy_from_group(context, jio_policy_id,group_id)
+        elif Action == 'CreateAction':
+            action_name = query_string['Action']
+            return jio_policy_controller.create_action(action_name)
+        
+        account_controller = resource.controllers.AccountV3()
+        if Action == 'UpdateServiceAccount':
+            user_ids = None
+            if 'UserIds' in query_string:
+                users_json = json.loads(query_string['UserIds'])
+                user_ids = users_json.get('userIds')
+            account_id = query_string['AccountId']
+            services_json = json.loads(query_string['Services'])
+            services = services_json.get('services')
+            return account_controller.update_service_account(context, services, account_id, user_ids)
+ 
+        raise exception.ActionNotFound(action = Action)
