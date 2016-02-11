@@ -180,9 +180,18 @@ class RootV3(controller.V3Controller):
             group_id = query_string['GroupId']
             return jio_policy_controller.detach_policy_from_group(context, jio_policy_id,group_id)
         elif Action == 'CreateAction':
-            action_name = query_string['Action']
-            return jio_policy_controller.create_action(action_name)
-        
+            action_name = query_string['ActionName']
+            return jio_policy_controller.create_action(context, action_name)
+        elif Action == 'CreateResourcetype':
+            resource_type = query_string['ResourceType']
+            service = query_string['ResourceTypeSevice']
+            return jio_policy_controller.create_resource_type(context, resource_type, service)
+        elif Action == 'CreateActionResourceTypeMapping':
+            action_name = query_string['ActionName']
+            resource_type_name = query_string['ResourceType']
+            resource_type_service = query_string['ResourceTypeSevice']
+            return jio_policy_controller.create_action_resource_type_mapping(context, action_name, resource_type_name, resource_type_service)
+
         account_controller = resource.controllers.AccountV3()
         if Action == 'UpdateServiceAccount':
             user_ids = None
