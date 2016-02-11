@@ -96,6 +96,13 @@ class Ec2ExtensionV3(wsgi.V3ExtensionRouter):
 
         self._add_resource(
             mapper, ec2_controller,
+            path='/ec2-auth-ex',
+            post_action='validate_cross_account_with_sign',
+            rel=build_resource_relation(resource_name='ec2-auth-ex')
+            )
+
+        self._add_resource(
+            mapper, ec2_controller,
             path='/users/{user_id}/credentials/OS-EC2/{credential_id}',
             get_action='ec2_get_credential',
             delete_action='ec2_delete_credential',
