@@ -258,10 +258,19 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             self.service_id,
             self.service.copy())
 
+        self.iam_service_id = uuid.uuid4().hex
+        self.iam_service = self.new_iam_service_ref()
+        self.iam_service['id'] = self.iam_service_id
+        self.catalog_api.create_service(
+            self.iam_service_id,
+            self.iam_service.copy())
+
         self.jio_root_policy = self.new_jio_policy_root_ref()
         self.jio_policy_api.create_policy(self.account_id, self.jio_root_policy.get('id'), copy.deepcopy(self.jio_root_policy))
         self.jio_policy_api.attach_policy_to_user(self.jio_root_policy.get('id'), self.user_id)
 
+         
+        self.populate_default_actions()
         self.endpoint_id = uuid.uuid4().hex
         self.endpoint = self.new_endpoint_ref(service_id=self.service_id)
         self.endpoint['id'] = self.endpoint_id
@@ -291,6 +300,11 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
     def new_service_ref(self):
         ref = self.new_ref()
         ref['type'] = uuid.uuid4().hex
+        return ref
+
+    def new_iam_service_ref(self):
+        ref = self.new_ref()
+        ref['type'] = 'iam'
         return ref
 
     def new_endpoint_ref(self, service_id, interface='public', **kwargs):
@@ -426,6 +440,14 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         action_name = 'jrn:jcs:*'
         service_type = self.service.get('type')
         return jio_policy_sql.create_action(action_id, action_name, service_type)
+
+    def populate_default_actions(self):
+        action_list = CONF.actions.default_actions
+        for action in action_list:
+            action_id =  uuid.uuid4().hex
+            action_name = 'jrn:jcs:iam:' + action
+            service_type = self.iam_service.get('type')
+            jio_policy_sql.create_action(action_id, action_name, service_type)
 
     def new_jio_policy_ref(self):
         ref = dict()
