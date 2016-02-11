@@ -755,6 +755,15 @@ class Manager(manager.Manager):
         return self._set_account_id_and_mapping(
             ref, account_id, driver, mapping.EntityType.USER)
 
+    @accounts_configured
+    @exception_translated('user')
+    @MEMOIZE
+    def get_root_user(self, account_id):
+        driver = self._select_identity_driver(account_id)
+        ref = driver.get_root_user(account_id)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.USER)
+
     def assert_user_enabled(self, user_id, user=None):
         """Assert the user and the user's account are enabled.
 

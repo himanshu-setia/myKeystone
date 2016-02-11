@@ -99,16 +99,6 @@ class CredentialTestCase(CredentialBaseTestCase):
         r = self.get(cred)
         self.assertValidCredentialResponse(r, self.credential)
 
-    def test_update_credential(self):
-        """Call ``PATCH /credentials/{credential_id}``."""
-        ref = self.new_credential_ref(
-            user_id=self.user['id'],
-            project_id=self.project_id)
-        del ref['id']
-        cred = '/?Action=UpdateCredential' + '&Blob=' + ref['blob'] + '&UserId=' + ref['user_id'] + '&Type=' + ref['type'] + '&ProjectId' + ref['project_id'] + '&Id=' + self.credential_id
-        r = self.get(cred)
-        self.assertValidCredentialResponse(r, ref)
-
     def test_delete_credential(self):
         """Call ``DELETE /credentials/{credential_id}``."""
         cred = '/?Action=DeleteCredential' + '&Id=' + self.credential_id

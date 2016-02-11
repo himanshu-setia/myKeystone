@@ -129,6 +129,15 @@ class Manager(manager.Manager):
     def is_action_resource_type_allowed(self, action_name, resource_type):
         return self.driver.is_action_resource_type_allowed(self, action_name, resource_type)
 
+    def create_action(self, action_id, action_name, service_type):
+        return self.driver.create_action(action_id, action_name, service_type)
+
+    def create_resource_type(self, resource_type_id, resource_type_name, service_type):
+        return self.driver.create_resource_type(resource_type_id, resource_type_name, service_type)
+
+    def create_action_resource_type_mapping(self, action_name, resource_type_name, resource_type_service):
+        return self.driver.create_action_resource_type_mapping(action_name, resource_type_name, resource_type_service)
+
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
 
@@ -225,3 +234,14 @@ class Driver(object):
     def is_action_resource_type_allowed(self, action_name, resource_type):
         raise exception.NotImplemented()
 
+    @abc.abstractmethod
+    def create_action(self, action_id, action_name, service_type):
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def create_resource_type(self, resource_type_id, resource_type_name, service_type):
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def create_action_resource_type_mapping(self, action_name, resource_type_name):
+        raise exception.NotImplemented()

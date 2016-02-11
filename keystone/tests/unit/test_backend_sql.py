@@ -81,7 +81,8 @@ class SqlModels(SqlTests):
                 ('account_id', sql.String, 64),
                 ('enabled', sql.Boolean, None),
                 ('extra', sql.JsonBlob, None),
-                ('expiry', sql.DateTime, None))
+                ('expiry', sql.DateTime, None),
+                ('type', sql.Enum, None))
         self.assertExpectedSchema('user', cols)
 
     def test_user_history(self):
@@ -102,7 +103,8 @@ class SqlModels(SqlTests):
     def test_account_model(self):
         cols = (('id', sql.String, 64),
                 ('name', sql.String, 64),
-                ('enabled', sql.Boolean, None))
+                ('enabled', sql.Boolean, None),
+                ('type', sql.Enum, None))
         self.assertExpectedSchema('account', cols)
 
     def test_project_model(self):

@@ -34,6 +34,7 @@ from keystone.resource import schema
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
+naming_pre = 'jrn:jcs:'
 root_action = 'jrn:jcs:*'
 root_resource = 'jrn:jcs:*:'
 
@@ -136,7 +137,7 @@ class AccountV3(controller.V3Controller):
         policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy)
         self.jio_policy_api.attach_policy_to_user(policy.get('id'), user_id)
 
-    @controller.protected()
+    @controller.console_protected()
     @validation.validated(schema.account_create, 'account')
     def create_account(self, context, account):
         ref = self._assign_unique_id(self._normalize_dict(account))
@@ -159,9 +160,43 @@ class AccountV3(controller.V3Controller):
         user_ref['name'] = ref['name']
         if 'password' in account and account.get('password') is not None:
             user_ref['password'] = account.get('password')
+        user_ref['type'] = 'root'
         user = self.identity_api.create_user(user_ref, initiator=None)
         self.attach_root_policy(user.get('id'), user_ref['account_id'])
+        if ref.get('type') == None:
+            ref.pop('type')
         return AccountV3.wrap_member(context, ref)
+
+    @controller.iam_special_protected()
+    def update_service_account(self, context, services, account_id, user_ids=None):
+        if account_id is None:
+            msg = 'Cannot upgrade without account id'
+        if not isinstance(services, list):
+            services = services.split()
+
+        if user_ids == None:
+            user_ids = []
+            user = self.identity_api.get_root_user(account_id)
+            user_ids.append(user.get('id'))
+        actions = []
+        resources = [] 
+        for s in services:
+            action = naming_pre + s +':*'
+            actions.append(action)
+            resources.append(action)
+
+        jio_policy = dict()
+        jio_policy['id'] = uuid.uuid4().hex
+        jio_policy['name'] = 'service_policy_' + account_id + uuid.uuid4().hex
+        statement = dict()
+        statement['action'] = actions
+        statement['resource'] =resources
+        statement['effect'] = 'allow'
+        jio_policy['statement'] = [statement]
+        policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy)
+        for id in user_ids:
+            self.jio_policy_api.attach_policy_to_user(policy.get('id'), id)
+        return self.resource_api.update_account_type(account_id, 'csa')
 
     @controller.filterprotected('enabled', 'name')
     def list_accounts(self, context, filters):
