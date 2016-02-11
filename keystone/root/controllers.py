@@ -23,7 +23,7 @@ from keystone import notifications
 from keystone import identity
 from keystone import jio_policy
 from keystone import credential as cred
-from keystone import resource
+from keystone import resource as res
 from keystone.common import dependency
 
 import json
@@ -193,7 +193,7 @@ class RootV3(controller.V3Controller):
             resource_type_service = query_string['ResourceTypeSevice']
             return jio_policy_controller.create_action_resource_type_mapping(context, action_name, resource_type_name, resource_type_service)
 
-        account_controller = resource.controllers.AccountV3()
+        account_controller = res.controllers.AccountV3()
         if Action == 'UpdateServiceAccount':
             user_ids = None
             if 'UserIds' in query_string:
