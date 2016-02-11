@@ -604,12 +604,55 @@ class Auth(controller.V3Controller):
                         user_id=token_data["token"]["user"]["id"])
         return self.render_response(response,context)
 
+
+    def validate_cross_account_with_token(self,context, **kwargs):
+        token_data = self.validate_token_data(context)
+        act_res_list = kwargs.get('action_resource_list', None)
+        if not act_res_list:
+            return self.render_response(token_data,context)       
+        try:
+            action = [item['action'] for item in act_res_list]
+            resource = [item['resource'] for item in act_res_list]
+            is_implicit_allow = [item.get('implicit_allow','False') for item in act_res_list]
+        except KeyError as e:
+            raise exception.ValidationError(attribute="action, resource and implicit_allow",
+                                            target="body")
+
+        auth_context = self.get_auth_context(context)
+
+        user_id = token_data["token"]["user"]["id"]
+        account_id = token_data["token"]["project"]["id"]
+        self._validate_cross_account_with_token(
+                    user_id, account_id, resource, action, is_implicit_allow, context)
+        return self.render_response(token_data,context)
+
+
+
+    def _validate_cross_account_with_token(self, user_id, user_acc_id,
+                                           resource, action, is_implicit_allow, context):
+
+        is_authorized = True
+        if len(action) != len(resource) or len(is_implicit_allow) != len(resource):
+            raise exception.ValidationError(
+                    attribute="equal number of actions and resources",
+                                            target="authorize call")
+        for act, res,imp_allow in zip(action, resource, is_implicit_allow):
+            if imp_allow and (imp_allow == 'True' or imp_allow == 'true' or imp_allow == True):
+                imp_allow = True
+            else:
+                imp_allow = False
+            is_authorized = is_authorized and self.jio_policy_api.\
+                 is_cross_account_access_auth(user_id, user_acc_id, res, act, imp_allow)
+
+        if not is_authorized:
+            raise exception.Forbidden(
+                    message='Policy does not allow to perform this action')
+ 
     def validate_token_with_action_resource_post(self, context, **kwargs):
         token_data = self.validate_token_data(context)
         act_res_list = kwargs.get('action_resource_list', None)
         if not act_res_list:
-            raise exception.ValidationError(attribute="action and resource",
-                                            target="body")
+            return self.render_response(token_data,context)
         try:
             action = [item['action'] for item in act_res_list]
             resource = [item['resource'] for item in act_res_list]

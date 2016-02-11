@@ -34,6 +34,7 @@ LOG = log.getLogger(__name__)
 class RootV3(controller.V3Controller):
 
     def genericmapper(self, context):
+
         query_string = context.get('query_string', None)
         Action = query_string['Action']
 
@@ -203,4 +204,23 @@ class RootV3(controller.V3Controller):
             services = services_json.get('services')
             return account_controller.update_service_account(context, services, account_id, user_ids)
  
+        elif Action == 'CreateResourceBasedPolicy':
+            policy_document = json.loads(query_string['PolicyDocument'])
+            return jio_policy_controller.create_resource_based_policy(context, policy_document)
+        elif Action == 'UpdateResourceBasedPolicy':
+            policy_document = json.loads(query_string['PolicyDocument'])
+            jio_policy_id = query_string['Id']
+            return jio_policy_controller.update_resource_based_policy(context, jio_policy_id, policy_document)
+        elif Action == 'DeleteResourceBasedPolicy':
+            jio_policy_id = query_string['Id']
+            return jio_policy_controller.delete_resource_based_policy(context, jio_policy_id)
+        elif Action == 'AttachPolicyToResource':
+            jio_policy_id = query_string['PolicyId']
+            resource = json.loads(query_string['Resource'])
+            return jio_policy_controller.attach_policy_to_resource(context, jio_policy_id, resource['resource'])
+        elif Action == 'DetachPolicyFromResource':
+            jio_policy_id = query_string['PolicyId']
+            resource = json.loads(query_string['Resource'])
+            return jio_policy_controller.detach_policy_from_resource(context, jio_policy_id, resource['resource'])        
+
         raise exception.ActionNotFound(action = Action)
