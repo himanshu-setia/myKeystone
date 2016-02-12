@@ -142,12 +142,12 @@ class CredentialV3(controller.V3Controller):
         if user_id is None:
             raise exception.ValidationError(attribute='userId is none',
                             target='User_d')
-        ref = self.credential_api.list_credentials_for_user(
+        refs = self.credential_api.list_credentials_for_user(
                      user_id)
-        for item in ref:
-            self._improve_response(item)
-        return CredentialV3.wrap_collection(context, ref)
-
+        ret_refs = [self._blob_to_json(r) for r in refs]
+        for ref in ret_refs:
+            self._improve_response(ref)
+        return CredentialV3.wrap_collection(context, ret_refs)
 
     @controller.jio_policy_user_filterprotected(args='Credential')
     def get_credential(self, context, credential_id):
