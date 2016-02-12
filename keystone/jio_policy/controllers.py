@@ -67,8 +67,23 @@ class JioPolicyV3(controller.V3Controller):
         return JioPolicyV3.wrap_collection(context, ref)
 
     @controller.jio_policy_filterprotected(args='Policy')
+    def list_resource_based_policies(self, context):
+        try:
+            account_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'account_id']
+        except KeyError:
+            raise exception.Forbidden('Cannot find account_id in context.')
+        ref = self.jio_policy_api.list_resource_based_policies(account_id)
+        return JioPolicyV3.wrap_collection(context, ref)
+
+    @controller.jio_policy_filterprotected(args='Policy')
     def get_policy(self, context, jio_policy_id):
         ref = self.jio_policy_api.get_policy(jio_policy_id)
+        return JioPolicyV3.wrap_member(context, ref)
+
+    @controller.jio_policy_filterprotected(args='Policy')
+    def get_resource_based_policy(self, context, jio_policy_id):
+        ref = self.jio_policy_api.get_resource_based_policy(jio_policy_id)
         return JioPolicyV3.wrap_member(context, ref)
 
     @controller.jio_policy_filterprotected(args='Policy')
@@ -128,7 +143,7 @@ class JioPolicyV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args='Policy')
     def get_policy_summary(self, context, jio_policy_id):
-        refs = self.jio_policy_api.list_policy_summary(jio_policy_id)
+        refs = self.jio_policy_api.get_policy_summary(jio_policy_id)
 
         sum_list = refs['Attached Entities']
         for ref in sum_list:
@@ -138,5 +153,10 @@ class JioPolicyV3(controller.V3Controller):
             else:
                 ref['Entity Name'] = (self.identity_api.get_group(ref['Entity Name']))['name']
 
+        return refs
+
+    @controller.jio_policy_filterprotected(args='Policy')
+    def get_resource_based_policy_summary(self, context, jio_policy_id):
+        refs = self.jio_policy_api.get_resource_based_policy_summary(jio_policy_id)
         return refs
 
