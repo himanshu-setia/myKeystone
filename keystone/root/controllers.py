@@ -136,8 +136,6 @@ class RootV3(controller.V3Controller):
             return credential_controller.create_credential(context,credential)
         elif Action == 'ListCredentials':
             return credential_controller.list_credentials(context)
-        elif Action == 'GetCredential':
-            return credential_controller.get_credential(context,query_string['Id'])
         elif Action == 'DeleteCredential':
             return credential_controller.delete_credential(context,query_string['Id'])
         elif Action == 'GetUserCredential':
@@ -190,7 +188,8 @@ class RootV3(controller.V3Controller):
             action_name = query_string['ActionName']
             resource_type_name = query_string['ResourceType']
             resource_type_service = query_string['ResourceTypeSevice']
-            return jio_policy_controller.create_action_resource_type_mapping(context, action_name, resource_type_name, resource_type_service)
+            return jio_policy_controller.create_action_resource_type_mapping(
+                        context, action_name, resource_type_name, resource_type_service)
 
         account_controller = res.controllers.AccountV3()
         if Action == 'UpdateServiceAccount':
