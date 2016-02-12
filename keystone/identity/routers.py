@@ -84,7 +84,7 @@ class Routers(wsgi.RoutersBase):
             })
 
         self._add_resource(
-            mapper, user_controller,
+            mapper, group_controller,
             path='/groups/{group_id}/summary',
             get_action='get_group_summary',
             rel=json_home.build_v3_resource_relation('group_summary'),
@@ -93,7 +93,7 @@ class Routers(wsgi.RoutersBase):
             })
 
         self._add_resource(
-            mapper, group_controller,
+            mapper, user_controller,
             path='/users/{user_id}/summary',
             get_action='get_user_summary',
             rel=json_home.build_v3_resource_relation('user_summary'),

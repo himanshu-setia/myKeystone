@@ -793,41 +793,26 @@ class Manager(manager.Manager):
         return self._set_account_id_and_mapping(
             ref_list, account_scope, driver, mapping.EntityType.USER)
 
-    @manager.response_truncated
-    @accounts_configured
-    @exception_translated('user')
-    def list_user_summary_for_group(self, group_id, account_scope=None, hints=None):
-        driver = self._select_identity_driver(account_scope)
-        hints = hints or driver_hints.Hints()
-        if driver.is_account_aware():
-            # Force the account_scope into the hint to ensure that we only get
-            # back accounts for that scope.
-            self._ensure_account_id_in_hints(hints, account_scope)
-        else:
-            # We are effectively satisfying any account_id filter by the above
-            # driver selection, so remove any such filter.
-            self._mark_account_id_filter_satisfied(hints)
-        ref_list = driver.list_user_summary_for_group(hints,group_id)
-        return self._set_account_id_and_mapping(
-            ref_list, account_scope, driver, mapping.EntityType.USER)
 
-    @manager.response_truncated
     @accounts_configured
     @exception_translated('group')
-    def list_group_summary_for_user(self, user_id, account_scope=None, hints=None):
-        driver = self._select_identity_driver(account_scope)
-        hints = hints or driver_hints.Hints()
-        if driver.is_account_aware():
-            # Force the account_scope into the hint to ensure that we only get
-            # back accounts for that scope.
-            self._ensure_account_id_in_hints(hints, account_scope)
-        else:
-            # We are effectively satisfying any account_id filter by the above
-            # driver selection, so remove any such filter.
-            self._mark_account_id_filter_satisfied(hints)
-        ref_list = driver.list_group_summary_for_user(hints,user_id)
+    @MEMOIZE
+    def get_user_summary_for_group(self, group_id):
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(group_id))
+        ref = driver.get_user_summary_for_group(entity_id)
         return self._set_account_id_and_mapping(
-            ref_list, account_scope, driver, mapping.EntityType.GROUP)
+            ref, account_id, driver, mapping.EntityType.GROUP)
+
+    @accounts_configured
+    @exception_translated('user')
+    @MEMOIZE
+    def get_group_summary_for_user(self, user_id):
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(user_id))
+        ref = driver.get_group_summary_for_user(entity_id)
+        return self._set_account_id_and_mapping(
+            ref, account_id, driver, mapping.EntityType.USER)
 
     @accounts_configured
     @exception_translated('user')
@@ -1193,6 +1178,15 @@ class Driver(object):
         """
         raise exception.NotImplemented()  # pragma: no cover
 
+    @abc.abstractmethod
+    def get_group_summary_for_user(self, user_id):
+        """Get a user by ID.
+
+        :returns: user_ref
+        :raises: keystone.exception.UserNotFound
+
+        """
+        raise exception.NotImplemented()  # pragma: no cover
     @abc.abstractmethod
     def update_user(self, user_id, user):
         """Updates an existing user.

@@ -136,7 +136,6 @@ class Identity(identity.Driver):
         session = sql.get_session()
         query = session.query(User)
         user_refs = sql.filter_limit_query(User, query, hints)
-
         ref_list = []
         for ref in user_refs:
             dict = ref.to_dict()
@@ -149,8 +148,7 @@ class Identity(identity.Driver):
 
         return ref_list
 
-    @sql.truncated
-    def list_user_summary_for_group(self, hints, group_id):
+    def get_user_summary_for_group(self, group_id):
         session = sql.get_session()
         group = self._get_group(session,group_id)
         query = session.query(User.id,User.name).join(UserGroupMembership)
@@ -170,8 +168,7 @@ class Identity(identity.Driver):
         ref_list['Users'] = dict_list
         return ref_list
 
-    @sql.truncated
-    def list_group_summary_for_user(self, hints, user_id):
+    def get_group_summary_for_user(self, user_id):
         session = sql.get_session()
         user = self._get_user(session,user_id)
         query = session.query(Group.id,Group.name).join(UserGroupMembership)
