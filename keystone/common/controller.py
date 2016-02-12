@@ -211,18 +211,18 @@ def console_protected(**params):
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
             elif self.resource_api.is_iam_special_account(account_id):
                 # iam account can create only console accounts
-                if 'account' in kwargs:
-                    if kwargs.get('account')['type'] != 'console':
+                if 'AccountType' in context['query_string']:
+                    if context['query_string']['AccountType'] != 'console':
                         raise exception.Forbidden(message='iam special account can create console account only. Console account protected.')
                 LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
             elif self.resource_api.is_account_console(account_id):
                 # console account can create only ca accounts
-                if 'account' in kwargs:
-                    if kwargs.get('account')['type'] != 'ca':
+                if 'AccountType' in context['query_string']:
+                    if context['query_string']['AccountType'] != 'ca':
                         raise exception.Forbidden(message='console account can create customer account only. Console account protected.')
                 LOG.warning(_LW('User belongs to console account; Bypassing authorization'))
             else:
-                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed by policy. Console account protected.')
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed by policy. Console account protected. iam special account can create console account only and  console account can create customer account only')
                                             %{'action':action_name, 'user_id':user_id}))
 
             if 'filters' in params:

@@ -132,18 +132,17 @@ class RootV3(controller.V3Controller):
             credential = {}
             if 'Type' in query_string:
                 credential['type'] = query_string['Type']
-            if 'UserId' in query_string:
-                credential['user_id'] = query_string['UserId']
+            credential['user_id'] = query_string['UserId']
             return credential_controller.create_credential(context,credential)
-
         elif Action == 'ListCredentials':
             return credential_controller.list_credentials(context)
-
         elif Action == 'GetCredential':
             return credential_controller.get_credential(context,query_string['Id'])
-
         elif Action == 'DeleteCredential':
             return credential_controller.delete_credential(context,query_string['Id'])
+        elif Action == 'GetUserCredential':
+            user_id = query_string['UserId']
+            return credential_controller.get_user_credentials(context, user_id)
 
         jio_policy_controller = jio_policy.controllers.JioPolicyV3()
 
@@ -203,6 +202,16 @@ class RootV3(controller.V3Controller):
             services_json = json.loads(query_string['Services'])
             services = services_json.get('services')
             return account_controller.update_service_account(context, services, account_id, user_ids)
+        elif Action == "CreateAccount":
+            account = {}
+            account['name'] =  query_string['AccountName']
+            account['password'] = query_string['Password']
+            if 'AccountType' in query_string:
+                account['type'] = query_string['AccountType']
+            return account_controller.create_account(context, account)
+        elif Action == "DeleteAccount":
+            account_id = query_string['AccountId']
+            return account_controller.delete_account(context, account_id)
  
         elif Action == 'CreateResourceBasedPolicy':
             policy_document = json.loads(query_string['PolicyDocument'])

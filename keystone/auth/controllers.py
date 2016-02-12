@@ -533,6 +533,16 @@ class Auth(controller.V3Controller):
         token_id = context.get('subject_token_id')
         return self.token_provider_api.revoke_token(token_id)
 
+    def format_auth_response(self, token_data):
+        if token_data is None:
+            return
+        res =  dict(account_id=token_data["token"]["user"]["account"]["id"],
+                        user_id=token_data["token"]["user"]["id"])
+        if 'type' in token_data["token"]["user"]:
+            res['user_type'] = token_data["token"]["user"]["type"]
+        return res
+
+
     # REMOVING ROLES CHECK FOR VALIDATE_TOKEN, onlu for mock
     def validate_token(self, context):
         token_id = context.get('subject_token_id')
@@ -541,8 +551,7 @@ class Auth(controller.V3Controller):
             token_id)
         if not include_catalog and 'catalog' in token_data['token']:
             del token_data['token']['catalog']
-        response = dict(account_id=token_data["token"]["user"]["account"]["id"],
-                        user_id=token_data["token"]["user"]["id"])
+        response = self.format_auth_response(token_data)
         return render_token_data_response(token_id, response)
 
     def validate_token_data(self, context):
@@ -600,33 +609,29 @@ class Auth(controller.V3Controller):
         project_id = token_data["token"]["user"]["account"]["id"]
         self._validate_token_with_action_resource(
                     [action], [resource], user_id, project_id, [is_implicit_allow], context)
-        response = dict(account_id=token_data["token"]["user"]["account"]["id"],
-                        user_id=token_data["token"]["user"]["id"])
+        response = self.format_auth_response(token_data)
         return self.render_response(response,context)
-
 
     def validate_cross_account_with_token(self,context, **kwargs):
         token_data = self.validate_token_data(context)
         act_res_list = kwargs.get('action_resource_list', None)
-        if not act_res_list:
-            return self.render_response(token_data,context)       
-        try:
-            action = [item['action'] for item in act_res_list]
-            resource = [item['resource'] for item in act_res_list]
-            is_implicit_allow = [item.get('implicit_allow','False') for item in act_res_list]
-        except KeyError as e:
-            raise exception.ValidationError(attribute="action, resource and implicit_allow",
+        if act_res_list:
+            try:
+                action = [item['action'] for item in act_res_list]
+                resource = [item['resource'] for item in act_res_list]
+                is_implicit_allow = [item.get('implicit_allow','False') for item in act_res_list]
+            except KeyError as e:
+                raise exception.ValidationError(attribute="action, resource and implicit_allow",
                                             target="body")
 
-        auth_context = self.get_auth_context(context)
+            auth_context = self.get_auth_context(context)
 
-        user_id = token_data["token"]["user"]["id"]
-        account_id = token_data["token"]["project"]["id"]
-        self._validate_cross_account_with_token(
+            user_id = token_data["token"]["user"]["id"]
+            account_id = token_data["token"]["project"]["id"]
+            self._validate_cross_account_with_token(
                     user_id, account_id, resource, action, is_implicit_allow, context)
-        return self.render_response(token_data,context)
-
-
+        response = self.format_auth_response(token_data)
+        return self.render_response(response ,context)
 
     def _validate_cross_account_with_token(self, user_id, user_acc_id,
                                            resource, action, is_implicit_allow, context):
@@ -651,25 +656,23 @@ class Auth(controller.V3Controller):
     def validate_token_with_action_resource_post(self, context, **kwargs):
         token_data = self.validate_token_data(context)
         act_res_list = kwargs.get('action_resource_list', None)
-        if not act_res_list:
-            return self.render_response(token_data,context)
-        try:
-            action = [item['action'] for item in act_res_list]
-            resource = [item['resource'] for item in act_res_list]
-            is_implicit_allow = [item.get('implicit_allow','False') for item in act_res_list]
-        except KeyError as e:
-            raise exception.ValidationError(attribute="action, resource and implicit_allow",
-                                            target="body")
-        if action == 'deny':
-            raise exception.Forbidden(message='Policy does not allow to '
+        if act_res_list:
+            try:
+                action = [item['action'] for item in act_res_list]
+                resource = [item['resource'] for item in act_res_list]
+                is_implicit_allow = [item.get('implicit_allow','False') for item in act_res_list]
+            except KeyError as e:
+                raise exception.ValidationError(attribute="action, resource and implicit_allow",
+                                                target="body")
+            if action == 'deny':
+                raise exception.Forbidden(message='Policy does not allow to '
                                               'perform this action')
-        auth_context = self.get_auth_context(context)
-        user_id = token_data["token"]["user"]["id"]
-        project_id = token_data["token"]["user"]["account"]["id"]
-        self._validate_token_with_action_resource(
+            auth_context = self.get_auth_context(context)
+            user_id = token_data["token"]["user"]["id"]
+            project_id = token_data["token"]["user"]["account"]["id"]
+            self._validate_token_with_action_resource(
                     action, resource, user_id, project_id, is_implicit_allow, context)
-        response = dict(account_id=token_data["token"]["user"]["account"]["id"],
-                        user_id=token_data["token"]["user"]["id"])
+        response = self.format_auth_response(token_data)
         return self.render_response(response,context)
 
     @controller.protected()

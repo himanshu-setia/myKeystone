@@ -59,7 +59,6 @@ def upgrade(migrate_engine):
             sql.Column('updated_at', sql.DateTime),
             sql.Column('deleted_at', sql.DateTime),
             sql.Column('policy_blob', key_sql.JsonBlob),
-            sql.Column('type', sql.Enum('UserBased','ResourceBased', name='type'), nullable=False),
             mysql_engine='InnoDB',
             mysql_charset='utf8')
 
@@ -118,45 +117,9 @@ def upgrade(migrate_engine):
             mysql_engine='InnoDB',
             mysql_charset='utf8')
 
-    policy_action_principle = sql.Table(
-            'policy_action_principle', meta,
-            sql.Column('policy_id', sql.String(length=64), nullable=False),
-            sql.Column('action_id', sql.String(length=64), nullable=False),
-            sql.Column('principle_id', sql.String(length=64), nullable=False),
-            sql.Column('principle_type', sql.Enum('User','Group', name='type'), nullable=False),
-            sql.Column('principle_acc_id',sql.String(length=64), nullable=False),  
-            sql.Column('effect', sql.Boolean, default=False, nullable=False),
-            sql.PrimaryKeyConstraint('action_id', 'principle_id', 'policy_id'),
-            sql.ForeignKeyConstraint(
-                ['policy_id'], ['jio_policy.id'],
-                name='fk_policy_action_principle_policy_id'
-            ),
-            sql.ForeignKeyConstraint(
-                ['action_id'], ['action.id'],
-                name='fk_policy_action_principle_mapping_action_id'
-            ),
-            mysql_engine='InnoDB',
-            mysql_charset='utf8')
-
-    policy_resource_mapping = sql.Table(
-            'policy_resource_mapping', meta,
-            sql.Column('resource_id', sql.String(64), nullable=False),
-            sql.Column('policy_id', sql.String(64), nullable=False),
-            sql.PrimaryKeyConstraint('policy_id', 'resource_id'),
-            sql.ForeignKeyConstraint(
-                ['policy_id'], ['jio_policy.id'],
-                name='fk_policy_resource_mapping_policy_id'
-            ),
-            sql.ForeignKeyConstraint(
-                ['resource_id'], ['resource.id'],
-                name='fk_policy_resource_mapping_resource_id'
-            ),
-            mysql_engine='InnoDB',
-            mysql_charset='utf8')
-
     # create policy related tables
     tables = [action, resource_type, resource, jio_policy, policy_action_resource,
-            policy_user_group_mapping, action_resource_type_mapping, policy_action_principle, policy_resource_mapping]
+            policy_user_group_mapping, action_resource_type_mapping]
 
     for table in tables:
         try:
