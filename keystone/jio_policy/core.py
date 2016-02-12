@@ -57,12 +57,21 @@ class Manager(manager.Manager):
     def list_policies(self, project_id):
         # TODO(ajayaa) Check whether the user has permission to list policies
         # in the project.
-        project_ref = self.resource_api.get_project(project_id)
+        project_ref = self.resource_api.get_account(project_id)
         return self.driver.list_policies(project_id)
+
+    def list_resource_based_policies(self, project_id):
+        # TODO(ajayaa) Check whether the user has permission to list policies
+        # in the project.
+        project_ref = self.resource_api.get_account(project_id)
+        return self.driver.list_resource_based_policies(project_id)
 
     def get_policy(self, policy_id):
         # TODO(ajayaa) Check whether the user has permission to get a policy.
         return self.driver.get_policy(policy_id)
+
+    def get_resource_based_policy(self, policy_id):
+        return self.driver.get_resource_based_policy(policy_id)
 
     def delete_policy(self, policy_id):
         ref = self.driver.delete_policy(policy_id)
@@ -113,8 +122,11 @@ class Manager(manager.Manager):
                                              is_implicit_allow)
         return ref
 
-    def list_policy_summary(self,policy_id):
-	return self.driver.list_policy_summary(policy_id)
+    def get_policy_summary(self,policy_id):
+	return self.driver.get_policy_summary(policy_id)
+
+    def get_resource_based_policy_summary(self,policy_id):
+        return self.driver.get_resource_based_policy_summary(policy_id)
 
     def get_group_policies(self, groupid):
 	return self.driver.get_group_policies(groupid)

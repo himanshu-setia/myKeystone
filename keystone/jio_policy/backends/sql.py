@@ -334,7 +334,7 @@ class Policy(jio_policy.Driver):
         session = sql.get_session()
 
         refs = session.query(JioPolicyModel).filter_by(account_id=account_id)\
-            .with_entities(
+            .filter_by(type='UserBased').with_entities(
                     JioPolicyModel.id, JioPolicyModel.name,
                     JioPolicyModel.created_at, JioPolicyModel.updated_at)
         ret = []
@@ -346,8 +346,50 @@ class Policy(jio_policy.Driver):
                 new_ref[attrs_to_return[index]] = value
             new_ref['attachment_count'] = int(self._find_attachment_count(
                 session, new_ref['id']))
+	    #The logic to find the users anf groups for the policy should be ideally be
+            #done in one pass through the table. Currently its done in 2 passes to keep
+            #it separate for groups and users, but for optimization can be done in 1 pass.
+            new_ref['Attached Groups'] = self.count_groups_for_policy(new_ref['id'])
+            new_ref['Attached Users'] = self.count_users_for_policy(new_ref['id'])
             ret.append(new_ref)
         return ret
+
+    def list_resource_based_policies(self, account_id):
+        session = sql.get_session()
+
+        refs = session.query(JioPolicyModel).filter_by(account_id=account_id)\
+            .filter_by(type='ResourceBased').with_entities(
+                    JioPolicyModel.id, JioPolicyModel.name,
+                    JioPolicyModel.created_at, JioPolicyModel.updated_at)
+        ret = []
+        attrs_to_return = ['id', 'name', 'created_at', 'deleted_at',
+                           'attachment_count']
+        for ref in refs:
+            new_ref = {}
+            for index, value in enumerate(ref):
+                new_ref[attrs_to_return[index]] = value
+            new_ref['attachment_count'] = int(self._find_attached_resources_count(
+                session, new_ref['id']))
+            ret.append(new_ref)
+        return ret
+
+    def count_groups_for_policy(self,policy_id):
+        session = sql.get_session()
+
+        query = session.query(PolicyUserGroupModel)
+        query = query.filter(PolicyUserGroupModel.policy_id == policy_id)
+        query = query.filter(PolicyUserGroupModel.type == 'GroupPolicy')
+
+        return query.count()
+
+    def count_users_for_policy(self,policy_id):
+        session = sql.get_session()
+
+        query = session.query(PolicyUserGroupModel)
+        query = query.filter(PolicyUserGroupModel.policy_id == policy_id)
+        query = query.filter(PolicyUserGroupModel.type == 'UserPolicy')
+
+        return query.count()
 
     def _get_policy(self, session, policy_id):
         """Private method to get a policy model object (NOT a dictionary)."""
@@ -360,17 +402,33 @@ class Policy(jio_policy.Driver):
         return session.query(PolicyUserGroupModel).filter_by(
                 policy_id=policy_id).count()
 
+    def _find_attached_resources_count(self, session, policy_id):
+        return session.query(PolicyResourceModel).filter_by(
+                policy_id=policy_id).count()
+
     def get_policy(self, policy_id):
         session = sql.get_session()
         count = self._find_attachment_count(session, policy_id)
         # TODO(roopali) Query for only required columns.
         ref = session.query(JioPolicyModel).get(policy_id)
-        if not ref:
+        if not ref or ref.type != 'UserBased':
             raise exception.PolicyNotFound(policy_id=policy_id)
         ret = jsonutils.loads(ref.policy_blob)
         ret['created_at'] = ref.created_at
         ret['updated_at'] = ref.updated_at
         attachment_count = self._find_attachment_count(session, policy_id)
+        ret['attachment_count'] = int(attachment_count)
+        return ret
+
+    def get_resource_based_policy(self, policy_id):
+        session = sql.get_session()
+        ref = session.query(JioPolicyModel).get(policy_id)
+        if not ref or ref.type != 'ResourceBased':
+            raise exception.PolicyNotFound(policy_id=policy_id)
+        ret = jsonutils.loads(ref.policy_blob)
+        ret['created_at'] = ref.created_at
+        ret['updated_at'] = ref.updated_at
+        attachment_count = self._find_attached_resources_count(session, policy_id)
         ret['attachment_count'] = int(attachment_count)
         return ret
 
@@ -930,17 +988,19 @@ class Policy(jio_policy.Driver):
                 ret.append(new_ref)
         return ret
 
-    def list_policy_summary(self,policy_id):
+    def get_policy_summary(self,policy_id):
         session = sql.get_session()
         policy = self._get_policy(session,policy_id)
+        if policy.type != 'UserBased':
+            raise exception.PolicyNotFound(policy_id=policy_id)
+ 
         query = session.query(PolicyUserGroupModel).filter_by(policy_id = policy_id) \
             .with_entities(
                     PolicyUserGroupModel.user_group_id, PolicyUserGroupModel.type)
 
         summary_list = {}
         summary_list['Policy Document'] =policy.policy_blob
-        summary_list['Attached Entities'] = query.count()
-        summary_list['Policy JRN'] = 'jrn:jcs:iam:'  ':policy:' + policy.name	
+        summary_list['Policy JRN'] = 'jrn:jcs:iam:' + policy.account_id + ':policy:' + policy.name
         summary_list['Creation Time'] = policy.created_at
 	
         sum_list = []
@@ -952,6 +1012,32 @@ class Policy(jio_policy.Driver):
 
         summary_list['Attached Entities'] = sum_list
         return summary_list 
+
+    def get_resource_based_policy_summary(self,policy_id):
+        session = sql.get_session()
+        policy = self._get_policy(session,policy_id)
+        if policy.type != 'ResourceBased':
+            raise exception.PolicyNotFound(policy_id=policy_id)
+
+        query = session.query(PolicyResourceModel).join(ResourceModel)\
+            .filter(PolicyResourceModel.policy_id == policy_id).with_entities(
+                    ResourceModel.name)
+
+        summary_list = {}
+        summary_list['Policy Document'] =policy.policy_blob
+        summary_list['Policy JRN'] = 'jrn:jcs:iam:' + policy.account_id + ':policy:' + policy.name
+        summary_list['Creation Time'] = policy.created_at
+
+        sum_list = []
+        for row in query:
+            dict = {}
+            resource = Policy._get_resource_list(row.name)
+            dict['Resource Id'] = resource[5]
+            dict['Type'] = resource[4]
+            sum_list.append(dict)
+
+        summary_list['Attached Entities'] = sum_list
+        return summary_list
 
     def is_action_resource_type_allowed(self, session, action_name, resource_type):
         query = session.query(ActionModel).join(ActionResourceMappingModel).join(ResourceTypeModel)

@@ -790,7 +790,7 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
         if keys_to_check is not None:
             keys = keys_to_check
         else:
-            keys = ['name', 'description', 'enabled']
+            keys = ['name', 'enabled']
 
         for k in ['id'] + keys:
             msg = '%s unexpectedly None in %s' % (k, entity)
@@ -1145,15 +1145,10 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
     def assertValidUser(self, entity, ref=None):
         self.assertIsNotNone(entity.get('account_id'))
         self.assertIsNotNone(entity.get('email'))
-        self.assertIsNone(entity.get('password'))
         self.assertNotIn('tenantId', entity)
         if ref:
             self.assertEqual(ref['account_id'], entity['account_id'])
             self.assertEqual(ref['email'], entity['email'])
-            if 'default_project_id' in ref:
-                self.assertIsNotNone(ref['default_project_id'])
-                self.assertEqual(ref['default_project_id'],
-                                 entity['default_project_id'])
         return entity
 
     # group validation
@@ -1428,6 +1423,12 @@ class RestfulTestCase(tests.SQLDriverOverrides, rest.RestfulTestCase,
             keys_to_check=['name', 'service', 'statement'],
             *args,
             **kwargs)
+
+    def assertValidJioPolicySummaryResponse(self, resp, req):
+        entity = resp.result
+        self.assertIsNotNone(entity.get('Policy Document'))
+        self.assertIsNotNone(entity.get('Policy JRN'))
+        self.assertIsNotNone(entity.get('Creation Time'))
 
     def assertValidJioPolicyListResponse(self, resp, *args, **kwargs):
         return self.assertValidListResponse(

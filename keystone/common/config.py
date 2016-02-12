@@ -895,7 +895,11 @@ FILE_OPTIONS = {
         'UpdateResourceBasedPolicy',
         'DeleteResourceBasedPolicy',
         'AttachPolicyToResource',
-        'DetachPolicyFromResource'],
+        'DetachPolicyFromResource',
+        'ListResourceBasedPolicies',
+        'GetPolicySummary',
+        'GetResourceBasedPolicy',
+        'GetResourceBasedPolicySummary'],
             help='List of default actions')
     ],
     'paste_deploy': [

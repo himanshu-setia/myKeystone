@@ -231,7 +231,7 @@ class UserV3(controller.V3Controller):
         return True
 
     def updated_ref_list(self,refs):
-        attrs_to_return = ['id', 'name', 'account_id', 'email', 'enabled', 'expiry']
+        attrs_to_return = ['id', 'name', 'account_id', 'GroupCount', 'password', 'email', 'enabled', 'expiry']
         ret = []
         for ref in refs:
             new_ref = {}
@@ -242,7 +242,7 @@ class UserV3(controller.V3Controller):
         return ret
 
     def updated_ref(self,ref):
-        attrs_to_return = ['id', 'name', 'account_id', 'email', 'enabled', 'expiry']
+        attrs_to_return = ['id', 'name', 'account_id', 'GroupCount', 'password', 'email', 'enabled', 'expiry']
         new_ref = {}
         for r in attrs_to_return:
             if r in ref:
@@ -269,7 +269,7 @@ class UserV3(controller.V3Controller):
         return UserV3.wrap_member(context, new_ref)
 
     @controller.jio_policy_filterprotected(args='User', filters=['account_id', 'enabled', 'name'])
-    def list_users(self, context, filters):
+    def list_users(self, context, filters=['account_id', 'enabled', 'name']):
         hints = UserV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_users(
             account_scope=self._get_account_id_for_list_request(context),
@@ -279,7 +279,7 @@ class UserV3(controller.V3Controller):
         return UserV3.wrap_collection(context, new_refs, hints=hints)
 
     @controller.jio_policy_filterprotected(args=['Group'], filters=['account_id', 'enabled', 'name'])
-    def list_users_in_group(self, context,group_id,filters={'account_id', 'enabled', 'name'}):
+    def list_users_in_group(self, context, filters, group_id):
         hints = UserV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_users_in_group(group_id, hints=hints)
         new_refs = self.updated_ref_list(refs)
@@ -330,20 +330,16 @@ class UserV3(controller.V3Controller):
 
         return False
 
-    @controller.filterprotected('account_id', 'name')
-    def get_group_summary(self, context,filters, group_id):
-        hints = GroupV3.build_driver_hints(context, filters)
-        refs = self.identity_api.list_user_summary_for_group(group_id,
-            account_scope=self._get_account_id_for_list_request(context),
-            hints=hints)
-        
-        policy_refs = self.jio_policy_api.get_group_policies(group_id)
+    @controller.jio_policy_user_filterprotected(args='User')
+    def get_user_summary(self, context, user_id):
+        refs = self.identity_api.get_group_summary_for_user(user_id)
+        policy_refs = self.jio_policy_api.get_user_policies(user_id)
 
         if not policy_refs:
             refs['Policies'] = ''
         else:
             refs['Policies'] = policy_refs
-        
+
         return refs
 
     @controller.jio_policy_user_filterprotected(args='User')
@@ -397,7 +393,7 @@ class GroupV3(controller.V3Controller):
         return GroupV3.wrap_member(context, ref)
 
     @controller.jio_policy_filterprotected(args='Group',filters=['account_id', 'name'])
-    def list_groups(self, context, filters):
+    def list_groups(self, context, filters=['account_id', 'name']):
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_groups(
             account_scope=self._get_account_id_for_list_request(context),
@@ -414,7 +410,7 @@ class GroupV3(controller.V3Controller):
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
     @controller.jio_policy_user_filterprotected(args='User',filters=['name'])
-    def list_groups_for_user(self, context, user_id,filters='name'):
+    def list_groups_for_user(self, context, filters, user_id):
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_groups_for_user(user_id, hints=hints)
         return GroupV3.wrap_collection(context, refs, hints=hints)
@@ -438,14 +434,10 @@ class GroupV3(controller.V3Controller):
         initiator = notifications._get_request_audit_info(context)
         self.identity_api.delete_group(group_id, initiator)
 
-    @controller.filterprotected('account_id', 'name')
-    def get_user_summary(self, context,filters, user_id):
-        hints = GroupV3.build_driver_hints(context, filters)
-        refs = self.identity_api.list_group_summary_for_user(user_id,
-            account_scope=self._get_account_id_for_list_request(context),
-            hints=hints)
-        
-        policy_refs = self.jio_policy_api.get_user_policies(user_id)
+    @controller.jio_policy_filterprotected(args='Group')
+    def get_group_summary(self, context, group_id):
+        refs = self.identity_api.get_user_summary_for_group(group_id)
+        policy_refs = self.jio_policy_api.get_group_policies(group_id)
 
         if not policy_refs:
             refs['Policies'] = ''
@@ -453,4 +445,3 @@ class GroupV3(controller.V3Controller):
             refs['Policies'] = policy_refs
 
         return refs
-

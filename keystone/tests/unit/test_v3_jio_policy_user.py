@@ -21,6 +21,12 @@ class JioPolicyTestCase(test_v3.RestfulTestCase):
                     'policy_id': self.jio_policy_id})
         return self.assertValidJioPolicyResponse(r, self.jio_policy)
 
+    def test_get_jio_policy_summary(self):
+        r = self.get(
+                '/?Action=GetPolicySummary&Id=%(policy_id)s' % {
+                    'policy_id': self.jio_policy_id})
+        return self.assertValidJioPolicySummaryResponse(r, self.jio_policy)
+
     def test_create_jio_policy(self):
         ref = self.new_jio_policy_ref()
         r = self.get(
