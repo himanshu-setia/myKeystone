@@ -54,6 +54,8 @@ class RootV3(controller.V3Controller):
             return user_controller.create_user(context,user)
         elif Action == 'GetUser':
             return user_controller.get_user(context,query_string['Id'])
+        elif Action == 'GetUserSummary':
+            return user_controller.get_user_summary(context,query_string['Id'])
         elif Action == 'ListUsers':
             return user_controller.list_users(context)
         elif Action == 'UpdateUser':
@@ -86,6 +88,9 @@ class RootV3(controller.V3Controller):
 
         elif Action == 'GetGroup':
             return group_controller.get_group(context,query_string['Id'])
+
+        elif Action == 'GetGroupSummary':
+            return group_controller.get_group_summary(context,query_string['Id'])
 
         elif Action == 'ListGroups':
             return group_controller.list_groups(context)
@@ -140,6 +145,9 @@ class RootV3(controller.V3Controller):
         elif Action == 'GetPolicy':
             jio_policy_id = query_string['Id']
             return jio_policy_controller.get_policy(context, jio_policy_id)
+        elif Action == 'GetPolicySummary':
+            jio_policy_id = query_string['Id']
+            return jio_policy_controller.get_policy_summary(context, jio_policy_id)
         elif Action == 'DeletePolicy':
             jio_policy_id = query_string['Id']
             return jio_policy_controller.delete_policy(context, jio_policy_id)
@@ -175,6 +183,14 @@ class RootV3(controller.V3Controller):
         elif Action == 'DeleteResourceBasedPolicy':
             jio_policy_id = query_string['Id']
             return jio_policy_controller.delete_resource_based_policy(context, jio_policy_id)
+        elif Action == 'ListResourceBasedPolicies':
+            return jio_policy_controller.list_resource_based_policies(context)
+        elif Action == 'GetResourceBasedPolicy':
+            jio_policy_id = query_string['Id']
+            return jio_policy_controller.get_resource_based_policy(context, jio_policy_id)
+        elif Action == 'GetResourceBasedPolicySummary':
+            jio_policy_id = query_string['Id']
+            return jio_policy_controller.get_resource_based_policy_summary(context, jio_policy_id)        
         elif Action == 'AttachPolicyToResource':
             jio_policy_id = query_string['PolicyId']
             resource = json.loads(query_string['Resource'])
