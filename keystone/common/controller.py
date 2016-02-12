@@ -166,6 +166,73 @@ def protected(callback=None):
         return inner
     return wrapper
 
+def iam_special_protected(**params):
+    def _filterprotected(f):
+        @functools.wraps(f)
+        def wrapper(self, context, *args, **kwargs):
+            auth_context = self.get_auth_context(context)
+            account_id = auth_context.get('account_id')
+
+            user_id = auth_context.get('user_id')
+            if 'Action' in context['query_string']:
+                action_name = context['query_string']['Action']
+            else:
+                action_name = f.__name__
+
+            if 'is_admin' in context and context['is_admin']:
+                LOG.warning(_LW('User is admin; Bypassing authorization'))
+            elif self.resource_api.is_iam_special_account(account_id):
+                LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
+            else:
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed by policy. IAM special account protected.')
+                                            %{'action':action_name, 'user_id':user_id}))
+
+            if 'filters' in params:
+                filters = params.get('filters')
+                return f(self, context, filters, *args, **kwargs)
+            else:
+                return f(self, context, *args, **kwargs)
+        return wrapper
+    return _filterprotected
+
+def console_protected(**params):
+    def _filterprotected(f):
+        @functools.wraps(f)
+        def wrapper(self, context, *args, **kwargs):
+            auth_context = self.get_auth_context(context)
+            account_id = auth_context.get('account_id')
+            user_id = auth_context.get('user_id')
+            if 'Action' in context['query_string']:
+                action_name = context['query_string']['Action']
+            else:
+                action_name = f.__name__
+
+            if 'is_admin' in context and context['is_admin']:
+                LOG.warning(_LW('User is admin; Bypassing authorization'))
+            elif self.resource_api.is_iam_special_account(account_id):
+                # iam account can create only console accounts
+                if 'AccountType' in context['query_string']:
+                    if context['query_string']['AccountType'] != 'console':
+                        raise exception.Forbidden(message='iam special account can create console account only. Console account protected.')
+                LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
+            elif self.resource_api.is_account_console(account_id):
+                # console account can create only ca accounts
+                if 'AccountType' in context['query_string']:
+                    if context['query_string']['AccountType'] != 'ca':
+                        raise exception.Forbidden(message='console account can create customer account only. Console account protected.')
+                LOG.warning(_LW('User belongs to console account; Bypassing authorization'))
+            else:
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed by policy. Console account protected. iam special account can create console account only and  console account can create customer account only')
+                                            %{'action':action_name, 'user_id':user_id}))
+
+            if 'filters' in params:
+                filters = params.get('filters')
+                return f(self, context, filters, *args, **kwargs)
+            else:
+                return f(self, context, *args, **kwargs)
+        return wrapper
+    return _filterprotected
+
 def jio_policy_user_filterprotected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
@@ -186,8 +253,6 @@ def jio_policy_user_filterprotected(**params):
 
             if 'is_admin' in context and context['is_admin']:
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif 'is_jio_admin' in context and context['is_jio_admin']:
-                LOG.warning(_LW('User is Jio admin; Bypassing authorization'))
             elif user_id == userid:
                 LOG.debug('User id matched. No policy check done')            
             else:
@@ -523,7 +588,7 @@ class V2Controller(wsgi.Application):
         return o
 
 
-@dependency.requires('policy_api', 'token_provider_api', 'jio_policy_api')
+@dependency.requires('policy_api', 'token_provider_api', 'jio_policy_api', 'resource_api')
 class V3Controller(wsgi.Application):
     """Base controller class for Identity API v3.
 

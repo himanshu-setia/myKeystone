@@ -27,7 +27,7 @@ CONF = cfg.CONF
 class User(sql.ModelBase, sql.DictBase):
     __tablename__ = 'user'
     attributes = ['id', 'name', 'account_id', 'password', 'enabled',
-                  'default_project_id', 'expiry']
+                  'default_project_id', 'expiry', 'type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
     account_id = sql.Column(sql.String(64), nullable=False)
@@ -36,6 +36,7 @@ class User(sql.ModelBase, sql.DictBase):
     extra = sql.Column(sql.JsonBlob())
     default_project_id = sql.Column(sql.String(64))
     expiry = sql.Column(sql.DateTime)
+    type = sql.Column(sql.Enum('regular', 'root'), nullable=False)
     # Unique constraint across two columns to create the separation
     # rather than just only 'name' being unique
     __table_args__ = (sql.UniqueConstraint('account_id', 'name'), {})
@@ -125,6 +126,7 @@ class Identity(identity.Driver):
     @sql.handle_conflicts(conflict_type='user')
     def create_user(self, user_id, user):
         user = utils.hash_user_password(user)
+        user['type']=user.get('type', 'regular')
         session = sql.get_session()
         with session.begin():
             user_ref = User.from_dict(user)
@@ -199,6 +201,17 @@ class Identity(identity.Driver):
         session = sql.get_session()
         return identity.filter_user(self._get_user(session, user_id).to_dict())
 
+    def get_root_user(self, account_id):
+        session = sql.get_session()
+        query = session.query(User)
+        query = query.filter_by(account_id=account_id)
+        query = query.filter_by(type = 'root')
+        try:
+            user_ref = query.one()
+        except sql.NotFound:
+            raise exception.RootUserNotFound(account_id=account_id)
+        return identity.filter_user(user_ref.to_dict())
+
     def get_user_by_name(self, user_name, account_id):
         session = sql.get_session()
         query = session.query(User)
@@ -213,7 +226,7 @@ class Identity(identity.Driver):
     @sql.handle_conflicts(conflict_type='user')
     def update_user(self, user_id, user):
         session = sql.get_session()
-
+        user['type']=user.get('type', 'regular')
         with session.begin():
             user_ref = self._get_user(session, user_id)
             old_user_dict = user_ref.to_dict()

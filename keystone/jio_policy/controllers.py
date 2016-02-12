@@ -160,3 +160,39 @@ class JioPolicyV3(controller.V3Controller):
         refs = self.jio_policy_api.get_resource_based_policy_summary(jio_policy_id)
         return refs
 
+    @controller.iam_special_protected()
+    def create_action(self, context, action_name):
+        action_id = uuid.uuid4().hex
+        ls = action_name.split(':')
+        if len(ls) < 4:
+            raise exception.ValidationError(attribute='action name', target='action_name')
+
+        service = ls[2]
+        if service == None: 
+                raise exception.ValidationError(attribute='Service name cannot be null.', target = 'service')
+        action = ls[3]
+        if action == None or (action != '*' and (action.isalpha() is False or action[0].isupper() is False)):
+            raise exception.ValidationError(attribute='Action name should contain only alphabets and in pascal case.', target='action_name')
+
+        ref = self.jio_policy_api.create_action(action_id, action_name, service)
+        return {'Action':ref}
+
+    @controller.iam_special_protected()
+    def create_resource_type(self, context, resource_type, service):
+        resource_type_id = uuid.uuid4().hex
+        if service == None: 
+                raise exception.ValidationError(attribute='Service name cannot be null.', target = 'service')
+        if resource_type == None or (
+                resource_type != '*' and (
+                    resource_type.isalpha() is False or resource_type[0].isupper() is False)):
+            raise exception.ValidationError(
+                            attribute='Resource type name should contain only alphabets and in pascal case.', 
+                            target='ResourceType')
+
+        ref = self.jio_policy_api.create_resource_type(resource_type_id, resource_type, service)
+        return {'Resource_type':ref}
+
+    @controller.iam_special_protected()
+    def create_action_resource_type_mapping(self, context, action_name, resource_type_name, resource_type_service):
+        ref = self.jio_policy_api.create_action_resource_type_mapping(action_name, resource_type_name, resource_type_service)
+        return {'Action_Resource_type_Mapping':ref}

@@ -1045,6 +1045,56 @@ class Policy(jio_policy.Driver):
         rows = query.filter(ResourceTypeModel.name == resource_type).count()
         return True if rows > 0 else False
 
+    @sql.handle_conflicts(conflict_type='action')
+    def create_action(self, action_id, action_name, service_type):
+        ref = dict()
+        ref['id'] = action_id
+        ref['name'] = action_name
+        ref['service_type'] = service_type
+        session = sql.get_session()
+        with session.begin():
+            try:
+                session.add(ActionModel(id=action_id, action_name=action_name, service_type=service_type))
+            except sql.DBReferenceError:
+                raise exception.ValidationError(attribute='valid service name', target='resource')
+        return ref
+
+    @sql.handle_conflicts(conflict_type='resource_type')
+    def create_resource_type(self, resource_type_id, resource_type_name, service_type):
+        ref = dict()
+        ref['id'] = resource_type_id
+        ref['name'] = resource_type_name
+        ref['service_type'] = service_type
+        session = sql.get_session()
+        with session.begin():
+            try:
+                session.add(ResourceTypeModel(id=resource_type_id, name=resource_type_name, service_type=service_type))
+            except sql.DBReferenceError:
+                raise exception.ValidationError(attribute='valid service name', target='resource')
+        return ref
+
+    @sql.handle_conflicts(conflict_type='action_resource_type_mapping')
+    def create_action_resource_type_mapping(self, action_name, resource_type_name, resource_type_service):
+        ref = dict()
+        ref['action_name'] = action_name
+        ref['resource_type_name'] = resource_type_name
+        session = sql.get_session()
+        with session.begin():
+            try:
+                action_id = session.query(ActionModel).filter_by(
+                                    action_name=action_name).with_entities(
+                                            ActionModel.id).one()[0]
+                query = session.query(ResourceTypeModel)
+                query = query.filter_by(name=resource_type_name)
+                query = query.filter_by(service_type=resource_type_service)
+                resource_type = query.one()
+                session.add(ActionResourceMappingModel(action_id=action_id, resource_type_id=resource_type.id))
+            except sql.NotFound:
+                raise exception.ValidationError(
+                                attribute='valid action or valid resource name and service name', 
+                                target='ActionName, ResourceType or ResourceTypeSevice')
+        return ref
+
 def create_action(action_id, action_name, service_type):
     ref = dict()
     ref['id'] = action_id

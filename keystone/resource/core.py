@@ -405,6 +405,14 @@ class Manager(manager.Manager):
         """
         pass
 
+    def update_account_type(self, account_id, account_type, initiator=None):
+        original_account = self.driver.get_account(account_id)
+        account = dict()
+        account['type'] = account_type
+        ret = self.driver.update_account(account_id, account)
+        notifications.Audit.updated(self._ACCOUNT, account_id, initiator)
+        return ret
+
     def update_account(self, account_id, account, initiator=None):
         self.assert_account_not_federated(account_id, account)
         original_account = self.driver.get_account(account_id)
@@ -424,13 +432,6 @@ class Manager(manager.Manager):
         return ret
 
     def delete_account(self, account_id, initiator=None):
-        # explicitly forbid deleting the default account (this should be a
-        # carefully orchestrated manual process involving configuration
-        # changes, etc)
-        if account_id == CONF.identity.default_account_id:
-            raise exception.ForbiddenAction(action=_('delete the default '
-                                                     'account'))
-
         account = self.driver.get_account(account_id)
 
         # To help avoid inadvertent deletes, we insist that the account
@@ -438,25 +439,33 @@ class Manager(manager.Manager):
         # their own account since, once it is disabled, they won't be able
         # to get a valid token to issue this delete.
         if account['enabled']:
-            raise exception.ForbiddenAction(
-                action=_('cannot delete a account that is enabled, '
-                         'please disable it first.'))
+            account['enabled'] = False
+            self.update_account(account.get('id'), account)
 
-        self._delete_account_contents(account_id)
+        #self._delete_account_contents(account_id)
         # Delete any database stored account config
-        self.account_config_api.delete_config_options(account_id)
-        self.account_config_api.delete_config_options(account_id, sensitive=True)
-        # TODO(henry-nash): Although the controller will ensure deletion of
-        # all users & groups within the account (which will cause all
-        # assignments for those users/groups to also be deleted), there
-        # could still be assignments on this account for users/groups in
-        # other accounts - so we should delete these here by making a call
-        # to the backend to delete all assignments for this account.
-        # (see Bug #1277847)
-        self.driver.delete_account(account_id)
-        notifications.Audit.deleted(self._ACCOUNT, account_id, initiator)
-        self.get_account.invalidate(self, account_id)
-        self.get_account_by_name.invalidate(self, account['name'])
+        #self.account_config_api.delete_config_options(account_id)
+        #self.account_config_api.delete_config_options(account_id, sensitive=True)
+        ## TODO(henry-nash): Although the controller will ensure deletion of
+        ## all users & groups within the account (which will cause all
+        ## assignments for those users/groups to also be deleted), there
+        ## could still be assignments on this account for users/groups in
+        ## other accounts - so we should delete these here by making a call
+        ## to the backend to delete all assignments for this account.
+        ## (see Bug #1277847)
+        #self.driver.delete_account(account_id)
+        #notifications.Audit.deleted(self._ACCOUNT, account_id, initiator)
+        #self.get_account.invalidate(self, account_id)
+        #self.get_account_by_name.invalidate(self, account['name'])
+
+    def is_account_console(self, account_id):
+        return self.driver.is_account_console(account_id)
+
+    def is_iam_special_account(self, account_id):
+        return self.driver.is_iam_special_account(account_id)
+
+    def is_service_account(self, account_id):
+        return self.driver.is_service_account(account_id)
 
     def _delete_account_contents(self, account_id):
         """Delete the contents of a account.

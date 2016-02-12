@@ -298,6 +298,8 @@ class TokenNotFound(NotFound):
 class UserNotFound(NotFound):
     message_format = _("Could not find user: %(user_id)s")
 
+class RootUserNotFound(NotFound):
+    message_format = _("Could not find root user for account: %(account_id)s")
 
 class GroupNotFound(NotFound):
     message_format = _("Could not find group: %(group_id)s")
