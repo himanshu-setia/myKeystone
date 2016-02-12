@@ -895,10 +895,14 @@ FILE_OPTIONS = {
         'UpdateResourceBasedPolicy',
         'DeleteResourceBasedPolicy',
         'AttachPolicyToResource',
-        'DetachPolicyFromResource'],
+        'DetachPolicyFromResource',
+        'ListResourceBasedPolicies',
+        'GetPolicySummary',
+        'GetResourceBasedPolicy',
+        'GetResourceBasedPolicySummary'],
             help='List of default actions')
     ],
-    'pase_deploy': [
+    'paste_deploy': [
         cfg.StrOpt('config_file', default='keystone-paste.ini',
                    help='Name of the paste configuration file that defines '
                         'the available pipelines.'),
