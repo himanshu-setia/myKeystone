@@ -203,6 +203,16 @@ class RootV3(controller.V3Controller):
             services_json = json.loads(query_string['Services'])
             services = services_json.get('services')
             return account_controller.update_service_account(context, services, account_id, user_ids)
+        elif Action == "CreateAccount":
+            account = {}
+            account['name'] =  query_string['AccountName']
+            account['password'] = query_string['Password']
+            if 'AccountType' in query_string:
+                account['type'] = query_string['AccountType']
+            return account_controller.create_account(context, account)
+        elif Action == "DeleteAccount":
+            account_id = query_string['AccountId']
+            return account_controller.delete_account(context, account_id)
  
         elif Action == 'CreateResourceBasedPolicy':
             policy_document = json.loads(query_string['PolicyDocument'])

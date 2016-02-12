@@ -148,7 +148,7 @@ class AccountV3(controller.V3Controller):
         # Check if not duplicate
         while self.resource_api.duplicate(ref['id']):
             ref['id'] = _unique_account_id()
-
+        ref.pop('password')
         ref = self.resource_api.create_account(ref['id'], ref, initiator)
         project = dict()
         project['account_id'] = ref['id']
@@ -204,12 +204,10 @@ class AccountV3(controller.V3Controller):
         refs = self.resource_api.list_accounts(hints=hints)
         return AccountV3.wrap_collection(context, refs, hints=hints)
 
-    @controller.protected()
     def get_account(self, context, account_id):
         ref = self.resource_api.get_account(account_id)
         return AccountV3.wrap_member(context, ref)
 
-    @controller.protected()
     @validation.validated(schema.account_update, 'account')
     def update_account(self, context, account_id, account):
         self._require_matching_id(account_id, account)
@@ -217,7 +215,7 @@ class AccountV3(controller.V3Controller):
         ref = self.resource_api.update_account(account_id, account, initiator)
         return AccountV3.wrap_member(context, ref)
 
-    @controller.protected()
+    @controller.jio_policy_filterprotected(args='Account')
     def delete_account(self, context, account_id):
         initiator = notifications._get_request_audit_info(context)
         return self.resource_api.delete_account(account_id, initiator)
