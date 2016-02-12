@@ -78,7 +78,7 @@ class CredentialV3(controller.V3Controller):
             user_id)
         return len(credential_refs)
 
-    #@controller.jio_policy_filterprotected(args='Credential')
+    @controller.jio_policy_filterprotected(args='Credential')
     @validation.validated(schema.credential_create, 'credential')
     def create_credential(self, context, credential):
         if 'user_id' not in credential:
@@ -118,8 +118,8 @@ class CredentialV3(controller.V3Controller):
                 raise exception.ValidationError(
                 message=_('Invalid blob in credential'))
             if not blob or not isinstance(blob, dict):
-                raise exception.ValidationError(attribute='blob',                                                                           
-                                                target='credential')
+                raise exception.ValidationError(attribute='blob',
+                            target='credential')
             new_ref = ref.copy()
             blob.pop('secret')
             new_ref['blob'] = blob
@@ -136,6 +136,18 @@ class CredentialV3(controller.V3Controller):
             self._improve_response(ref)
         return CredentialV3.wrap_collection(context, ret_refs,
                                             hints=hints)
+
+    @controller.jio_policy_filterprotected(args='Credential')
+    def get_user_credentials(self, context, user_id):
+        if user_id is None:
+            raise exception.ValidationError(attribute='userId is none',
+                            target='User_d')
+        ref = self.credential_api.list_credentials_for_user(
+                     user_id)
+        for item in ref:
+            self._improve_response(item)
+        return CredentialV3.wrap_collection(context, ref)
+
 
     @controller.jio_policy_user_filterprotected(args='Credential')
     def get_credential(self, context, credential_id):
