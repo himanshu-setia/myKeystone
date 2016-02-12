@@ -104,7 +104,6 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         # Administrator is allowed to list others' groups
         ref= '/?Action=AssignUserToGroup' + '&GroupId=' + self.group_id + '&UserId=' + self.user['id']
         self.get(ref,expected_status=204)
-	
         resource_url = '/?Action=ListGroupsForUser&Id=' + self.user['id']
         r = self.get(resource_url)
         self.assertValidGroupListResponse(r, ref=self.group,
@@ -195,9 +194,6 @@ class IdentityTestCase(test_v3.RestfulTestCase):
     def test_create_group_400(self):
         self.get('/?Action=CreateGroup', expected_status=400)
 
-        self.delete('/groups/%(group_id)s' % {
-            'group_id': self.group_id})
-
     def test_list_groups(self):
         resource_url = '/?Action=ListGroups'
         r = self.get(resource_url)
@@ -214,7 +210,6 @@ class IdentityTestCase(test_v3.RestfulTestCase):
         del ref['id']
         group = '/?Action=UpdateGroup' + '&Name=' + ref['name'] + '&Id=' + self.group_id + '&Description=' + ref['description']
         r = self.get(group)
-        print r
         self.assertValidGroupResponse(r, ref)
 
     def test_delete_group(self):

@@ -16,6 +16,19 @@ class JioPolicyResourceTestCase(test_v3.RestfulTestCase):
         self.jio_res_type = self.jio_policy.get('res_type')
         self.jio_policy_api.create_resource_based_policy(self.project_id, self.jio_policy_id, copy.deepcopy(self.jio_policy))
 
+
+    def test_get_jio_policy(self):
+        r = self.get(
+                '/?Action=GetResourceBasedPolicy&Id=%(policy_id)s' % {
+                    'policy_id': self.jio_policy_id})
+        return self.assertValidJioPolicyResponse(r, self.jio_policy)
+
+    def test_get_jio_policy_summary(self):
+        r = self.get(
+                '/?Action=GetResourceBasedPolicySummary&Id=%(policy_id)s' % {
+                    'policy_id': self.jio_policy_id})
+        return self.assertValidJioPolicySummaryResponse(r, self.jio_policy)
+
     def test_create_jio_policy(self):
         ref = self.new_resource_jio_policy_ref()
         r = self.get(
@@ -86,6 +99,16 @@ class JioPolicyResourceTestCase(test_v3.RestfulTestCase):
                 '/?Action=CreateResourceBasedPolicy&PolicyDocument=%(policy)s' % {
                 'policy':  json.dumps(ref)}, 
                 expected_status = 400)
+
+    def test_get_jio_policy_with_invalid_policy_id_fail(self):
+        r = self.get(
+                '/?Action=GetResourceBasedPolicy&Id=%(policy_id)s' % {
+                'policy_id': uuid.uuid4().hex},
+                expected_status = 404)
+
+    def test_list_jio_policies(self):
+        r = self.get('?Action=ListResourceBasedPolicies')
+        return self.assertValidJioPolicyListResponse(r, ref = self.jio_policy)
 
     def test_attach_policy_to_resource(self):
         resource = self.new_resource(self.jio_res_type)
