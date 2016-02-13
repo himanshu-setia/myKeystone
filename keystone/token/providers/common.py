@@ -144,6 +144,7 @@ class V2TokenDataHelper(object):
                         'user': {'id': user_ref['id'],
                                  'name': user_ref['name'],
                                  'username': user_ref['name'],
+                                 'type': user_ref['type'],
                                  'roles': roles_ref,
                                  'roles_links': metadata_ref.get('roles_links',
                                                                  [])
