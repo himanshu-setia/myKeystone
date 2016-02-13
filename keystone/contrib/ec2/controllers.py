@@ -351,6 +351,8 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
         response = dict(domain_id=token_data["access"]["token"]["tenant"]["domain_id"],
                         user_id=token_data["access"]["user"]["id"],
                         token_id=token_data["access"]["token"]["id"])
+        if 'type' in token_data["access"]["user"]:
+            response['user_type'] = token_data["access"]["user"]['type']
         return response
 
 
@@ -422,6 +424,8 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
         response = dict(account_id=token_data["access"]["token"]["tenant"]["account_id"],
                         user_id=token_data["access"]["user"]["id"],
                         token_id=token_data["access"]["token"]["id"])
+        if 'type' in token_data["access"]["user"]:
+            response['user_type'] = token_data["access"]["user"]['type']
         return response
 
     @controller.v2_deprecated
