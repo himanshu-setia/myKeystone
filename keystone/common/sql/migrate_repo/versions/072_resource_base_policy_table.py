@@ -2,13 +2,18 @@ import migrate
 import sqlalchemy as sql
 from migrate.changeset.constraint import UniqueConstraint
 from oslo_log import log
+
+LOG = log.getLogger(__name__)
   
 def upgrade(migrate_engine):
     meta = sql.MetaData()
     meta.bind = migrate_engine
-    jio_policy_table = sql.Table('jio_policy', meta, autoload=True)
+    jio_policy = sql.Table('jio_policy', meta, autoload=True)
     jio_policy_column = sql.Column('type', sql.Enum('UserBased', 'ResourceBased', name='type'), nullable=False)
-    jio_policy_column.create(jio_policy_table)
+    jio_policy_column.create(jio_policy)
+
+    action = sql.Table('action', meta, autoload=True)
+    resource = sql.Table('resource', meta, autoload=True)
       
     policy_action_principle = sql.Table(
         'policy_action_principle', meta,
