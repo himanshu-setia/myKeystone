@@ -263,7 +263,7 @@ class UserV3(controller.V3Controller):
             if not self.checkPasswordPolicy(password):
                 raise exception.ValidationError(target='user',
                                                 attribute='password',
-                                                message='password does not validate password policy')
+                                                message=CONF.password_policy.error_message)
         ref = self.identity_api.create_user(ref, initiator)
         new_ref = self.updated_ref(ref)
         return UserV3.wrap_member(context, new_ref)
@@ -342,7 +342,6 @@ class UserV3(controller.V3Controller):
 
         return refs
 
-    @controller.jio_policy_user_filterprotected(args='User')
     def change_password(self, context, user_id, user):
         original_password = user.get('original_password')
         if original_password is None:
@@ -356,7 +355,7 @@ class UserV3(controller.V3Controller):
         if not self.checkPasswordPolicy(password):
             raise exception.ValidationError(target='user',
                                             attribute='password',
-                                            message='password is not in correct format.')
+                                            message=CONF.password_policy.error_message)
         if original_password == password:
             raise exception.ValidationError(target='user',
                                             attribute='password',
