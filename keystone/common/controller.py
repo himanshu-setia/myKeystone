@@ -184,7 +184,7 @@ def iam_special_protected(**params):
             elif self.resource_api.is_iam_special_account(account_id):
                 LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
             else:
-                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed by policy. IAM special account protected.')
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. IAM special account protected.')
                                             %{'action':action_name, 'user_id':user_id}))
 
             if 'filters' in params:
@@ -222,7 +222,7 @@ def console_protected(**params):
                         raise exception.Forbidden(message='console account can create customer account only. Console account protected.')
                 LOG.warning(_LW('User belongs to console account; Bypassing authorization'))
             else:
-                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed by policy. Console account protected. iam special account can create console account only and  console account can create customer account only')
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. Console protected. iam special account can create console account only and console account can create customer account only')
                                             %{'action':action_name, 'user_id':user_id}))
 
             if 'filters' in params:
@@ -277,13 +277,10 @@ def jio_policy_user_filterprotected(**params):
                             item = item + res_postfix
                         if item in context['query_string']:
                             resourceId= context['query_string'][item]
-                        #else:
-                         #   resourceId= user_id
                         if resourceId is not None:
                             resources.append(resource_item + resourceId)
                         else:
                             resources.append(resource_item) 
-
                 else:
                     resources.append(resource)
                 for r in resources:
@@ -291,12 +288,12 @@ def jio_policy_user_filterprotected(**params):
                         effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r, False)
                         if effect is False:
                             LOG.debug('Jio policy based authorization failed')
-                            raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
-                                                 %{'action':action, 'user_id':user_id, 'resource':r}))
+                            raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
+                                               %{'action':action_name, 'user_id':user_id}))
                     except exception.ResourceNotFound:
                         LOG.debug('Jio policy based authorization failed')
-                        raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
-                                               %{'action':action, 'user_id':user_id, 'resource':r}))
+                        raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
+                                               %{'action':action_name, 'user_id':user_id}))
                 LOG.debug('Jio policy based authorization granted')
             if 'filters' in params:
                 filters = params.get('filters')
@@ -342,8 +339,6 @@ def jio_policy_filterprotected(**params):
                             item = item + res_postfix
                         if item in context['query_string']:
                             resourceId= context['query_string'][item]
-                        #else:
-                         #   resourceId= user_id
                         if resourceId is not None:
                             resources.append(resource_item + resourceId)
                         else:
@@ -355,12 +350,12 @@ def jio_policy_filterprotected(**params):
                         effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r, False)
                         if effect is False:
                             LOG.debug('Jio policy based authorization failed')
-                            raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
-                                                 %{'action':action, 'user_id':user_id, 'resource':r}))
+                            raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
+                                                 %{'action':action_name, 'user_id':user_id}))
                     except exception.ResourceNotFound:
                         LOG.debug('Jio policy based authorization failed')
-                        raise exception.Forbidden(message=(_('%(action)s on %(resource)s by %(user_id)s disallowed by policy')
-                                               %{'action':action, 'user_id':user_id, 'resource':r}))
+                        raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
+                                               %{'action':action_name, 'user_id':user_id}))
                 LOG.debug('Jio policy based authorization granted')
             if 'filters' in params:
                 filters = params.get('filters')
