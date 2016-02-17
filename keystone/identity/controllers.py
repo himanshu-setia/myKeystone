@@ -271,7 +271,12 @@ class UserV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='User', filters=['account_id', 'enabled', 'name'])
     def list_users(self, context, filters=['account_id', 'enabled', 'name']):
         hints = UserV3.build_driver_hints(context, filters)
-        refs = self.identity_api.list_users(
+        try:
+            account_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'account_id']
+        except KeyError:
+            raise exception.Forbidden('Cannot find account_id in context.')
+        refs = self.identity_api.list_users(account_id,
             account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
         
@@ -394,7 +399,12 @@ class GroupV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='Group',filters=['account_id', 'name'])
     def list_groups(self, context, filters=['account_id', 'name']):
         hints = GroupV3.build_driver_hints(context, filters)
-        refs = self.identity_api.list_groups(
+        try:
+            account_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'account_id']
+        except KeyError:
+            raise exception.Forbidden('Cannot find account_id in context.')
+        refs = self.identity_api.list_groups(account_id,
             account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
 

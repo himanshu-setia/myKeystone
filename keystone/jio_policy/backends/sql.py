@@ -99,7 +99,7 @@ class PolicyActionPrincipleModel(sql.ModelBase):
     action_id = sql.Column(sql.String(64), sql.ForeignKey('action.id'), primary_key=True)
     principle_acc_id = sql.Column(sql.String(64),nullable=False)
     principle_id = sql.Column(sql.String(64), primary_key=True)
-    principle_type = sql.Column(sql.String(64), nullable=False)
+    principle_type = sql.Column(sql.Enum('User', 'Group', '*'), nullable=False)
     effect = sql.Column(sql.Boolean)
 
 

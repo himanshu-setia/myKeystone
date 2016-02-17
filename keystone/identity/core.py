@@ -787,7 +787,7 @@ class Manager(manager.Manager):
     @manager.response_truncated
     @accounts_configured
     @exception_translated('user')
-    def list_users(self, account_scope=None, hints=None):
+    def list_users(self, account_id, account_scope=None, hints=None):
         driver = self._select_identity_driver(account_scope)
         hints = hints or driver_hints.Hints()
         if driver.is_account_aware():
@@ -798,7 +798,7 @@ class Manager(manager.Manager):
             # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter.
             self._mark_account_id_filter_satisfied(hints)
-        ref_list = driver.list_users(hints)
+        ref_list = driver.list_users(hints, account_id)
         return self._set_account_id_and_mapping(
             ref_list, account_scope, driver, mapping.EntityType.USER)
 
@@ -1030,7 +1030,7 @@ class Manager(manager.Manager):
     @manager.response_truncated
     @accounts_configured
     @exception_translated('group')
-    def list_groups(self, account_scope=None, hints=None):
+    def list_groups(self, account_id, account_scope=None, hints=None):
         driver = self._select_identity_driver(account_scope)
         hints = hints or driver_hints.Hints()
         if driver.is_account_aware():
@@ -1041,7 +1041,7 @@ class Manager(manager.Manager):
             # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter.
             self._mark_account_id_filter_satisfied(hints)
-        ref_list = driver.list_groups(hints)
+        ref_list = driver.list_groups(hints, account_id)
         return self._set_account_id_and_mapping(
             ref_list, account_scope, driver, mapping.EntityType.GROUP)
 

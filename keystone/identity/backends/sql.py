@@ -134,9 +134,9 @@ class Identity(identity.Driver):
         return identity.filter_user(user_ref.to_dict())
 
     @sql.truncated
-    def list_users(self, hints):
+    def list_users(self, hints, account_id):
         session = sql.get_session()
-        query = session.query(User)
+        query = session.query(User).filter_by(account_id = account_id)
         user_refs = sql.filter_limit_query(User, query, hints)
         ref_list = []
         for ref in user_refs:
@@ -400,9 +400,9 @@ class Identity(identity.Driver):
         return ref.to_dict()
 
     @sql.truncated
-    def list_groups(self, hints):
+    def list_groups(self, hints, account_id):
         session = sql.get_session()
-        query = session.query(Group)
+        query = session.query(Group).filter_by(account_id = account_id)
         refs = sql.filter_limit_query(Group, query, hints)
 	
         ref_list = []
