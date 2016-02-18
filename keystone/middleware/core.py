@@ -28,7 +28,7 @@ from keystone import exception
 from keystone.i18n import _LW
 from keystone.models import token_model
 from keystone.openstack.common import versionutils
-
+from keystone import contrib
 
 
 CONF = cfg.CONF
@@ -251,7 +251,6 @@ class AuthContextMiddleware(wsgi.Middleware):
 
         context = {'token_id': token_id}
         context['environment'] = request.environ
-
         try:
             token_ref = token_model.KeystoneToken(
                 token_id=token_id,
@@ -349,33 +348,13 @@ class AuthContextMiddleware(wsgi.Middleware):
        }
        LOG.warning(cred_dict)
 
-       token_url = CONF.keystone_ec2_tokens_url
-       if "ec2" in token_url:
-           creds = {'ec2Credentials': cred_dict}
-       else:
-           creds = {'auth': {'OS-KSEC2:ec2Credentials': cred_dict}}
-       creds_json = jsonutils.dumps(creds)
-       headers = {'Content-Type': 'application/json'}
+       #The context is passed as None, it is unused in the function
+       ec2controller = contrib.ec2.controllers.Ec2Controller()
+       response = ec2controller.authenticate(None,ec2Credentials=cred_dict)
 
-       verify = False #CONF.ssl_ca_file or not CONF.ssl_insecure
-       LOG.warning("making the ec2 request2")
-       LOG.warning(creds_json)
-       response = requests.request('POST', token_url, verify=verify,
-                                   data=creds_json, headers=headers)
-       status_code = response.status_code
-       if status_code != 200:
-           msg = response.reason
-           raise exception.Unauthorized()
-
-       result = response.json() 
-       LOG.debug(result)
-       token_id = None
-       account_id = None
-       if 'token' in result:
-           token_id = response.headers['x-subject-token']
-       else: 
-           token_id = result['access']['token']['id']
-           account_id = result['access']['token']['tenant']['account_id']
+       LOG.debug(response)
+       token_id = response['access']['token']['id']
+       account_id = response['access']['token']['tenant']['account_id']
        req.headers[AUTH_TOKEN_HEADER] = token_id
        return token_id, account_id
 
