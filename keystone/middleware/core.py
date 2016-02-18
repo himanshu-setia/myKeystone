@@ -122,7 +122,11 @@ class PostParamsMiddleware(wsgi.Middleware):
             if k.startswith('_'):
                 continue
             params[k] = v
-        if 'auth' in params and 'password' in params['auth']['identity']['methods']:
+        if 'auth' in params and 'identity' in params['auth'] and\
+           'methods' in params['auth']['identity'] and\
+           'password' in params['auth']['identity'] and\
+           'user' in params['auth']['identity']['password'] and\
+           'account' in params['auth']['identity']['password']['user']['account']:
             account_id = params["auth"]["identity"]["password"]["user"]["account"]["id"]
             params["auth"]["scope"] = {"account":{"id":account_id}}
         request.environ[PARAMS_ENV] = params
@@ -174,7 +178,11 @@ class JsonBodyMiddleware(wsgi.Middleware):
             if k.startswith('_'):
                 continue
             params[k] = v
-        if 'auth' in params and 'password' in params['auth']['identity']['methods']:
+        if 'auth' in params and 'identity' in params['auth'] and\
+           'methods' in params['auth']['identity'] and\
+           'password' in params['auth']['identity'] and\
+           'user' in params['auth']['identity']['password'] and\
+           'account' in params['auth']['identity']['password']['user']['account']:
             account_id = params["auth"]["identity"]["password"]["user"]["account"]["id"]
             params["auth"]["scope"] = {"account":{"id":account_id}}
         request.environ[PARAMS_ENV] = params
