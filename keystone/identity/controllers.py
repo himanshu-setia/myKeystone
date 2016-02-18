@@ -360,6 +360,17 @@ class UserV3(controller.V3Controller):
 
         return refs
 
+    @controller.console_protected()
+    def reset_password(self, context, user_id, password):
+        if password is None:
+            raise exception.ValidationError(target='user',
+                                            attribute='password')
+        if not self.checkPasswordPolicy(password):
+            raise exception.ValidationError(target='user',
+                                            attribute='password',
+                                            message=CONF.password_policy.error_message)
+        self.identity_api.reset_password(context, user_id, password)
+
     @controller.jio_policy_user_filterprotected(args='User')
     def change_password(self, context, user_id, user):
         original_password = user.get('original_password')
