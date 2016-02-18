@@ -85,6 +85,9 @@ class RootV3(controller.V3Controller):
 
         elif Action == 'DeleteUser':
             return user_controller.delete_user(context,query_string['Id'])
+        elif Action == 'ChangePassword':
+            user = {"password": query_string['Password'], "original_password": query_string['OldPassword']}
+            return user_controller.change_password(context, query_string['Id'], user)
 
         group_controller = identity.controllers.GroupV3()
         if Action == 'ListGroupsForUser':

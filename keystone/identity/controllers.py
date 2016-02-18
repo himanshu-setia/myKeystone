@@ -301,6 +301,19 @@ class UserV3(controller.V3Controller):
         self._require_matching_account_id(
             user_id, user, self.identity_api.get_user)
         initiator = notifications._get_request_audit_info(context)
+        if 'password' in user:
+            password = user.get('password')
+            if password is None:
+               raise exception.ValidationError(target='user', 
+                            attribute='password')
+            if not self.checkPasswordPolicy(password):
+                raise exception.ValidationError(target='user',
+                                 attribute='password',
+                                 message=CONF.password_policy.error_message) 
+            if self.match_previous_passwords(user_id, password):
+                raise exception.ValidationError(target='user',
+                                             attribute='password',
+                                             message=CONF.password_policy.old_password_error_message)
         ref = self.identity_api.update_user(user_id, user, initiator)
         new_ref = self.updated_ref(ref)
         return UserV3.wrap_member(context, new_ref)
@@ -347,6 +360,7 @@ class UserV3(controller.V3Controller):
 
         return refs
 
+    @controller.jio_policy_user_filterprotected(args='User')
     def change_password(self, context, user_id, user):
         original_password = user.get('original_password')
         if original_password is None:
@@ -368,7 +382,7 @@ class UserV3(controller.V3Controller):
         if self.match_previous_passwords(user_id, password):
             raise exception.ValidationError(target='user',
                                             attribute='password',
-                                            message='Cannot use old passwords')
+                                            message=CONF.password_policy.old_password_error_message)
         try:
             self.identity_api.change_password(
                 context, user_id, original_password, password)
@@ -454,3 +468,4 @@ class GroupV3(controller.V3Controller):
             refs['Policies'] = policy_refs
 
         return refs
+

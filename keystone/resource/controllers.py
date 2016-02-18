@@ -137,7 +137,7 @@ class AccountV3(controller.V3Controller):
         policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy)
         self.jio_policy_api.attach_policy_to_user(policy.get('id'), user_id)
 
-    @controller.console_protected()
+    @controller.ism_console_protected()
     @validation.validated(schema.account_create, 'account')
     def create_account(self, context, account):
         ref = self._assign_unique_id(self._normalize_dict(account))

@@ -209,7 +209,33 @@ def console_protected(**params):
 
             if 'is_admin' in context and context['is_admin']:
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif self.resource_api.is_iam_special_account(account_id):
+            elif self.resource_api.is_account_console(account_id):
+                LOG.warning(_LW('User belongs to console account; Bypassing authorization'))
+            else:
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. Console protected.')
+                                            %{'action':action_name, 'user_id':user_id}))
+
+            if 'filters' in params:
+                filters = params.get('filters')
+                return f(self, context, filters, *args, **kwargs)
+            else:
+                return f(self, context, *args, **kwargs)
+        return wrapper
+    return _filterprotected
+
+def ism_console_protected(**params):
+    def _filterprotected(f):
+        @functools.wraps(f)
+        def wrapper(self, context, *args, **kwargs):
+            auth_context = self.get_auth_context(context)
+            account_id = auth_context.get('account_id')
+            user_id = auth_context.get('user_id')
+            if 'Action' in context['query_string']:
+                action_name = context['query_string']['Action']
+            else:
+                action_name = f.__name__
+
+            if self.resource_api.is_iam_special_account(account_id):
                 # iam account can create only console accounts
                 if 'AccountType' in context['query_string']:
                     if context['query_string']['AccountType'] != 'console':
