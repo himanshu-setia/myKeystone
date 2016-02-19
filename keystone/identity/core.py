@@ -1122,12 +1122,7 @@ class Manager(manager.Manager):
         self.authenticate(context, user_id, original_password)
 
         update_dict = {'password': new_password}
-        expiry_days = CONF.password_policy.expiry_days
-        if expiry_days is not None:
-            update_dict['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
-
         self.update_user(user_id, update_dict)
-        self.update_user_history(user_id, original_password, CONF.password_policy.num_password_saved)
 
 
 @six.add_metaclass(abc.ABCMeta)

@@ -249,13 +249,13 @@ class Identity(identity.Driver):
         query = query.filter_by(userid=user_id).order_by(UserHistory.date.desc())
         if count is not None and count is not 0:
             query = query.limit(count)
-            try:
-                user_refs = query.all()
-            except sql.NotFound:
-                raise exception.UserNotFound(userid=user_id)
-            if not user_refs:
-                return None
-            return user_refs
+        try:
+            user_refs = query.all()
+        except sql.NotFound:
+            raise exception.UserNotFound(userid=user_id)
+        if not user_refs:
+            return None
+        return user_refs
 
     def get_user_history(self, user_id, count):
         session = sql.get_session()
@@ -266,7 +266,7 @@ class Identity(identity.Driver):
             return None
 
     @sql.handle_conflicts(conflict_type='user_history')
-    def update_user_history(self, user_id, original_password, count, hashed=False):
+    def update_user_history(self, user_id, original_password, count=0, hashed=False):
         session = sql.get_session()
         if hashed is False:
             original_password = utils.hash_password(original_password)
@@ -275,10 +275,9 @@ class Identity(identity.Driver):
             if user_history_refs:
                 h_user_cnt = len(user_history_refs)
                 if h_user_cnt is not 0 and h_user_cnt >= count:
-                    user = user_history_refs[h_user_cnt - 1]
+                    user = user_history_refs[count-1]
                     setattr(user, 'password', original_password)
                     setattr(user, 'date', datetime.datetime.now())
-                    session.query(UserHistory).filter(UserHistory.id == user.id).update(user, synchronize_session=False)
                     if h_user_cnt > count:
                         ## deleting the redundant user history
                         uids = []
