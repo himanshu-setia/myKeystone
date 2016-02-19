@@ -46,8 +46,8 @@ class Manager(manager.Manager):
     def list_actions(self, hints=None):
         return self.driver.list_actions(hints)
 
-    def create_policy(self, project_id, policy_id, policy):
-        ref = self.driver.create_policy(project_id, policy_id, policy)
+    def create_policy(self, project_id, policy_id, policy, hidden=False):
+        ref = self.driver.create_policy(project_id, policy_id, policy, hidden)
         return ref
 
     def create_resource_based_policy(self, project_id, policy_id, policy):
@@ -162,7 +162,7 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def create_policy(self, project_id, policy_id, policy):
+    def create_policy(self, project_id, policy_id, policy, hidden=False):
         """Store a policy blob.
 
         :raises: keystone.exception.Conflict

@@ -134,7 +134,7 @@ class AccountV3(controller.V3Controller):
         statement['resource'] =[resource]
         statement['effect'] = 'allow'
         jio_policy['statement'] = [statement]
-        policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy)
+        policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy, True)
         self.jio_policy_api.attach_policy_to_user(policy.get('id'), user_id)
 
     @controller.isa_console_protected()
@@ -193,7 +193,7 @@ class AccountV3(controller.V3Controller):
         statement['resource'] =resources
         statement['effect'] = 'allow'
         jio_policy['statement'] = [statement]
-        policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy)
+        policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy, True)
         for id in user_ids:
             self.jio_policy_api.attach_policy_to_user(policy.get('id'), id)
         return self.resource_api.update_account_type(account_id, 'csa')
