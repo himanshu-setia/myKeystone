@@ -223,7 +223,7 @@ def console_protected(**params):
         return wrapper
     return _filterprotected
 
-def ism_console_protected(**params):
+def isa_console_protected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
@@ -234,18 +234,26 @@ def ism_console_protected(**params):
                 action_name = context['query_string']['Action']
             else:
                 action_name = f.__name__
-
-            if self.resource_api.is_iam_special_account(account_id):
+            account_type = ''
+            if action_name is 'create_account':
+                # request in openstack style
+                account_type = kwargs.get('account').get('type')
+            elif 'AccountType' in context['query_string']:
+                account_type = context['query_string']['AccountType']
+            
+            if 'is_admin' in context and context['is_admin']:
+                if account_type != 'isa':
+                    raise exception.Forbidden(message='Admin user can create only iam special accounts')
+                LOG.warning(_LW('User is admin; Bypassing authorization'))
+            elif self.resource_api.is_iam_special_account(account_id):
                 # iam account can create only console accounts
-                if 'AccountType' in context['query_string']:
-                    if context['query_string']['AccountType'] != 'console':
-                        raise exception.Forbidden(message='iam special account can create console account only. Console account protected.')
+                if account_type != 'console':
+                    raise exception.Forbidden(message='iam special account can create console account only. Console account protected.')
                 LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
             elif self.resource_api.is_account_console(account_id):
                 # console account can create only ca accounts
-                if 'AccountType' in context['query_string']:
-                    if context['query_string']['AccountType'] != 'ca':
-                        raise exception.Forbidden(message='console account can create customer account only. Console account protected.')
+                if account_type != 'ca':
+                    raise exception.Forbidden(message='console account can create customer account only. Console account protected.')
                 LOG.warning(_LW('User belongs to console account; Bypassing authorization'))
             else:
                 raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. Console protected. iam special account can create console account only and console account can create customer account only')
