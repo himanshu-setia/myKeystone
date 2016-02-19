@@ -127,7 +127,7 @@ class PostParamsMiddleware(wsgi.Middleware):
            'methods' in params['auth']['identity'] and\
            'password' in params['auth']['identity'] and\
            'user' in params['auth']['identity']['password'] and\
-           'account' in params['auth']['identity']['password']['user']['account']:
+           'account' in params['auth']['identity']['password']['user']:
             account_id = params["auth"]["identity"]["password"]["user"]["account"]["id"]
             params["auth"]["scope"] = {"account":{"id":account_id}}
         request.environ[PARAMS_ENV] = params
@@ -183,7 +183,7 @@ class JsonBodyMiddleware(wsgi.Middleware):
            'methods' in params['auth']['identity'] and\
            'password' in params['auth']['identity'] and\
            'user' in params['auth']['identity']['password'] and\
-           'account' in params['auth']['identity']['password']['user']['account']:
+           'account' in params['auth']['identity']['password']['user']:
             account_id = params["auth"]["identity"]["password"]["user"]["account"]["id"]
             params["auth"]["scope"] = {"account":{"id":account_id}}
         request.environ[PARAMS_ENV] = params
