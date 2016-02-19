@@ -195,7 +195,7 @@ def iam_special_protected(**params):
         return wrapper
     return _filterprotected
 
-def console_protected(**params):
+def isa_console_reset_password_protected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
@@ -209,10 +209,16 @@ def console_protected(**params):
 
             if 'is_admin' in context and context['is_admin']:
                 LOG.warning(_LW('User is admin; Bypassing authorization'))
+            elif self.resource_api.is_iam_special_account(account_id):
+                LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
             elif self.resource_api.is_account_console(account_id):
+                if action_name == 'ResetPassword':
+                    param_account_id = context['query_string']['AccountId']
+                    if self.resource_api.is_customer_account(param_account_id) is False:
+                        raise exception.Forbidden(message='console account can reset password for customer account only.')
                 LOG.warning(_LW('User belongs to console account; Bypassing authorization'))
             else:
-                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. Console protected.')
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. Iam special account or console account can reset password.')
                                             %{'action':action_name, 'user_id':user_id}))
 
             if 'filters' in params:

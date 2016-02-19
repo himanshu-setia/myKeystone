@@ -467,6 +467,9 @@ class Manager(manager.Manager):
     def is_service_account(self, account_id):
         return self.driver.is_service_account(account_id)
 
+    def is_customer_account(self, account_id):
+        return self.driver.is_customer_account(account_id)
+
     def _delete_account_contents(self, account_id):
         """Delete the contents of a account.
 

@@ -89,7 +89,7 @@ class RootV3(controller.V3Controller):
             user = {"password": query_string['Password'], "original_password": query_string['OldPassword']}
             return user_controller.change_password(context, query_string['Id'], user)
         elif Action == 'ResetPassword':
-            return user_controller.reset_password(context, query_string['Id'], query_string['Password'])
+            return user_controller.reset_password(context, query_string['AccountId'], query_string['Password'])
 
         group_controller = identity.controllers.GroupV3()
         if Action == 'ListGroupsForUser':

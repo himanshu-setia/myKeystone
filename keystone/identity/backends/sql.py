@@ -230,7 +230,6 @@ class Identity(identity.Driver):
     @sql.handle_conflicts(conflict_type='user')
     def update_user(self, user_id, user):
         session = sql.get_session()
-        user['type']=user.get('type', 'regular')
         with session.begin():
             user_ref = self._get_user(session, user_id)
             old_user_dict = user_ref.to_dict()

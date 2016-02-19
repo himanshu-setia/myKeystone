@@ -1108,9 +1108,9 @@ class Manager(manager.Manager):
             self._get_account_driver_and_entity_id(user_id))
         driver.update_user_history(user_id, original_password, count, hashed)
 
-    def reset_password(self, context, user_id, password):
-        account_id, driver, entity_id = (
-            self._get_account_driver_and_entity_id(user_id))
+    def reset_password(self, context, account_id, password):
+        user = self.get_root_user(account_id)
+        user_id = user.get('id')
         update_dict = {'password': password}
         self.update_user(user_id, update_dict)
 
