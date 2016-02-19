@@ -261,6 +261,11 @@ class Resource(keystone_resource.Driver):
             account = self._get_account(session, account_id).to_dict()
             return account.get('type') == 'csa'
 
+    def is_customer_account(self, account_id):
+        with sql.transaction() as session:
+            account = self._get_account(session, account_id).to_dict()
+            return account.get('type') == 'ca'
+
 class Account(sql.ModelBase, sql.DictBase):
     __tablename__ = 'account'
     attributes = ['id', 'name', 'enabled', 'extra', 'type']

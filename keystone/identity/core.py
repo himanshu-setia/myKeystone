@@ -758,6 +758,15 @@ class Manager(manager.Manager):
     @accounts_configured
     @exception_translated('user')
     @MEMOIZE
+    def get_unfiltered_user(self, user_id):
+        account_id, driver, entity_id = (
+            self._get_account_driver_and_entity_id(user_id))
+        ref = driver.get_unfiltered_user(entity_id)
+        return ref
+
+    @accounts_configured
+    @exception_translated('user')
+    @MEMOIZE
     def get_root_user(self, account_id):
         driver = self._select_identity_driver(account_id)
         ref = driver.get_root_user(account_id)
@@ -787,7 +796,7 @@ class Manager(manager.Manager):
     @manager.response_truncated
     @accounts_configured
     @exception_translated('user')
-    def list_users(self, account_scope=None, hints=None):
+    def list_users(self, account_id, account_scope=None, hints=None):
         driver = self._select_identity_driver(account_scope)
         hints = hints or driver_hints.Hints()
         if driver.is_account_aware():
@@ -798,7 +807,7 @@ class Manager(manager.Manager):
             # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter.
             self._mark_account_id_filter_satisfied(hints)
-        ref_list = driver.list_users(hints)
+        ref_list = driver.list_users(hints, account_id)
         return self._set_account_id_and_mapping(
             ref_list, account_scope, driver, mapping.EntityType.USER)
 
@@ -826,7 +835,7 @@ class Manager(manager.Manager):
     @accounts_configured
     @exception_translated('user')
     def update_user(self, user_id, user_ref, initiator=None):
-        old_user_ref = self.get_user(user_id)
+        old_user_ref = self.get_unfiltered_user(user_id)
         user = user_ref.copy()
         if 'name' in user:
             user['name'] = clean.user_name(user['name'])
@@ -841,6 +850,10 @@ class Manager(manager.Manager):
             # the driver layer won't be confused by the fact the this is the
             # public ID not the local ID
             user.pop('id')
+        if 'password' in user:
+            expiry_days = CONF.password_policy.expiry_days
+            if expiry_days is not None:
+                user['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
 
         account_id, driver, entity_id = (
             self._get_account_driver_and_entity_id(user_id))
@@ -858,6 +871,9 @@ class Manager(manager.Manager):
         if enabled_change or user.get('password') is not None:
             self.emit_invalidate_user_token_persistence(user_id)
 
+        if user.get('password') is not None:
+            self.update_user_history(old_user_ref.get('id'), old_user_ref.get('password'), CONF.password_policy.num_password_saved, True)
+        
         return self._set_account_id_and_mapping(
             ref, account_id, driver, mapping.EntityType.USER)
 
@@ -1030,7 +1046,7 @@ class Manager(manager.Manager):
     @manager.response_truncated
     @accounts_configured
     @exception_translated('group')
-    def list_groups(self, account_scope=None, hints=None):
+    def list_groups(self, account_id, account_scope=None, hints=None):
         driver = self._select_identity_driver(account_scope)
         hints = hints or driver_hints.Hints()
         if driver.is_account_aware():
@@ -1041,7 +1057,7 @@ class Manager(manager.Manager):
             # We are effectively satisfying any account_id filter by the above
             # driver selection, so remove any such filter.
             self._mark_account_id_filter_satisfied(hints)
-        ref_list = driver.list_groups(hints)
+        ref_list = driver.list_groups(hints, account_id)
         return self._set_account_id_and_mapping(
             ref_list, account_scope, driver, mapping.EntityType.GROUP)
 
@@ -1087,10 +1103,16 @@ class Manager(manager.Manager):
             self._get_account_driver_and_entity_id(user_id))
         return driver.get_user_history(user_id, CONF.password_policy.num_password_saved)
 
-    def update_user_history(self, user_id, original_password, count):
+    def update_user_history(self, user_id, original_password, count, hashed=False):
         account_id, driver, entity_id = (
             self._get_account_driver_and_entity_id(user_id))
-        driver.update_user_history(user_id, original_password, count)
+        driver.update_user_history(user_id, original_password, count, hashed)
+
+    def reset_password(self, context, account_id, password):
+        user = self.get_root_user(account_id)
+        user_id = user.get('id')
+        update_dict = {'password': password}
+        self.update_user(user_id, update_dict)
 
     @accounts_configured
     def change_password(self, context, user_id, original_password,
@@ -1100,12 +1122,7 @@ class Manager(manager.Manager):
         self.authenticate(context, user_id, original_password)
 
         update_dict = {'password': new_password}
-        expiry_days = CONF.password_policy.expiry_days
-        if expiry_days is not None:
-            update_dict['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
-
         self.update_user(user_id, update_dict)
-        self.update_user_history(user_id, original_password, CONF.password_policy.num_password_saved)
 
 
 @six.add_metaclass(abc.ABCMeta)

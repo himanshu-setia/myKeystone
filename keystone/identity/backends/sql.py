@@ -134,9 +134,9 @@ class Identity(identity.Driver):
         return identity.filter_user(user_ref.to_dict())
 
     @sql.truncated
-    def list_users(self, hints):
+    def list_users(self, hints, account_id):
         session = sql.get_session()
-        query = session.query(User)
+        query = session.query(User).filter_by(account_id = account_id)
         user_refs = sql.filter_limit_query(User, query, hints)
         ref_list = []
         for ref in user_refs:
@@ -197,6 +197,10 @@ class Identity(identity.Driver):
             raise exception.UserNotFound(user_id=user_id)
         return user_ref
 
+    def get_unfiltered_user(self, user_id):
+        session = sql.get_session()
+        return self._get_user(session, user_id).to_dict()
+
     def get_user(self, user_id):
         session = sql.get_session()
         return identity.filter_user(self._get_user(session, user_id).to_dict())
@@ -226,7 +230,6 @@ class Identity(identity.Driver):
     @sql.handle_conflicts(conflict_type='user')
     def update_user(self, user_id, user):
         session = sql.get_session()
-        user['type']=user.get('type', 'regular')
         with session.begin():
             user_ref = self._get_user(session, user_id)
             old_user_dict = user_ref.to_dict()
@@ -245,13 +248,13 @@ class Identity(identity.Driver):
         query = query.filter_by(userid=user_id).order_by(UserHistory.date.desc())
         if count is not None and count is not 0:
             query = query.limit(count)
-            try:
-                user_refs = query.all()
-            except sql.NotFound:
-                raise exception.UserNotFound(userid=user_id)
-            if not user_refs:
-                return None
-            return user_refs
+        try:
+            user_refs = query.all()
+        except sql.NotFound:
+            raise exception.UserNotFound(userid=user_id)
+        if not user_refs:
+            return None
+        return user_refs
 
     def get_user_history(self, user_id, count):
         session = sql.get_session()
@@ -262,17 +265,18 @@ class Identity(identity.Driver):
             return None
 
     @sql.handle_conflicts(conflict_type='user_history')
-    def update_user_history(self, user_id, original_password, count):
+    def update_user_history(self, user_id, original_password, count=0, hashed=False):
         session = sql.get_session()
+        if hashed is False:
+            original_password = utils.hash_password(original_password)
         with session.begin():
             user_history_refs = self._get_user_history(session, user_id)
             if user_history_refs:
                 h_user_cnt = len(user_history_refs)
                 if h_user_cnt is not 0 and h_user_cnt >= count:
-                    user = user_history_refs[h_user_cnt - 1]
-                    setattr(user, 'password', utils.hash_password(original_password))
+                    user = user_history_refs[count-1]
+                    setattr(user, 'password', original_password)
                     setattr(user, 'date', datetime.datetime.now())
-                    session.query(UserHistory).filter(UserHistory.id == user.id).update(user, synchronize_session=False)
                     if h_user_cnt > count:
                         ## deleting the redundant user history
                         uids = []
@@ -282,7 +286,7 @@ class Identity(identity.Driver):
                             session.query(UserHistory).filter(UserHistory.id.in_(uids)).delete(synchronize_session=False)
             else:
                 session.add(UserHistory(userid=user_id,
-                                            password=utils.hash_password(original_password),
+                                            password=original_password,
                                             date=datetime.datetime.now()))
 
     def add_user_to_group(self, user_id, group_id):
@@ -400,9 +404,9 @@ class Identity(identity.Driver):
         return ref.to_dict()
 
     @sql.truncated
-    def list_groups(self, hints):
+    def list_groups(self, hints, account_id):
         session = sql.get_session()
-        query = session.query(Group)
+        query = session.query(Group).filter_by(account_id = account_id)
         refs = sql.filter_limit_query(Group, query, hints)
 	
         ref_list = []

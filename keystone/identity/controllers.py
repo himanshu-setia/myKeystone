@@ -263,7 +263,7 @@ class UserV3(controller.V3Controller):
             if not self.checkPasswordPolicy(password):
                 raise exception.ValidationError(target='user',
                                                 attribute='password',
-                                                message='password does not validate password policy')
+                                                message=CONF.password_policy.error_message)
         ref = self.identity_api.create_user(ref, initiator)
         new_ref = self.updated_ref(ref)
         return UserV3.wrap_member(context, new_ref)
@@ -271,7 +271,12 @@ class UserV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='User', filters=['account_id', 'enabled', 'name'])
     def list_users(self, context, filters=['account_id', 'enabled', 'name']):
         hints = UserV3.build_driver_hints(context, filters)
-        refs = self.identity_api.list_users(
+        try:
+            account_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'account_id']
+        except KeyError:
+            raise exception.Forbidden('Cannot find account_id in context.')
+        refs = self.identity_api.list_users(account_id,
             account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
         
@@ -296,6 +301,19 @@ class UserV3(controller.V3Controller):
         self._require_matching_account_id(
             user_id, user, self.identity_api.get_user)
         initiator = notifications._get_request_audit_info(context)
+        if 'password' in user:
+            password = user.get('password')
+            if password is None:
+               raise exception.ValidationError(target='user', 
+                            attribute='password')
+            if not self.checkPasswordPolicy(password):
+                raise exception.ValidationError(target='user',
+                                 attribute='password',
+                                 message=CONF.password_policy.error_message) 
+            if self.match_previous_passwords(user_id, password):
+                raise exception.ValidationError(target='user',
+                                             attribute='password',
+                                             message=CONF.password_policy.old_password_error_message)
         ref = self.identity_api.update_user(user_id, user, initiator)
         new_ref = self.updated_ref(ref)
         return UserV3.wrap_member(context, new_ref)
@@ -342,6 +360,17 @@ class UserV3(controller.V3Controller):
 
         return refs
 
+    @controller.isa_console_reset_password_protected()
+    def reset_password(self, context, account_id, password):
+        if password is None:
+            raise exception.ValidationError(target='user',
+                                            attribute='password')
+        if not self.checkPasswordPolicy(password):
+            raise exception.ValidationError(target='user',
+                                            attribute='password',
+                                            message=CONF.password_policy.error_message)
+        self.identity_api.reset_password(context, account_id, password)
+
     @controller.jio_policy_user_filterprotected(args='User')
     def change_password(self, context, user_id, user):
         original_password = user.get('original_password')
@@ -356,7 +385,7 @@ class UserV3(controller.V3Controller):
         if not self.checkPasswordPolicy(password):
             raise exception.ValidationError(target='user',
                                             attribute='password',
-                                            message='password is not in correct format.')
+                                            message=CONF.password_policy.error_message)
         if original_password == password:
             raise exception.ValidationError(target='user',
                                             attribute='password',
@@ -364,7 +393,7 @@ class UserV3(controller.V3Controller):
         if self.match_previous_passwords(user_id, password):
             raise exception.ValidationError(target='user',
                                             attribute='password',
-                                            message='Cannot use old passwords')
+                                            message=CONF.password_policy.old_password_error_message)
         try:
             self.identity_api.change_password(
                 context, user_id, original_password, password)
@@ -395,7 +424,12 @@ class GroupV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='Group',filters=['account_id', 'name'])
     def list_groups(self, context, filters=['account_id', 'name']):
         hints = GroupV3.build_driver_hints(context, filters)
-        refs = self.identity_api.list_groups(
+        try:
+            account_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'account_id']
+        except KeyError:
+            raise exception.Forbidden('Cannot find account_id in context.')
+        refs = self.identity_api.list_groups(account_id,
             account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
 
@@ -445,3 +479,4 @@ class GroupV3(controller.V3Controller):
             refs['Policies'] = policy_refs
 
         return refs
+

@@ -28,6 +28,7 @@ python-oslo-middleware>=1.0.0
 python-oslo-policy>=0.3.1
 python-oslo-serialization>=1.4.0
 python-oslo-utils>=1.4.0
+python-oslo-context>=0.2.0
 python-pam>=0.1.4
 python-passlib
 python-paste

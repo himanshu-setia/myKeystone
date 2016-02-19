@@ -36,7 +36,7 @@ class JioPolicyModel(sql.ModelBase, sql.DictBase):
     updated_at = sql.Column(sql.DateTime)
     deleted_at = sql.Column(sql.DateTime)
     policy_blob = sql.Column(sql.JsonBlob)
-
+    hidden = sql.Column(sql.Boolean, default=False, nullable=True)
 
 class PolicyActionResourceModel(sql.ModelBase):
     __tablename__ = 'policy_action_resource'
@@ -99,7 +99,7 @@ class PolicyActionPrincipleModel(sql.ModelBase):
     action_id = sql.Column(sql.String(64), sql.ForeignKey('action.id'), primary_key=True)
     principle_acc_id = sql.Column(sql.String(64),nullable=False)
     principle_id = sql.Column(sql.String(64), primary_key=True)
-    principle_type = sql.Column(sql.String(64), nullable=False)
+    principle_type = sql.Column(sql.Enum('User', 'Group', '*'), nullable=False)
     effect = sql.Column(sql.Boolean)
 
 
@@ -140,7 +140,7 @@ class Policy(jio_policy.Driver):
         return ls
 
     @sql.handle_conflicts(conflict_type='policy')
-    def create_policy(self, account_id, policy_id, policy):
+    def create_policy(self, account_id, policy_id, policy, hidden=False):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.get('name', None)
@@ -152,6 +152,7 @@ class Policy(jio_policy.Driver):
                         account_id=account_id, type='UserBased',
                         created_at=created_at,
                         updated_at=created_at,
+                        hidden=hidden,
                         policy_blob=jsonutils.dumps(ref)))
             for stmt in statement:
                 action = stmt.get('action', None)
@@ -334,7 +335,7 @@ class Policy(jio_policy.Driver):
         session = sql.get_session()
 
         refs = session.query(JioPolicyModel).filter_by(account_id=account_id)\
-            .filter_by(type='UserBased').with_entities(
+            .filter_by(type='UserBased').filter_by(hidden=False).with_entities(
                     JioPolicyModel.id, JioPolicyModel.name,
                     JioPolicyModel.created_at, JioPolicyModel.updated_at)
         ret = []
@@ -394,7 +395,7 @@ class Policy(jio_policy.Driver):
     def _get_policy(self, session, policy_id):
         """Private method to get a policy model object (NOT a dictionary)."""
         ref = session.query(JioPolicyModel).get(policy_id)
-        if not ref:
+        if not ref or ref.hidden:
             raise exception.PolicyNotFound(policy_id=policy_id)
         return ref
 
@@ -411,7 +412,7 @@ class Policy(jio_policy.Driver):
         count = self._find_attachment_count(session, policy_id)
         # TODO(roopali) Query for only required columns.
         ref = session.query(JioPolicyModel).get(policy_id)
-        if not ref or ref.type != 'UserBased':
+        if not ref or ref.type != 'UserBased' or ref.hidden:
             raise exception.PolicyNotFound(policy_id=policy_id)
         ret = jsonutils.loads(ref.policy_blob)
         ret['created_at'] = ref.created_at
