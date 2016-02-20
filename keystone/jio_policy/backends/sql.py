@@ -395,7 +395,7 @@ class Policy(jio_policy.Driver):
     def _get_policy(self, session, policy_id):
         """Private method to get a policy model object (NOT a dictionary)."""
         ref = session.query(JioPolicyModel).get(policy_id)
-        if not ref or ref.hidden:
+        if not ref:
             raise exception.PolicyNotFound(policy_id=policy_id)
         return ref
 
@@ -441,6 +441,8 @@ class Policy(jio_policy.Driver):
         # TODO(roopali) sql optimizations.
         with session.begin():
             ref = self._get_policy(session, policy_id)
+            if ref.hidden:
+                raise exception.PolicyNotFound(policy_id=policy_id)
             ref.name = policy.get('name')
             ref.updated_at = datetime.utcnow()
             policy_blob = jsonutils.loads(ref.policy_blob)
@@ -583,6 +585,8 @@ class Policy(jio_policy.Driver):
 
         with session.begin():
             policy_ref = self._get_policy(session, policy_id)
+            if policy_ref.hidden:
+                raise exception.PolicyNotFound(policy_id=policy_id)
             policy_action_resource = session.query(PolicyActionResourceModel).\
                 filter_by(policy_id=policy_ref.id).all()
             session.query(PolicyActionResourceModel).filter_by(
@@ -992,7 +996,7 @@ class Policy(jio_policy.Driver):
     def get_policy_summary(self,policy_id):
         session = sql.get_session()
         policy = self._get_policy(session,policy_id)
-        if policy.type != 'UserBased':
+        if policy.type != 'UserBased' or policy.hidden:
             raise exception.PolicyNotFound(policy_id=policy_id)
  
         query = session.query(PolicyUserGroupModel).filter_by(policy_id = policy_id) \
