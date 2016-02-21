@@ -24,7 +24,9 @@ from keystone.common import dependency
 from keystone.common import driver_hints
 from keystone.common import manager
 from keystone import exception
-
+from keystone.common import utils
+from Crypto.Cipher import AES
+import base64
 
 CONF = cfg.CONF
 
@@ -47,6 +49,13 @@ class Manager(manager.Manager):
     def list_credentials(self, hints=None):
         return self.driver.list_credentials(hints or driver_hints.Hints())
 
+    def decrypt_password_in_context(self, access, password):
+        ec2_credential_id = utils.hash_access_key(access)
+        creds = self.driver.get_credential(ec2_credential_id)
+        secret = creds['blob'].split('"')[7]
+        cipher = AES.new(secret, AES.MODE_ECB)
+        decoded_password = cipher.decrypt(base64.b64decode(password))
+        return decoded_password.strip()
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):

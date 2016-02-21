@@ -64,6 +64,8 @@ PAYLOAD_BUFFER = 1024 * 1024
 # Header used to transmit the auth token
 AUTH_TOKEN_HEADER = 'X-Auth-Token'
 
+# Header used to transmit the console token
+CONSOLE_TOKEN_HEADER = 'X-Console-Token'
 
 # Header used to transmit the subject token
 SUBJECT_TOKEN_HEADER = 'X-Subject-Token'
@@ -235,7 +237,6 @@ class RequestBodySizeLimiter(sizelimit.RequestBodySizeLimiter):
     def __init__(self, *args, **kwargs):
         super(RequestBodySizeLimiter, self).__init__(*args, **kwargs)
 
-
 class AuthContextMiddleware(wsgi.Middleware):
     """Build the authentication context from the request auth token."""
 
@@ -262,7 +263,6 @@ class AuthContextMiddleware(wsgi.Middleware):
         except exception.TokenNotFound:
             LOG.warning(_LW('RBAC: Invalid token'))
             raise exception.Unauthorized()
-
 
 
     """Authenticate an EC2 request with keystone and convert to context."""
@@ -323,7 +323,7 @@ class AuthContextMiddleware(wsgi.Middleware):
            return None, None
        access = self._get_access(req)
        if not access:
-           msg = _("Access key not provided")
+           msg = ("Access key not provided")
            return None, None
 
        if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
@@ -347,7 +347,6 @@ class AuthContextMiddleware(wsgi.Middleware):
            'body_hash': body_hash
        }
        LOG.warning(cred_dict)
-
        #The context is passed as None, it is unused in the function
        ec2controller = contrib.ec2.controllers.Ec2Controller()
        response = ec2controller.authenticate(None,ec2Credentials=cred_dict)
@@ -363,7 +362,23 @@ class AuthContextMiddleware(wsgi.Middleware):
         oslo_context.RequestContext(
             request_id=request.environ.get('openstack.request_id'))
         account_id = None
-        if AUTH_TOKEN_HEADER not in request.headers:
+        if AUTH_TOKEN_HEADER in request.headers:
+            if request.path != '/v3/token-auth' and request.path != '/v3/token-auth-ex':
+                if CONSOLE_TOKEN_HEADER in request.headers:
+                    try:
+                        token_id = request.headers.get(CONSOLE_TOKEN_HEADER).strip()
+                        token_data=self.token_provider_api.validate_token(token_id)
+                        account_type = token_data['token']['account']['type']
+                        if account_type != 'console':
+                            msg = _LW('Caller token is invalid')
+                            raise exception.Forbidden(msg)
+                    except exception.TokenNotFound:
+                        msg = _LW('Caller token is invalid')
+                        raise exception.Forbidden(msg)
+                else:
+                    msg = _LW('Caller token is missing')
+                    raise exception.ValidationError(msg)
+        else:
             LOG.debug(('Auth token not in the request header. '
                        'Will not build auth context.'))
             LOG.warning(request.path)
