@@ -140,8 +140,7 @@ class CredentialV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='Credential')
     def get_user_credentials(self, context, user_id):
         if user_id is None:
-            raise exception.ValidationError(attribute='userId is none',
-                            target='User_d')
+            user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
         refs = self.credential_api.list_credentials_for_user(
                      user_id)
         ret_refs = [self._blob_to_json(r) for r in refs]

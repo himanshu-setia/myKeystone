@@ -142,14 +142,17 @@ class RootV3(controller.V3Controller):
             credential = {}
             if 'Type' in query_string:
                 credential['type'] = query_string['Type']
-            credential['user_id'] = query_string['UserId']
+            if 'UserId' in query_string:
+                credential['user_id'] = query_string['UserId']
             return credential_controller.create_credential(context,credential)
         elif Action == 'ListCredentials':
             return credential_controller.list_credentials(context)
         elif Action == 'DeleteCredential':
             return credential_controller.delete_credential(context,query_string['Id'])
         elif Action == 'GetUserCredential':
-            user_id = query_string['UserId']
+            user_id = None
+            if 'UserId' in query_string:
+                user_id = query_string['UserId']
             return credential_controller.get_user_credentials(context, user_id)
 
         jio_policy_controller = jio_policy.controllers.JioPolicyV3()
