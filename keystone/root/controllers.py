@@ -30,13 +30,25 @@ import json
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
-@dependency.requires('resource_api')
+@dependency.requires('resource_api', 'credential_api')
 class RootV3(controller.V3Controller):
 
     def genericmapper(self, context):
 
         query_string = context.get('query_string', None)
         Action = query_string['Action']
+        if 'X-Console-Token' in context['headers']:
+            if 'Password' in query_string:
+                if 'AccessKey' in query_string:
+                    password = query_string['Password']
+                    access = query_string['AccessKey']
+                    query_string['Password'] = self.credential_api.decrypt_password_in_context(access, password)
+                    if 'OldPassword' in query_string:
+                        query_string['OldPassword'] = self.credential_api.decrypt_password_in_context(access,
+                                                     query_string['OldPassword'])
+                else:
+                    msg = _LW('access key not found')
+                    raise exception.ValidationError(msg)
 
         if 'RequestAccType' in query_string and query_string['RequestAccType'] == 'service':
             # (roopali) This is a iam service account request. context's account needs to be replaced with the parameter accountid

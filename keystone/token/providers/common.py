@@ -235,7 +235,7 @@ class V3TokenDataHelper(object):
 
     def _get_filtered_account(self, account_id):
         account_ref = self.resource_api.get_account(account_id)
-        return {'id': account_ref['id'], 'name': account_ref['name']}
+        return {'id': account_ref['id'], 'name': account_ref['name'], 'type': account_ref['type']}
 
     def _get_filtered_project(self, project_id):
         project_ref = self.resource_api.get_project(project_id)
