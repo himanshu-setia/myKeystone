@@ -337,7 +337,7 @@ class Policy(jio_policy.Driver):
         refs = session.query(JioPolicyModel).filter_by(account_id=account_id)\
             .filter_by(type='UserBased').filter_by(hidden=False).with_entities(
                     JioPolicyModel.id, JioPolicyModel.name,
-                    JioPolicyModel.created_at, JioPolicyModel.updated_at)
+                    JioPolicyModel.created_at, JioPolicyModel.deleted_at)
         ret = []
         attrs_to_return = ['id', 'name', 'created_at', 'deleted_at',
                            'attachment_count']
@@ -361,7 +361,7 @@ class Policy(jio_policy.Driver):
         refs = session.query(JioPolicyModel).filter_by(account_id=account_id)\
             .filter_by(type='ResourceBased').with_entities(
                     JioPolicyModel.id, JioPolicyModel.name,
-                    JioPolicyModel.created_at, JioPolicyModel.updated_at)
+                    JioPolicyModel.created_at, JioPolicyModel.deleted_at)
         ret = []
         attrs_to_return = ['id', 'name', 'created_at', 'deleted_at',
                            'attachment_count']
@@ -1005,7 +1005,7 @@ class Policy(jio_policy.Driver):
 
         summary_list = {}
         summary_list['Policy Document'] =policy.policy_blob
-        summary_list['Policy JRN'] = 'jrn:jcs:iam:' + policy.account_id + ':policy:' + policy.name
+        summary_list['Policy JRN'] = 'jrn:jcs:iam:' + policy.account_id + ':Policy:' + policy.name
         summary_list['Creation Time'] = policy.created_at
 	
         sum_list = []
@@ -1030,7 +1030,7 @@ class Policy(jio_policy.Driver):
 
         summary_list = {}
         summary_list['Policy Document'] =policy.policy_blob
-        summary_list['Policy JRN'] = 'jrn:jcs:iam:' + policy.account_id + ':policy:' + policy.name
+        summary_list['Policy JRN'] = 'jrn:jcs:iam:' + policy.account_id + ':Policy:' + policy.name
         summary_list['Creation Time'] = policy.created_at
 
         sum_list = []
