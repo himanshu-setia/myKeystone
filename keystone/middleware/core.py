@@ -102,11 +102,8 @@ class AdminTokenAuthMiddleware(wsgi.Middleware):
     """
 
     def process_request(self, request):
-        token = request.headers.get(AUTH_TOKEN_HEADER)
-        context = request.environ.get(CONTEXT_ENV, {})
-        context['is_admin'] = (token == CONF.admin_token)
-        request.environ[CONTEXT_ENV] = context
-
+        #(roopali) : removed admin token.
+        pass
 
 class PostParamsMiddleware(wsgi.Middleware):
     """Middleware to allow method arguments to be passed as POST parameters.
@@ -242,14 +239,6 @@ class AuthContextMiddleware(wsgi.Middleware):
 
     def _build_auth_context(self, request):
         token_id = request.headers.get(AUTH_TOKEN_HEADER).strip()
-        if token_id == CONF.admin_token:
-            # NOTE(gyee): no need to proceed any further as the special admin
-            # token is being handled by AdminTokenAuthMiddleware. This code
-            # will not be impacted even if AdminTokenAuthMiddleware is removed
-            # from the pipeline as "is_admin" is default to "False". This code
-            # is independent of AdminTokenAuthMiddleware.
-            return {}
-
         context = {'token_id': token_id}
         context['environment'] = request.environ
         try:
