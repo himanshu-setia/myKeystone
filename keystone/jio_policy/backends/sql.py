@@ -23,7 +23,7 @@ from oslo_serialization import jsonutils
 from sqlalchemy.orm import load_only
 from sqlalchemy import or_
 from sqlalchemy import and_
-
+from sqlalchemy.orm import relationship
 
 class JioPolicyModel(sql.ModelBase, sql.DictBase):
     __tablename__ = 'jio_policy'
@@ -109,7 +109,7 @@ class PolicyResourceModel(sql.ModelBase):
     resource_id = sql.Column(sql.String(64), sql.ForeignKey('resource.id'),
                                primary_key=True)
     policy_id = sql.Column(sql.String(64), sql.ForeignKey('jio_policy.id'), primary_key=True)
-
+    resource = relationship("ResourceModel")
 
 @dependency.requires('identity_api')
 class Policy(jio_policy.Driver):
@@ -928,7 +928,6 @@ class Policy(jio_policy.Driver):
 
     def attach_policy_to_resource(self, policy_id, account_id, resource):
         session = sql.get_session()
-        #import pdb;pdb.set_trace()
         with session.begin():
             resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
             action_tuple = session.query(ActionModel).join(PolicyActionPrincipleModel)\
