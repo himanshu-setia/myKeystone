@@ -235,7 +235,14 @@ class RootV3(controller.V3Controller):
             account['password'] = query_string['Password']
             if 'AccountType' in query_string:
                 account['type'] = query_string['AccountType']
-            return account_controller.create_account(context, account)
+            return account_controller.create_customer_account(context, account)
+        elif Action == "CreateConsoleAccount":
+            account = {}
+            account['name'] =  query_string['AccountName']
+            account['password'] = query_string['Password']
+            account['type'] = query_string['AccountType']
+            return account_controller.create_console_account(context, account)
+
         elif Action == "DeleteAccount":
             account_id = query_string['AccountId']
             return account_controller.delete_account(context, account_id)

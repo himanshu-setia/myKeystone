@@ -164,22 +164,22 @@ def protected(callback=None):
         return inner
     return wrapper
 
-def iam_special_protected(**params):
+def isa_protected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
             auth_context = self.get_auth_context(context)
             account_id = auth_context.get('account_id')
 
-            user_id = auth_context.get('user_id')
-            if 'Action' in context['query_string']:
-                action_name = context['query_string']['Action']
-            else:
-                action_name = f.__name__
-
             if self.resource_api.is_iam_special_account(account_id):
                 LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
             else:
+                user_id = auth_context.get('user_id')
+                if 'Action' in context['query_string']:
+                    action_name = context['query_string']['Action']
+                else:
+                    action_name = f.__name__
+
                 raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. IAM special account protected.')
                                             %{'action':action_name, 'user_id':user_id}))
 
@@ -223,22 +223,14 @@ def isa_console_reset_password_protected(**params):
         return wrapper
     return _filterprotected
 
-def isa_console_protected(**params):
+def isa_protected_for_create_console_acc(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
             auth_context = self.get_auth_context(context)
             account_id = auth_context.get('account_id')
-            user_id = auth_context.get('user_id')
-            if 'Action' in context['query_string']:
-                action_name = context['query_string']['Action']
-            else:
-                action_name = f.__name__
             account_type = ''
-            if action_name is 'create_account':
-                # request in openstack style
-                account_type = kwargs.get('account').get('type')
-            elif 'AccountType' in context['query_string']:
+            if 'AccountType' in context['query_string']:
                 account_type = context['query_string']['AccountType']
 
             if self.resource_api.is_iam_special_account(account_id):
@@ -246,13 +238,45 @@ def isa_console_protected(**params):
                 if account_type != 'console':
                     raise exception.Forbidden(message='iam special account can create console account only. Console account protected.')
                 LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
-            elif self.resource_api.is_account_console(account_id):
+            else:
+                user_id = auth_context.get('user_id')
+                if 'Action' in context['query_string']:
+                    action_name = context['query_string']['Action']
+                else:
+                    action_name = f.__name__
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. IAM special account can create console account only.')
+                                            %{'action':action_name, 'user_id':user_id}))
+
+            if 'filters' in params:
+                filters = params.get('filters')
+                return f(self, context, filters, *args, **kwargs)
+            else:
+                return f(self, context, *args, **kwargs)
+        return wrapper
+    return _filterprotected
+
+def console_protected(**params):
+    def _filterprotected(f):
+        @functools.wraps(f)
+        def wrapper(self, context, *args, **kwargs):
+            auth_context = self.get_auth_context(context)
+            account_id = auth_context.get('account_id')
+            account_type = ''
+            if 'AccountType' in context['query_string']:
+                account_type = context['query_string']['AccountType']
+
+            if self.resource_api.is_account_console(account_id):
                 # console account can create only ca accounts
                 if account_type != 'ca':
-                    raise exception.Forbidden(message='console account can create customer account only. Console account protected.')
+                    raise exception.Forbidden(message='Invalid account type. Console account user can create customer account only..')
                 LOG.warning(_LW('User belongs to console account; Bypassing authorization'))
             else:
-                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. Console protected. iam special account can create console account only and console account can create customer account only')
+                user_id = auth_context.get('user_id')
+                if 'Action' in context['query_string']:
+                    action_name = context['query_string']['Action']
+                else:
+                    action_name = f.__name__
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. Console account user can create customer account only.')
                                             %{'action':action_name, 'user_id':user_id}))
 
             if 'filters' in params:

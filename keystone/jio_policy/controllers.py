@@ -160,7 +160,7 @@ class JioPolicyV3(controller.V3Controller):
         refs = self.jio_policy_api.get_resource_based_policy_summary(jio_policy_id)
         return refs
 
-    @controller.iam_special_protected()
+    @controller.isa_protected()
     def create_action(self, context, action_name):
         action_id = uuid.uuid4().hex
         ls = action_name.split(':')
@@ -177,7 +177,7 @@ class JioPolicyV3(controller.V3Controller):
         ref = self.jio_policy_api.create_action(action_id, action_name, service)
         return {'Action':ref}
 
-    @controller.iam_special_protected()
+    @controller.isa_protected()
     def create_resource_type(self, context, resource_type, service):
         resource_type_id = uuid.uuid4().hex
         if service == None: 
@@ -192,7 +192,7 @@ class JioPolicyV3(controller.V3Controller):
         ref = self.jio_policy_api.create_resource_type(resource_type_id, resource_type, service)
         return {'Resource_type':ref}
 
-    @controller.iam_special_protected()
+    @controller.isa_protected()
     def create_action_resource_type_mapping(self, context, action_name, resource_type_name, resource_type_service):
         ref = self.jio_policy_api.create_action_resource_type_mapping(action_name, resource_type_name, resource_type_service)
         return {'Action_Resource_type_Mapping':ref}
