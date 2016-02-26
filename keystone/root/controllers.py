@@ -37,7 +37,7 @@ class RootV3(controller.V3Controller):
 
         query_string = context.get('query_string', None)
         Action = query_string['Action']
-        if 'X-Console-Token' in context['headers']:
+        if 'console_token_id' in context and context['console_token_id'] != None:
             if 'Password' in query_string:
                 if 'AccessKey' in query_string:
                     password = query_string['Password']

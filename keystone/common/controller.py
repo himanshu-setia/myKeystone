@@ -129,29 +129,6 @@ def protected(callback=None):
                         ref = self.get_member_from_driver(kwargs[key])
                         policy_dict['target'] = {self.member_name: ref}
 
-                # TODO(henry-nash): Move this entire code to a member
-                # method inside v3 Auth
-                if context.get('subject_token_id') is not None:
-                    token_ref = token_model.KeystoneToken(
-                        token_id=context['subject_token_id'],
-                        token_data=self.token_provider_api.validate_token(
-                            context['subject_token_id']))
-                    policy_dict.setdefault('target', {})
-                    policy_dict['target'].setdefault(self.member_name, {})
-                    policy_dict['target'][self.member_name]['user_id'] = (
-                        token_ref.user_id)
-                    try:
-                        user_account_id = token_ref.user_account_id
-                    except exception.UnexpectedError:
-                        user_account_id = None
-                    if user_account_id:
-                        policy_dict['target'][self.member_name].setdefault(
-                            'user', {})
-                        policy_dict['target'][self.member_name][
-                            'user'].setdefault('account', {})
-                        policy_dict['target'][self.member_name]['user'][
-                            'account']['id'] = (
-                                user_account_id)
 
                 # Add in the kwargs, which means that any entity provided as a
                 # parameter for calls like create and update will be included.

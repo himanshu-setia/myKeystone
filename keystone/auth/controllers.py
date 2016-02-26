@@ -530,9 +530,8 @@ class Auth(controller.V3Controller):
             msg = _('User not found')
             raise exception.Unauthorized(msg)
 
-    @controller.protected()
     def check_token(self, context):
-        token_id = context.get('subject_token_id')
+        token_id = context.get('token_id')
         token_data = self.token_provider_api.validate_v3_token(
             token_id)
         # NOTE(morganfainberg): The code in
@@ -540,9 +539,8 @@ class Auth(controller.V3Controller):
         # body.
         return render_token_data_response(token_id, token_data)
 
-    @controller.protected()
     def revoke_token(self, context):
-        token_id = context.get('subject_token_id')
+        token_id = context.get('token_id')
         return self.token_provider_api.revoke_token(token_id)
 
     def format_auth_response(self, token_data):
@@ -557,7 +555,7 @@ class Auth(controller.V3Controller):
 
     # REMOVING ROLES CHECK FOR VALIDATE_TOKEN, onlu for mock
     def validate_token(self, context):
-        token_id = context.get('subject_token_id')
+        token_id = context.get('token_id')
         include_catalog = 'nocatalog' not in context['query_string']
         token_data = self.token_provider_api.validate_v3_token(
             token_id)
@@ -567,7 +565,7 @@ class Auth(controller.V3Controller):
         return render_token_data_response(token_id, response)
 
     def validate_token_data(self, context):
-        token_id = context.get('subject_token_id')
+        token_id = context.get('token_id')
         include_catalog = 'nocatalog' not in context['query_string']
         token_data = self.token_provider_api.validate_v3_token(
             token_id)
@@ -576,7 +574,7 @@ class Auth(controller.V3Controller):
         return token_data
 
     def render_response(self,token_data, context):
-        token_id = context.get('subject_token_id')
+        token_id = context.get('token_id')
         return render_token_data_response(token_id, token_data)
 
     def _validate_token_with_action_resource(self, action, resource, user_id,
