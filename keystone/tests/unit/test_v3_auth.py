@@ -4031,8 +4031,7 @@ class TestAPIProtectionWithoutAuthContextMiddleware(test_v3.RestfulTestCase):
         auth_controller = auth.controllers.Auth()
         # all we care is that auth context is not in the environment and
         # 'token_id' is used to build the auth context instead
-        context = {'subject_token_id': token,
-                   'token_id': token,
+        context = {'token_id': token,
                    'query_string': {},
                    'environment': {}}
         r = auth_controller.validate_token(context)

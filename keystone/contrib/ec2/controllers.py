@@ -348,7 +348,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
-        response = dict(domain_id=token_data["access"]["token"]["tenant"]["domain_id"],
+        response = dict(domain_id=token_data["access"]["token"]["tenant"]["account_id"],
                         user_id=token_data["access"]["user"]["id"],
                         token_id=token_data["access"]["token"]["id"])
         if 'type' in token_data["access"]["user"]:
@@ -605,7 +605,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
             user_id, method_names, project_id=account_id,
             metadata_ref='')
         
-        response = dict(domain_id=token_data["token"]["project"]["domain"]["id"],
+        response = dict(domain_id=token_data["token"]["project"]["account"]["id"],
                         user_id=token_data["token"]["user"]["id"],
                         token_id=token_id)
 

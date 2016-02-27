@@ -107,9 +107,7 @@ def protected(callback=None):
     def wrapper(f):
         @functools.wraps(f)
         def inner(self, context, *args, **kwargs):
-            if 'is_admin' in context and context['is_admin']:
-                LOG.warning(_LW('RBAC: Bypassing authorization'))
-            elif callback is not None:
+            if callback is not None:
                 prep_info = {'f_name': f.__name__,
                              'input_attr': kwargs}
                 callback(self, context, prep_info, *args, **kwargs)
@@ -131,29 +129,6 @@ def protected(callback=None):
                         ref = self.get_member_from_driver(kwargs[key])
                         policy_dict['target'] = {self.member_name: ref}
 
-                # TODO(henry-nash): Move this entire code to a member
-                # method inside v3 Auth
-                if context.get('subject_token_id') is not None:
-                    token_ref = token_model.KeystoneToken(
-                        token_id=context['subject_token_id'],
-                        token_data=self.token_provider_api.validate_token(
-                            context['subject_token_id']))
-                    policy_dict.setdefault('target', {})
-                    policy_dict['target'].setdefault(self.member_name, {})
-                    policy_dict['target'][self.member_name]['user_id'] = (
-                        token_ref.user_id)
-                    try:
-                        user_account_id = token_ref.user_account_id
-                    except exception.UnexpectedError:
-                        user_account_id = None
-                    if user_account_id:
-                        policy_dict['target'][self.member_name].setdefault(
-                            'user', {})
-                        policy_dict['target'][self.member_name][
-                            'user'].setdefault('account', {})
-                        policy_dict['target'][self.member_name]['user'][
-                            'account']['id'] = (
-                                user_account_id)
 
                 # Add in the kwargs, which means that any entity provided as a
                 # parameter for calls like create and update will be included.
@@ -166,24 +141,22 @@ def protected(callback=None):
         return inner
     return wrapper
 
-def iam_special_protected(**params):
+def isa_protected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
             auth_context = self.get_auth_context(context)
             account_id = auth_context.get('account_id')
 
-            user_id = auth_context.get('user_id')
-            if 'Action' in context['query_string']:
-                action_name = context['query_string']['Action']
-            else:
-                action_name = f.__name__
-
-            if 'is_admin' in context and context['is_admin']:
-                LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif self.resource_api.is_iam_special_account(account_id):
+            if self.resource_api.is_iam_special_account(account_id):
                 LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
             else:
+                user_id = auth_context.get('user_id')
+                if 'Action' in context['query_string']:
+                    action_name = context['query_string']['Action']
+                else:
+                    action_name = f.__name__
+
                 raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. IAM special account protected.')
                                             %{'action':action_name, 'user_id':user_id}))
 
@@ -207,9 +180,7 @@ def isa_console_reset_password_protected(**params):
             else:
                 action_name = f.__name__
 
-            if 'is_admin' in context and context['is_admin']:
-                LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif self.resource_api.is_iam_special_account(account_id):
+            if self.resource_api.is_iam_special_account(account_id):
                 LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
             elif self.resource_api.is_account_console(account_id):
                 if action_name == 'ResetPassword':
@@ -229,40 +200,60 @@ def isa_console_reset_password_protected(**params):
         return wrapper
     return _filterprotected
 
-def isa_console_protected(**params):
+def isa_protected_for_create_console_acc(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
             auth_context = self.get_auth_context(context)
             account_id = auth_context.get('account_id')
-            user_id = auth_context.get('user_id')
-            if 'Action' in context['query_string']:
-                action_name = context['query_string']['Action']
-            else:
-                action_name = f.__name__
             account_type = ''
-            if action_name is 'create_account':
-                # request in openstack style
-                account_type = kwargs.get('account').get('type')
-            elif 'AccountType' in context['query_string']:
+            if 'AccountType' in context['query_string']:
                 account_type = context['query_string']['AccountType']
-            
-            if 'is_admin' in context and context['is_admin']:
-                if account_type != 'isa':
-                    raise exception.Forbidden(message='Admin user can create only iam special accounts')
-                LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif self.resource_api.is_iam_special_account(account_id):
+
+            if self.resource_api.is_iam_special_account(account_id):
                 # iam account can create only console accounts
                 if account_type != 'console':
                     raise exception.Forbidden(message='iam special account can create console account only. Console account protected.')
                 LOG.warning(_LW('User belongs to iam special account; Bypassing authorization'))
-            elif self.resource_api.is_account_console(account_id):
+            else:
+                user_id = auth_context.get('user_id')
+                if 'Action' in context['query_string']:
+                    action_name = context['query_string']['Action']
+                else:
+                    action_name = f.__name__
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. IAM special account can create console account only.')
+                                            %{'action':action_name, 'user_id':user_id}))
+
+            if 'filters' in params:
+                filters = params.get('filters')
+                return f(self, context, filters, *args, **kwargs)
+            else:
+                return f(self, context, *args, **kwargs)
+        return wrapper
+    return _filterprotected
+
+def console_protected(**params):
+    def _filterprotected(f):
+        @functools.wraps(f)
+        def wrapper(self, context, *args, **kwargs):
+            auth_context = self.get_auth_context(context)
+            account_id = auth_context.get('account_id')
+            account_type = ''
+            if 'AccountType' in context['query_string']:
+                account_type = context['query_string']['AccountType']
+
+            if self.resource_api.is_account_console(account_id):
                 # console account can create only ca accounts
                 if account_type != 'ca':
-                    raise exception.Forbidden(message='console account can create customer account only. Console account protected.')
+                    raise exception.Forbidden(message='Invalid account type. Console account user can create customer account only..')
                 LOG.warning(_LW('User belongs to console account; Bypassing authorization'))
             else:
-                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. Console protected. iam special account can create console account only and console account can create customer account only')
+                user_id = auth_context.get('user_id')
+                if 'Action' in context['query_string']:
+                    action_name = context['query_string']['Action']
+                else:
+                    action_name = f.__name__
+                raise exception.Forbidden(message=(_('%(action)s by %(user_id)s not allowed. Console account user can create customer account only.')
                                             %{'action':action_name, 'user_id':user_id}))
 
             if 'filters' in params:
@@ -291,10 +282,8 @@ def jio_policy_user_filterprotected(**params):
                 else:
                     userid = context['query_string'][res_postfix]
 
-            if 'is_admin' in context and context['is_admin']:
-                LOG.warning(_LW('User is admin; Bypassing authorization'))
-            elif user_id == userid:
-                LOG.debug('User id matched. No policy check done')            
+            if user_id == userid:
+                LOG.debug('User id matched. No policy check done')
             else:
                 action = jio_namespace + jio_delimiter + action_default_service + jio_delimiter + action_name
                 project_id = auth_context.get('project_id')
@@ -320,7 +309,7 @@ def jio_policy_user_filterprotected(**params):
                         if resourceId is not None:
                             resources.append(resource_item + resourceId)
                         else:
-                            resources.append(resource_item) 
+                            resources.append(resource_item)
                 else:
                     resources.append(resource)
                 for r in resources:
@@ -347,56 +336,53 @@ def jio_policy_filterprotected(**params):
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
-            if 'is_admin' in context and context['is_admin']:
-                LOG.warning(_LW('User is admin; Bypassing authorization'))
+            if 'Action' in context['query_string']:
+                action_name = context['query_string']['Action']
             else:
-                if 'Action' in context['query_string']:
-                    action_name = context['query_string']['Action']
-                else:
-                    action_name = f.__name__
-                action = jio_namespace + jio_delimiter + action_default_service + jio_delimiter + action_name
-                auth_context = self.get_auth_context(context)
-                user_id = auth_context.get('user_id')
-                project_id = auth_context.get('project_id')
-                resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
-                resource = resource_pre + project_id + jio_delimiter
-                resources = []
-                #TODO(roopali): simplify and optimise.
-                #if params and 'resource' in params:
-                #    resource = resource_pre + params.get('resource')
-                if params and 'args' in params:
-                    items = params.get('args')
-                    
-                    if not isinstance(items, list):
-                        items = items.split()
-                        
-                    for item in items:
-                        resourceId=None
-                        resource_item = resource + item + jio_delimiter
-                        if not isinstance(params.get('args'), list):
-                            item = res_postfix
-                        else:
-                            item = item + res_postfix
-                        if item in context['query_string']:
-                            resourceId= context['query_string'][item]
-                        if resourceId is not None:
-                            resources.append(resource_item + resourceId)
-                        else:
-                            resources.append(resource_item)
-                else:
-                    resources.append(resource)
-                for r in resources:
-                    try:
-                        effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r, False)
-                        if effect is False:
-                            LOG.debug('Jio policy based authorization failed')
-                            raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
-                                                 %{'action':action_name, 'user_id':user_id}))
-                    except exception.ResourceNotFound:
+                action_name = f.__name__
+            action = jio_namespace + jio_delimiter + action_default_service + jio_delimiter + action_name
+            auth_context = self.get_auth_context(context)
+            user_id = auth_context.get('user_id')
+            project_id = auth_context.get('project_id')
+            resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
+            resource = resource_pre + project_id + jio_delimiter
+            resources = []
+            #TODO(roopali): simplify and optimise.
+            #if params and 'resource' in params:
+            #    resource = resource_pre + params.get('resource')
+            if params and 'args' in params:
+                items = params.get('args')
+
+                if not isinstance(items, list):
+                    items = items.split()
+
+                for item in items:
+                    resourceId=None
+                    resource_item = resource + item + jio_delimiter
+                    if not isinstance(params.get('args'), list):
+                        item = res_postfix
+                    else:
+                        item = item + res_postfix
+                    if item in context['query_string']:
+                        resourceId= context['query_string'][item]
+                    if resourceId is not None:
+                        resources.append(resource_item + resourceId)
+                    else:
+                        resources.append(resource_item)
+            else:
+                resources.append(resource)
+            for r in resources:
+                try:
+                    effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r, False)
+                    if effect is False:
                         LOG.debug('Jio policy based authorization failed')
                         raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
-                                               %{'action':action_name, 'user_id':user_id}))
-                LOG.debug('Jio policy based authorization granted')
+                                             %{'action':action_name, 'user_id':user_id}))
+                except exception.ResourceNotFound:
+                    LOG.debug('Jio policy based authorization failed')
+                    raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
+                                           %{'action':action_name, 'user_id':user_id}))
+            LOG.debug('Jio policy based authorization granted')
             if 'filters' in params:
                 filters = params.get('filters')
                 return f(self, context, filters, *args, **kwargs)

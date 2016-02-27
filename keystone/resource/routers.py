@@ -38,11 +38,6 @@ class Admin(wsgi.ComposableRouter):
 class Routers(wsgi.RoutersBase):
 
     def append_v3_routers(self, mapper, routers):
-        routers.append(
-            router.Router(controllers.AccountV3(),
-                          'accounts', 'account',
-                          resource_descriptions=self.v3_resources))
-
         config_controller = controllers.AccountConfigV3()
 
         self._add_resource(

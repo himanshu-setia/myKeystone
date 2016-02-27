@@ -29,7 +29,8 @@ from keystone import exception
 from keystone.i18n import _
 from keystone import notifications
 from keystone.resource import schema
-
+from keystone.common import utils
+from oslo_serialization import jsonutils
 
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
@@ -40,7 +41,8 @@ root_resource = 'jrn:jcs:*:'
 
 def _unique_account_id():
     x=12
-    return '{0:0{x}d}'.format(random.randint(0, 10**x-1), x=x)
+    id = '{0:0{x}d}'.format(random.randint(0, 10**x-1), x=x)
+    return id.rjust(32, '0')
 
 @dependency.requires('resource_api')
 class Tenant(controller.V2Controller):
@@ -114,7 +116,7 @@ class Tenant(controller.V2Controller):
         self.resource_api.delete_project(tenant_id, initiator)
 
 
-@dependency.requires('resource_api', 'identity_api', 'jio_policy_api')
+@dependency.requires('resource_api', 'identity_api', 'jio_policy_api', 'credential_api')
 class AccountV3(controller.V3Controller):
     collection_name = 'accounts'
     member_name = 'account'
@@ -137,8 +139,6 @@ class AccountV3(controller.V3Controller):
         policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy, True)
         self.jio_policy_api.attach_policy_to_user(policy.get('id'), user_id)
 
-    @controller.isa_console_protected()
-    @validation.validated(schema.account_create, 'account')
     def create_account(self, context, account):
         ref = self._assign_unique_id(self._normalize_dict(account))
         initiator = notifications._get_request_audit_info(context)
@@ -165,9 +165,33 @@ class AccountV3(controller.V3Controller):
         self.attach_root_policy(user.get('id'), user_ref['account_id'])
         if ref.get('type') == None:
             ref.pop('type')
+        return ref, user.get('id')
+
+    @controller.console_protected()
+    @validation.validated(schema.account_create, 'account')
+    def create_customer_account(self, context, account):
+        ref, user_id = self.create_account(context, account)
         return AccountV3.wrap_member(context, ref)
 
-    @controller.iam_special_protected()
+    @controller.isa_protected_for_create_console_acc()
+    @validation.validated(schema.account_create, 'account')
+    def create_console_account(self, context, account):
+        ref, user_id = self.create_account(context, account)
+        #create credentials for the root user.
+        blob = {'access': uuid.uuid4().hex,
+                'secret': uuid.uuid4().hex }
+        credential_id = utils.hash_access_key(blob['access'])
+        cred_ref = {'user_id': user_id,
+                    'project_id': ref['id'],
+                    'blob': jsonutils.dumps(blob),
+                    'id': credential_id,
+                    'type': 'ec2'}
+
+        self.credential_api.create_credential(credential_id, cred_ref)
+        ref['credentials'] = cred_ref.get('blob')
+        return AccountV3.wrap_member(context, ref)
+
+    @controller.isa_protected()
     def update_service_account(self, context, services, account_id, user_ids=None):
         if account_id is None:
             msg = 'Cannot upgrade without account id'
@@ -179,7 +203,7 @@ class AccountV3(controller.V3Controller):
             user = self.identity_api.get_root_user(account_id)
             user_ids.append(user.get('id'))
         actions = []
-        resources = [] 
+        resources = []
         for s in services:
             action = naming_pre + s +':*'
             actions.append(action)

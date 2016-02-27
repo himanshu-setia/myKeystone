@@ -61,11 +61,10 @@ PAYLOAD_BUFFER = 1024 * 1024
 
 
 
+TOKEN_DELIMITER = '_'
+
 # Header used to transmit the auth token
 AUTH_TOKEN_HEADER = 'X-Auth-Token'
-
-# Header used to transmit the console token
-CONSOLE_TOKEN_HEADER = 'X-Console-Token'
 
 # Header used to transmit the subject token
 SUBJECT_TOKEN_HEADER = 'X-Subject-Token'
@@ -83,15 +82,18 @@ class TokenAuthMiddleware(wsgi.Middleware):
     def process_request(self, request):
         token = request.headers.get(AUTH_TOKEN_HEADER)
         context = request.environ.get(CONTEXT_ENV, {})
-        context['token_id'] = token
-        if SUBJECT_TOKEN_HEADER in request.headers:
-            context['subject_token_id'] = (
-                request.headers.get(SUBJECT_TOKEN_HEADER))
-        else:
-            context['subject_token_id'] = (
-                request.headers.get(AUTH_TOKEN_HEADER))
-        request.environ[CONTEXT_ENV] = context
+        if token != None and len(token) == 65:
+            tokens = token.split(TOKEN_DELIMITER)
+            if len(tokens)<2:
+                LOG.warning(_LW('RBAC: Invalid token. Second token missing'))
+                raise exception.Unauthorized()
+            token = tokens[0]
+            console_token_id = tokens[1]
+            context['console_token_id'] = console_token_id
 
+
+        context['token_id'] = token
+        request.environ[CONTEXT_ENV] = context
 
 class AdminTokenAuthMiddleware(wsgi.Middleware):
     """A trivial filter that checks for a pre-defined admin token.
@@ -102,11 +104,8 @@ class AdminTokenAuthMiddleware(wsgi.Middleware):
     """
 
     def process_request(self, request):
-        token = request.headers.get(AUTH_TOKEN_HEADER)
-        context = request.environ.get(CONTEXT_ENV, {})
-        context['is_admin'] = (token == CONF.admin_token)
-        request.environ[CONTEXT_ENV] = context
-
+        #(roopali) : removed admin token.
+        pass
 
 class PostParamsMiddleware(wsgi.Middleware):
     """Middleware to allow method arguments to be passed as POST parameters.
@@ -241,16 +240,19 @@ class AuthContextMiddleware(wsgi.Middleware):
     """Build the authentication context from the request auth token."""
 
     def _build_auth_context(self, request):
-        token_id = request.headers.get(AUTH_TOKEN_HEADER).strip()
-        if token_id == CONF.admin_token:
-            # NOTE(gyee): no need to proceed any further as the special admin
-            # token is being handled by AdminTokenAuthMiddleware. This code
-            # will not be impacted even if AdminTokenAuthMiddleware is removed
-            # from the pipeline as "is_admin" is default to "False". This code
-            # is independent of AdminTokenAuthMiddleware.
-            return {}
+        composite_token = request.headers.get(AUTH_TOKEN_HEADER).strip()
+        token_id = ''
+        context={}
+        if len(composite_token) < 65:
+                token_id = composite_token
+        else:
+            tokens = composite_token.split(TOKEN_DELIMITER)
+            if len(tokens)<2:
+                LOG.warning(_LW('RBAC: Invalid token. Second token missing'))
+                raise exception.Unauthorized()
+            token_id = tokens[0]
 
-        context = {'token_id': token_id}
+        context['token_id']= token_id
         context['environment'] = request.environ
         try:
             token_ref = token_model.KeystoneToken(
@@ -363,21 +365,26 @@ class AuthContextMiddleware(wsgi.Middleware):
             request_id=request.environ.get('openstack.request_id'))
         account_id = None
         if AUTH_TOKEN_HEADER in request.headers:
-            if request.path != '/v3/token-auth' and request.path != '/v3/token-auth-ex':
-                if CONSOLE_TOKEN_HEADER in request.headers:
-                    try:
-                        token_id = request.headers.get(CONSOLE_TOKEN_HEADER).strip()
-                        token_data=self.token_provider_api.validate_token(token_id)
-                        account_type = token_data['token']['account']['type']
-                        if account_type != 'console':
-                            msg = _LW('Caller token is invalid')
-                            raise exception.Forbidden(msg)
-                    except exception.TokenNotFound:
+            composite_token = request.headers.get(AUTH_TOKEN_HEADER).strip()
+            if len(composite_token) < 65:
+                if request.path != '/v3/token-auth' and request.path != '/v3/token-auth-ex':
+                    LOG.warning(_LW('RBAC: Invalid AUTH token. Size is less than 65.'))
+                    raise exception.Unauthorized()
+            else:
+                tokens = composite_token.split(TOKEN_DELIMITER)
+                if len(tokens)<2:
+                    LOG.warning(_LW('RBAC: Invalid token. Second token missing'))
+                    raise exception.Unauthorized()
+                console_token_id = tokens[1]
+                try:
+                    console_token_data=self.token_provider_api.validate_token(console_token_id)
+                    account_type = console_token_data['token']['account']['type']
+                    if account_type != 'console':
                         msg = _LW('Caller token is invalid')
                         raise exception.Forbidden(msg)
-                else:
-                    msg = _LW('Caller token is missing')
-                    raise exception.ValidationError(msg)
+                except exception.TokenNotFound:
+                    msg = _LW('Caller token is invalid')
+                    raise exception.Forbidden(msg)
         else:
             LOG.debug(('Auth token not in the request header. '
                        'Will not build auth context.'))
