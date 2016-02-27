@@ -41,7 +41,8 @@ root_resource = 'jrn:jcs:*:'
 
 def _unique_account_id():
     x=12
-    return '{0:0{x}d}'.format(random.randint(0, 10**x-1), x=x)
+    id = '{0:0{x}d}'.format(random.randint(0, 10**x-1), x=x)
+    return id.rjust(32, '0')
 
 @dependency.requires('resource_api')
 class Tenant(controller.V2Controller):
