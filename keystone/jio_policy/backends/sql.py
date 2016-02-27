@@ -111,7 +111,7 @@ class PolicyResourceModel(sql.ModelBase):
     policy_id = sql.Column(sql.String(64), sql.ForeignKey('jio_policy.id'), primary_key=True)
     resource = relationship("ResourceModel")
 
-@dependency.requires('identity_api')
+@dependency.requires('identity_api','resource_api')
 class Policy(jio_policy.Driver):
 
     @classmethod
@@ -132,6 +132,9 @@ class Policy(jio_policy.Driver):
     @classmethod
     def _get_principle_list(cls, principle):
         ls = principle.split(':')
+        if len(ls) < 4:
+            raise exception.ValidationError(attribute='account_id',
+                                            target='principle')
         return ls
 
     @classmethod
@@ -254,11 +257,8 @@ class Policy(jio_policy.Driver):
         ref['updated_at'] = created_at
         return ref
 
-
-
     @sql.handle_conflicts(conflict_type='policy')
     def create_resource_based_policy(self, account_id, policy_id, policy):
-        #import pdb;pdb.set_trace()
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.get('name', None)
@@ -293,26 +293,33 @@ class Policy(jio_policy.Driver):
                                         ActionModel.id).one()[0]
                        
                         principle_list = Policy._get_principle_list(pair[1])
-                        principle_id = '*' if len(principle_list) < 3 else principle_list[2]
-                        principle_type = None if len(principle_list) < 2 else principle_list[1]
-
+                        principle_id = '*' if len(principle_list) < 6 else principle_list[5]
+                        principle_type = 'None' if len(principle_list) < 5 else principle_list[4]
                         #For principle as AccId, both the type and id of principle will be NULL
                         #as we need to only give permission to the account owner.
-                        if principle_type == None:
-                            principle_id = None
-                        if principle_type is not None and principle_type not in ['*','User','Group']:
+                        if principle_type == 'None':
+                            principle_id = 'None'
+                        if principle_type is not 'None' and principle_type not in ['*','User','Group']:
                              raise exception.ValidationError(
                                      attribute='valid principle type', target='principle')
+                       
+                        principle_acc_id = principle_list[3]
+                        self.resource_api.get_account(principle_acc_id)
 
-                        principle_acc_id = principle_list[0]
                         if principle_acc_id == account_id:
                              raise exception.ValidationError(
                                      attribute='valid account id', target='principle')
 
                         if principle_type == 'User' and principle_id !='*':
-                            self.identity_api.get_user(principle_id)
-                        elif principle_type == 'Group' and principle_id!='*':
-                            self.identity_api.get_group(principle_id)
+                            user = self.identity_api.get_user(principle_id)
+                            if user['account_id'] != principle_acc_id:
+                                raise exception.ValidationError(
+                                     attribute='valid user', target='account')       
+                        elif principle_type == 'Group' and principle_id !='*':
+                            group = self.identity_api.get_group(principle_id)
+                            if group['account_id'] != principle_acc_id:
+                                raise exception.ValidationError(
+                                     attribute='valid group', target='account')
                         
                         session.add(
                             PolicyActionPrincipleModel(
@@ -545,25 +552,31 @@ class Policy(jio_policy.Driver):
                             action_id = session.query(ActionModel).filter_by(
                                     action_name=pair[0]).with_entities(
                                             ActionModel.id).one()[0]
+
                             principle_list = Policy._get_principle_list(pair[1])
-    
-                            principle_id = '*' if len(principle_list) < 3 else principle_list[2]
-                            principle_type = None if len(principle_list) < 2 else principle_list[1]
-                    
+                            principle_id = '*' if len(principle_list) < 6 else principle_list[5]
+                            principle_type = 'None' if len(principle_list) < 5 else principle_list[4]
                             #For principle as AccId, both the type and id of principle will be NULL
                             #as we need to only give permission to the account owner.
-                            if principle_type == None:
-                                principle_id = None
+                            if principle_type == 'None':
+                                principle_id = 'None'
+                            if principle_type is not 'None' and principle_type not in ['*','User','Group']:
+                                 raise exception.ValidationError(
+                                     attribute='valid principle type', target='principle')
 
-                            principle_acc_id = principle_list[0]
-                            #if principle_acc_id == project_id:
-                             #    raise exception.ValidationError(
-                              #           attribute='valid account id', target='principle')
+                            principle_acc_id = principle_list[3]
+                            self.resource_api.get_account(principle_acc_id)
 
                             if principle_type == 'User' and principle_id !='*':
-                                self.identity_api.get_user(principle_id)
-                            elif principle_type == 'Group' and principle_id!='*':
-                                self.identity_api.get_group(principle_id)
+                                user = self.identity_api.get_user(principle_id)
+                                if user['account_id'] != principle_acc_id:
+                                    raise exception.ValidationError(
+                                     attribute='valid user', target='account')
+                            elif principle_type == 'Group' and principle_id !='*':
+                                group = self.identity_api.get_group(principle_id)
+                                if group['account_id'] != principle_acc_id:
+                                    raise exception.ValidationError(
+                                     attribute='valid group', target='account')
 
                             session.add(
                                 PolicyActionPrincipleModel(
@@ -653,7 +666,6 @@ class Policy(jio_policy.Driver):
 
     def is_cross_account_access_auth(self, user_id, group_ids, user_acc_id, res_id, action, is_impl_allow):
         session = sql.get_session()
-
         if len(res_id.split(':')) < 6:
             raise exception.ResourceNotFound(resource=res_id)  
 
@@ -670,7 +682,6 @@ class Policy(jio_policy.Driver):
                         .filter(JioPolicyModel.type == 'ResourceBased')\
                         .with_entities(JioPolicyModel.id).all()
 
-        group_ids.append('*')
         policy_exists = False
         is_authorized = True
         for policy in policy_ids:
@@ -680,16 +691,21 @@ class Policy(jio_policy.Driver):
 
             for result in result_list:
                 if result:
-                    if result.principle_type == 'None' and user_id == user_acc_id:
-                        policy_exists = True
-                        is_authorized = result.effect 
-                    elif result.principle_type == 'User' and result.principle_id in ['*',user_id]:
-                        policy_exists = True
-                        is_authorized = result.effect 
-                    elif result.principle_type == 'Group' and result.principle_id in group_ids:
-                        policy_exists = True
-                        is_authorized = result.effect 
-                
+                    user = self.identity_api.get_user(user_id)
+                    if result.principle_type == 'None':
+                        if user['type'] == 'root':
+                            policy_exists = True
+                            is_authorized = result.effect 
+                    if result.principle_type in ['*', 'User'] and result.principle_id in ['*',user_id]:
+                        if user['account_id'] == result.principle_acc_id:
+                            policy_exists = True
+                            is_authorized = result.effect 
+                    if result.principle_type in ['*', 'Group']:
+                        if ((result.principle_id == '*' and len(group_ids) > 0) or (result.principle_id in group_ids)):
+                            if user['account_id'] == result.principle_acc_id:
+                                policy_exists = True
+                                is_authorized = result.effect
+ 
                 if is_authorized == False:
                     return False
 
@@ -697,8 +713,8 @@ class Policy(jio_policy.Driver):
             return True
         else:
             return is_impl_allow   
-                
     
+            
     def is_user_authorized(self, user_id, group_id, account_id, action, resource, is_implicit_allow):
         session = sql.get_session()
         # resource name must have 5 separators (:) e.g. 

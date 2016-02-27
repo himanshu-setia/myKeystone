@@ -384,6 +384,7 @@ class Auth(controller.V3Controller):
             else:
                 msg = _LW('access key not found')
                 raise exception.ValidationError(msg)
+
         try:
             auth_info = AuthInfo.create(context, auth=auth)
             auth_context = AuthContext(extras={},
@@ -637,7 +638,7 @@ class Auth(controller.V3Controller):
             auth_context = self.get_auth_context(context)
 
             user_id = token_data["token"]["user"]["id"]
-            account_id = token_data["token"]["project"]["id"]
+            account_id = token_data["token"]["account"]["id"]
             self._validate_cross_account_with_token(
                     user_id, account_id, resource, action, is_implicit_allow, context)
         response = self.format_auth_response(token_data)
