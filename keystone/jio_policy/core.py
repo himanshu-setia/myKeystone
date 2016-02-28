@@ -46,8 +46,8 @@ class Manager(manager.Manager):
     def list_actions(self, hints=None):
         return self.driver.list_actions(hints)
 
-    def create_policy(self, project_id, policy_id, policy, hidden=False):
-        ref = self.driver.create_policy(project_id, policy_id, policy, hidden)
+    def create_policy(self, project_id, policy_id, policy, hidden=False, service=False):
+        ref = self.driver.create_policy(project_id, policy_id, policy, hidden, service)
         return ref
 
     def create_resource_based_policy(self, project_id, policy_id, policy):

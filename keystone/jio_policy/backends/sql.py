@@ -76,10 +76,10 @@ class ResourceModel(sql.ModelBase):
 class ActionResourceMappingModel(sql.ModelBase):
     __tablename__ = 'action_resource_type_mapping'
     attributes = ['action_id', 'resource_type_id']
-    action_id = sql.Column(sql.String(64), 
-                    sql.ForeignKey('action.id'), 
+    action_id = sql.Column(sql.String(64),
+                    sql.ForeignKey('action.id'),
                     primary_key=True)
-    resource_type_id = sql.Column(sql.String(64), 
+    resource_type_id = sql.Column(sql.String(64),
                   sql.ForeignKey('resource_type.id'),
                   primary_key=True)
 
@@ -144,7 +144,7 @@ class Policy(jio_policy.Driver):
 
         if ls[2] != 'iam':
             raise exception.ValidationError(attribute='valid service name(iam)',
-                                            target='principle') 
+                                            target='principle')
         return ls
 
     @classmethod
@@ -153,7 +153,7 @@ class Policy(jio_policy.Driver):
         return ls
 
     @sql.handle_conflicts(conflict_type='policy')
-    def create_policy(self, account_id, policy_id, policy, hidden=False):
+    def create_policy(self, account_id, policy_id, policy, hidden=False, service=False):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
         name = policy.get('name', None)
@@ -198,12 +198,12 @@ class Policy(jio_policy.Driver):
                             session.add(ResourceModel(id=pair[0], name=pair[1],
                                     service_type=Policy._get_service_name(
                                         pair[1])))
-                    
+
                     for pair in itertools.product(action, zip_resource):
                         resource = Policy._get_resource_list(pair[1][1])
                         res_acc_id = resource[3]
 
-                        if res_acc_id != account_id:
+                        if res_acc_id != account_id and service == False:
                             #LOG.debug('Cross Account Policy')
 
                             resource = session.query(ResourceModel.id).\
@@ -297,11 +297,11 @@ class Policy(jio_policy.Driver):
                 try:
 
                     for pair in itertools.product(action, principle):
-                        
+
                         action_id = session.query(ActionModel).filter_by(
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
-                       
+
                         principle_list = Policy._get_principle_list(pair[1])
                         principle_id = '*' if len(principle_list) < 6 else principle_list[5]
                         principle_type = 'None' if len(principle_list) < 5 else principle_list[4]
@@ -312,7 +312,7 @@ class Policy(jio_policy.Driver):
                         if principle_type is not 'None' and principle_type not in ['*','User','Group']:
                              raise exception.ValidationError(
                                      attribute='valid principle type', target='principle')
-                       
+
                         principle_acc_id = principle_list[3]
                         self.resource_api.get_account(principle_acc_id)
 
@@ -324,13 +324,13 @@ class Policy(jio_policy.Driver):
                             user = self.identity_api.get_user(principle_id)
                             if user['account_id'] != principle_acc_id:
                                 raise exception.ValidationError(
-                                     attribute='valid user', target='account')       
+                                     attribute='valid user', target='account')
                         elif principle_type == 'Group' and principle_id !='*':
                             group = self.identity_api.get_group(principle_id)
                             if group['account_id'] != principle_acc_id:
                                 raise exception.ValidationError(
                                      attribute='valid group', target='account')
-                        
+
                         session.add(
                             PolicyActionPrincipleModel(
                                 policy_id=policy_id, action_id=action_id,principle_acc_id=principle_acc_id,
@@ -529,7 +529,6 @@ class Policy(jio_policy.Driver):
     @sql.handle_conflicts(conflict_type='policy')
     def update_resource_based_policy(self, policy_id, policy):
         session = sql.get_session()
-        #import pdb;pdb.set_trace()
         # TODO(ajayaa) sql optimizations.
         with session.begin():
             ref = self._get_policy(session, policy_id)
@@ -556,7 +555,7 @@ class Policy(jio_policy.Driver):
                         raise exception.ValidationError(attribute='allow or deny',
                                                         target='effect')
                     try:
-    
+
                         for pair in itertools.product(action, principle):
                             #check if action is allowed in resource type
                             action_id = session.query(ActionModel).filter_by(
@@ -592,7 +591,7 @@ class Policy(jio_policy.Driver):
                                 PolicyActionPrincipleModel(
                                     policy_id=policy_id, action_id=action_id,principle_acc_id=principle_acc_id,
                                     principle_id=principle_id, principle_type=principle_type ,effect=effect))
-    
+
                     except sql.NotFound:
                         raise exception.ValidationError(
                                 attribute='valid action', target='policy')
@@ -677,11 +676,11 @@ class Policy(jio_policy.Driver):
     def is_cross_account_access_auth(self, user_id, group_ids, user_acc_id, res_id, action, is_impl_allow):
         session = sql.get_session()
         if len(res_id.split(':')) < 6:
-            raise exception.ResourceNotFound(resource=res_id)  
+            raise exception.ResourceNotFound(resource=res_id)
 
         resource = Policy._get_resource_list(res_id)
         res_acc_id = resource[3]
-        
+
         resource = session.query(ResourceModel.id).\
             filter(ResourceModel.name == res_id).all()
 
@@ -705,34 +704,34 @@ class Policy(jio_policy.Driver):
                     if result.principle_type == 'None':
                         if user['type'] == 'root':
                             policy_exists = True
-                            is_authorized = result.effect 
+                            is_authorized = result.effect
                     if result.principle_type in ['*', 'User'] and result.principle_id in ['*',user_id]:
                         if user['account_id'] == result.principle_acc_id:
                             policy_exists = True
-                            is_authorized = result.effect 
+                            is_authorized = result.effect
                     if result.principle_type in ['*', 'Group']:
                         if ((result.principle_id == '*' and len(group_ids) > 0) or (result.principle_id in group_ids)):
                             if user['account_id'] == result.principle_acc_id:
                                 policy_exists = True
                                 is_authorized = result.effect
- 
+
                 if is_authorized == False:
                     return False
 
         if policy_exists is True:
             return True
         else:
-            return is_impl_allow   
-    
-            
+            return is_impl_allow
+
+
     def is_user_authorized(self, user_id, group_id, account_id, action, resource, is_implicit_allow):
         session = sql.get_session()
-        # resource name must have 5 separators (:) e.g. 
+        # resource name must have 5 separators (:) e.g.
         # 'jrn:jcs:service:tenantid:rtype:res' is a valid resource name
         # providing tenantid is optional for a service
         # but the format should be maintained
         if len(resource.split(':')) < 6:
-            raise exception.ResourceNotFound(resource=resource)            
+            raise exception.ResourceNotFound(resource=resource)
         # in case tenantid is not present in resource, update it
         if resource.split(':')[3] == '':
             var = resource.split(':')
@@ -833,7 +832,7 @@ class Policy(jio_policy.Driver):
         else:
             user_query = user_query.\
                 filter(PolicyActionResourceModel.action_id.in_(action_indirect))
- 
+
         if resource_direct != [] and resource_indirect != []:
             user_query = user_query.\
                 filter(
@@ -882,7 +881,7 @@ class Policy(jio_policy.Driver):
             else:
                 group_query = group_query.\
                     filter(PolicyActionResourceModel.action_id.in_(action_indirect))
- 
+
             if resource_direct != [] and resource_indirect != []:
                 group_query = group_query.\
                     filter(
@@ -964,7 +963,7 @@ class Policy(jio_policy.Driver):
             try:
                 zip_resource = zip(resource_ids, resource)
                 self._get_policy(session, policy_id)
-                
+
                 for pair in itertools.product(actions, zip_resource):
                     #check if action is allowed in resource type
                     resource_type = Policy._get_resource_type(pair[1][1])
@@ -1023,7 +1022,7 @@ class Policy(jio_policy.Driver):
         policy = self._get_policy(session,policy_id)
         if policy.type != 'UserBased' or policy.hidden:
             raise exception.PolicyNotFound(policy_id=policy_id)
- 
+
         query = session.query(PolicyUserGroupModel).filter_by(policy_id = policy_id) \
             .with_entities(
                     PolicyUserGroupModel.user_group_id, PolicyUserGroupModel.type)
@@ -1041,7 +1040,7 @@ class Policy(jio_policy.Driver):
             sum_list.append(dict)
 
         summary_list['Attached Entities'] = sum_list
-        return summary_list 
+        return summary_list
 
     def get_resource_based_policy_summary(self,policy_id):
         session = sql.get_session()
@@ -1121,7 +1120,7 @@ class Policy(jio_policy.Driver):
                 session.add(ActionResourceMappingModel(action_id=action_id, resource_type_id=resource_type.id))
             except sql.NotFound:
                 raise exception.ValidationError(
-                                attribute='valid action or valid resource name and service name', 
+                                attribute='valid action or valid resource name and service name',
                                 target='ActionName, ResourceType or ResourceTypeSevice')
         return ref
 
