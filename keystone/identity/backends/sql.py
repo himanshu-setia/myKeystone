@@ -383,7 +383,8 @@ class Identity(identity.Driver):
 
         with session.begin():
             ref = self._get_user(session, user_id)
-
+            if ref.type == 'root':
+                raise exception.Forbidden(message='Cannot delete root user.')
             q = session.query(UserGroupMembership)
             q = q.filter_by(user_id=user_id)
             q.delete(False)
@@ -412,7 +413,7 @@ class Identity(identity.Driver):
         ref_list = []
         for ref in refs:
             dict = ref.to_dict()
-            dict['UserCount'] = self.count_users_in_group(ref.id) 
+            dict['UserCount'] = self.count_users_in_group(ref.id)
             ref_list.append(dict)
 
         return ref_list
