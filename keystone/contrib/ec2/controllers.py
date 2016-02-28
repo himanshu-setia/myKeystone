@@ -77,17 +77,17 @@ class Ec2ControllerCommon(object):
                                         signature):
                     return True
                 raise exception.Unauthorized(
-                    message='Invalid EC2 signature.')
+                    message='Invalid JCS signature.')
             else:
                 raise exception.Unauthorized(
-                    message='EC2 signature not supplied.')
+                    message='Invalid JCS signature.')
         # Raise the exception when credentials.get('signature') is None
         else:
-            raise exception.Unauthorized(message='EC2 signature not supplied.')
+            raise exception.Unauthorized(message='JCS signature not supplied.')
 
     @abc.abstractmethod
     def authenticate(self, context, credentials=None, ec2Credentials=None):
-        """Validate a signed EC2 request and provide a token.
+        """Validate a signed JCS request and provide a token.
 
         Other services (such as Nova) use this **admin** call to determine
         if a request they signed received is from a valid user.
@@ -120,7 +120,7 @@ class Ec2ControllerCommon(object):
             credentials = ec2credentials
 
         if 'access' not in credentials:
-            raise exception.Unauthorized(message='EC2 signature not supplied.')
+            raise exception.Unauthorized(message='JCS signature not supplied.')
 
         creds_ref = self._get_credentials(credentials['access'])
         self.check_signature(creds_ref, credentials)
@@ -254,7 +254,7 @@ class Ec2ControllerCommon(object):
         ec2_credential_id = utils.hash_access_key(credential_id)
         creds = self.credential_api.get_credential(ec2_credential_id)
         if not creds:
-            raise exception.Unauthorized(message='EC2 access key not found.')
+            raise exception.Unauthorized(message='JCS access key not found.')
         return self._convert_v3_to_ec2_credential(creds)
 
 

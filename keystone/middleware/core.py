@@ -317,16 +317,15 @@ class AuthContextMiddleware(wsgi.Middleware):
 
     def _verify_signature(self, req):
        body_hash = hashlib.sha256(req.body).hexdigest()
-       
        signature = self._get_signature(req)
-       LOG.warning(_LW( signature))
+       LOG.debug(_LW( signature))
        if not signature:
-           msg = ("Signature not provided")
-           return None, None
+           msg = ("JCS Signature not provided")
+           raise exception.Forbidden(msg)
        access = self._get_access(req)
        if not access:
-           msg = ("Access key not provided")
-           return None, None
+           msg = ("JCS Access key not provided")
+           return exception.Forbidden(msg)
 
        if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
            params = {}
