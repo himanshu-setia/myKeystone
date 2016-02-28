@@ -25,6 +25,8 @@ from sqlalchemy import or_
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
 
+iam_pre_format = 'jrn:jcs'
+
 class JioPolicyModel(sql.ModelBase, sql.DictBase):
     __tablename__ = 'jio_policy'
     attributes = ['id', 'account_id', 'created_at', 'deleted_at']
@@ -133,8 +135,16 @@ class Policy(jio_policy.Driver):
     def _get_principle_list(cls, principle):
         ls = principle.split(':')
         if len(ls) < 4:
-            raise exception.ValidationError(attribute='account_id',
+            raise exception.ValidationError(attribute='valid prefix(jrn:jcs:iam:AccountId)',
                                             target='principle')
+        iam_prefix = ':'.join(ls[:2])
+        if iam_prefix != iam_pre_format:
+            raise exception.ValidationError(attribute='valid prefix(jrn:jcs)',
+                                            target='principle')
+
+        if ls[2] != 'iam':
+            raise exception.ValidationError(attribute='valid service name(iam)',
+                                            target='principle') 
         return ls
 
     @classmethod
