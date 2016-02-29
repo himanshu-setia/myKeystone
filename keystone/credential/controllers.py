@@ -155,6 +155,6 @@ class CredentialV3(controller.V3Controller):
         self._improve_response(ref)
         return CredentialV3.wrap_member(context, ret_ref)
 
-    @controller.jio_policy_user_filterprotected(args='Credential')
+    @controller.jio_policy_filterprotected(args='Credential')
     def delete_credential(self, context, credential_id):
         return self.credential_api.delete_credential(credential_id)

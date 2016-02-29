@@ -318,7 +318,7 @@ class UserV3(controller.V3Controller):
         new_ref = self.updated_ref(ref)
         return UserV3.wrap_member(context, new_ref)
 
-    @controller.jio_policy_user_filterprotected(args='User')
+    @controller.jio_policy_filterprotected(args='User')
     def update_user(self, context, user_id, user):
         return self._update_user(context, user_id, user)
 
@@ -334,7 +334,7 @@ class UserV3(controller.V3Controller):
     def remove_user_from_group(self, context, user_id, group_id):
         self.identity_api.remove_user_from_group(user_id, group_id)
 
-    @controller.jio_policy_user_filterprotected(args='User')
+    @controller.jio_policy_filterprotected(args='User')
     def delete_user(self, context, user_id):
         initiator = notifications._get_request_audit_info(context)
         return self.identity_api.delete_user(user_id, initiator)
@@ -348,7 +348,7 @@ class UserV3(controller.V3Controller):
 
         return False
 
-    @controller.jio_policy_user_filterprotected(args='User')
+    @controller.jio_policy_filterprotected(args='User')
     def get_user_summary(self, context, user_id):
         refs = self.identity_api.get_group_summary_for_user(user_id)
         policy_refs = self.jio_policy_api.get_user_policies(user_id)
@@ -443,7 +443,7 @@ class GroupV3(controller.V3Controller):
 
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
-    @controller.jio_policy_user_filterprotected(args='User',filters=['name'])
+    @controller.jio_policy_filterprotected(args='User',filters=['name'])
     def list_groups_for_user(self, context, filters, user_id):
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_groups_for_user(user_id, hints=hints)
