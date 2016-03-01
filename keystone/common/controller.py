@@ -533,9 +533,9 @@ class V2Controller(wsgi.Application):
         def _normalize_and_filter_user_properties(ref):
             """Run through the various filter/normalization methods."""
             _format_default_project_id(ref)
-            V2Controller.filter_account(ref)
-            V2Controller.filter_account_id(ref)
-            V2Controller.normalize_username_in_response(ref)
+            #V2Controller.filter_account(ref)
+            #V2Controller.filter_account_id(ref)
+            #V2Controller.normalize_username_in_response(ref)
             return ref
 
         if isinstance(ref, dict):

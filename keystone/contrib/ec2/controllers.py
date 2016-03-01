@@ -127,12 +127,8 @@ class Ec2ControllerCommon(object):
 
         # TODO(termie): don't create new tokens every time
         # TODO(termie): this is copied from TokenController.authenticate
-        tenant_ref = self.resource_api.get_project(creds_ref['tenant_id'])
         user_ref = self.identity_api.get_user(creds_ref['user_id'])
         metadata_ref = {}
-        metadata_ref['roles'] = (
-            self.assignment_api.get_roles_for_user_and_project(
-                user_ref['id'], tenant_ref['id']))
 
         trust_id = creds_ref.get('trust_id')
         if trust_id:
@@ -145,19 +141,11 @@ class Ec2ControllerCommon(object):
                 user_id=user_ref['id'], user=user_ref)
             self.resource_api.assert_account_enabled(
                 account_id=user_ref['account_id'])
-            self.resource_api.assert_project_enabled(
-                project_id=tenant_ref['id'], project=tenant_ref)
         except AssertionError as e:
             six.reraise(exception.Unauthorized, exception.Unauthorized(e),
                         sys.exc_info()[2])
 
-        roles = metadata_ref.get('roles', [])
-        roles_ref = [self.role_api.get_role(role_id) for role_id in roles]
-
-        catalog_ref = self.catalog_api.get_catalog(
-            user_ref['id'], tenant_ref['id'])
-
-        return user_ref, tenant_ref, metadata_ref, roles_ref, catalog_ref
+        return user_ref, None, metadata_ref, None, None 
 
     def create_credential(self, context, user_id, tenant_id):
         """Create a secret/access pair for use with ec2 style auth.
@@ -287,7 +275,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
          catalog_ref) = self._authenticate(credentials=credentials,
                                            ec2credentials=ec2Credentials)
         user_id = user_ref["id"]
-        account_id = tenant_ref["id"]
+        account_id = user_ref["account_id"]
         query_string = context.get('query_string', None)
 
         if query_string:
@@ -348,8 +336,8 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
-        response = dict(domain_id=token_data["access"]["token"]["tenant"]["account_id"],
-                        user_id=token_data["access"]["user"]["id"],
+        response = dict(account_id=account_id,
+                        user_id=user_id,
                         token_id=token_data["access"]["token"]["id"])
         if 'type' in token_data["access"]["user"]:
             response['user_type'] = token_data["access"]["user"]['type']
@@ -362,7 +350,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                            ec2credentials=ec2Credentials)
         # get user id
         user_id = user_ref["id"]
-        project_id = tenant_ref["id"]
+        project_id = user_ref["account_id"]
         query_string = context.get('query_string', None)
         if query_string:
             action = query_string.pop('action', None)
@@ -421,8 +409,8 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
-        response = dict(account_id=token_data["access"]["token"]["tenant"]["account_id"],
-                        user_id=token_data["access"]["user"]["id"],
+        response = dict(account_id=project_id,
+                        user_id=user_id,
                         token_id=token_data["access"]["token"]["id"])
         if 'type' in token_data["access"]["user"]:
             response['user_type'] = token_data["access"]["user"]['type']
@@ -542,14 +530,12 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
             metadata_ref=metadata_ref)
         return render_token_data_response(token_id, token_data)
 
-
-
     def validate_cross_account_with_sign(self,context, credentials=None, ec2Credentials=None):
         (user_ref, project_ref, metadata_ref, roles_ref,
          catalog_ref) = self._authenticate(credentials=credentials,
                                            ec2credentials=ec2Credentials)
         user_id = user_ref["id"]
-        account_id = project_ref['id']
+        account_id = user_ref["account_id"]
         query_string = context.get('query_string', None)
 
         if query_string:
@@ -605,8 +591,8 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
             user_id, method_names, project_id=account_id,
             metadata_ref='')
         
-        response = dict(domain_id=token_data["token"]["project"]["account"]["id"],
-                        user_id=token_data["token"]["user"]["id"],
+        response = dict(account_id=account_id,
+                        user_id=user_id,
                         token_id=token_id)
 
         return render_token_data_response(token_id,response)
@@ -619,7 +605,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
 
         # get user id
         user_id = user_ref["id"]
-        project_id = project_ref["id"]
+        project_id = user_ref["account_id"]
         query_string = context.get('query_string', None)
         if query_string:
             action = query_string.pop('action', None)
@@ -668,15 +654,13 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
         method_names = ['ec2credential']
 
         token_id, token_data = self.token_provider_api.issue_v3_token(
-            user_ref['id'], method_names, project_id=project_ref['id'],
+            user_id, method_names, project_id=project_id,
             metadata_ref=metadata_ref)
-        response = dict(account_id=token_data["token"]["project"]["account"]["id"],
-                        user_id=token_data["token"]["user"]["id"],
+        response = dict(account_id=project_id,
+                        user_id=user_id,
                         token_id=token_id)
 
         return render_token_data_response(token_id,response)
-
-
 
 
     @controller.protected(callback=_check_credential_owner_and_user_id_match)

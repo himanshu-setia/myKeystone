@@ -354,7 +354,7 @@ class AuthContextMiddleware(wsgi.Middleware):
 
        LOG.debug(response)
        token_id = response['access']['token']['id']
-       account_id = response['access']['token']['tenant']['account_id']
+       account_id = response['access']['user']['account_id']
        req.headers[AUTH_TOKEN_HEADER] = token_id
        return token_id, account_id
 

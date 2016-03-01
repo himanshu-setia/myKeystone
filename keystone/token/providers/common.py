@@ -141,7 +141,8 @@ class V2TokenDataHelper(object):
                                   'issued_at': timeutils.strtime(),
                                   'audit_ids': audit_info
                                   },
-                        'user': {'id': user_ref['id'],
+                        'user': {'account_id': user_ref['account_id'],
+                                 'id': user_ref['id'],
                                  'name': user_ref['name'],
                                  'username': user_ref['name'],
                                  'type': user_ref['type'],
