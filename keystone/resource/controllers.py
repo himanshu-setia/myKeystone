@@ -211,7 +211,12 @@ class AccountV3(controller.V3Controller):
 
         jio_policy = dict()
         jio_policy['id'] = uuid.uuid4().hex
-        jio_policy['name'] = 'service_policy_' + account_id + uuid.uuid4().hex
+        account_id_len = len(account_id)
+        if account_id_len > 12:
+            len_to_trunc = account_id_len-12
+        else:
+            len_to_trunc = 0
+        jio_policy['name'] = 'csa_ubp_' + account_id[len_to_trunc:] + '_' + uuid.uuid4().hex
         statement = dict()
         statement['action'] = actions
         statement['resource'] =resources
