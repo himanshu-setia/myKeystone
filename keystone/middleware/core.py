@@ -321,11 +321,11 @@ class AuthContextMiddleware(wsgi.Middleware):
        LOG.debug(_LW( signature))
        if not signature:
            msg = ("JCS Signature not provided")
-           raise exception.Forbidden(msg)
+           return None, None
        access = self._get_access(req)
        if not access:
            msg = ("JCS Access key not provided")
-           return exception.Forbidden(msg)
+           return None, None
 
        if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
            params = {}
