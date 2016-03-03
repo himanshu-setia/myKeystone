@@ -793,6 +793,10 @@ class Manager(manager.Manager):
         return self._set_account_id_and_mapping(
             ref, account_id, driver, mapping.EntityType.USER)
 
+    def get_account_if_name_root(self, user_name):
+        driver = self._select_identity_driver(None)
+        return driver.get_account_if_name_root(user_name)
+
     @manager.response_truncated
     @accounts_configured
     @exception_translated('user')

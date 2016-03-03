@@ -216,6 +216,18 @@ class Identity(identity.Driver):
             raise exception.RootUserNotFound(account_id=account_id)
         return identity.filter_user(user_ref.to_dict())
 
+    def get_account_if_name_root(self, user_name):
+        session = sql.get_session()
+        query = session.query(User)
+        query = query.filter_by(name=user_name)
+        query = query.filter_by(type = 'root')
+        try:
+            user_ref = query.one()
+        except sql.NotFound:
+            return
+        return user_ref.to_dict().get('account_id')
+
+
     def get_user_by_name(self, user_name, account_id):
         session = sql.get_session()
         query = session.query(User)

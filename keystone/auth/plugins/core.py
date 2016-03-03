@@ -167,8 +167,12 @@ class UserAuthInfo(object):
         try:
             if user_name:
                 if 'account' not in user_info:
-                    raise exception.ValidationError(attribute='account',
+                    # check if user is root user
+                    account_id = self.identity_api.get_account_if_name_root(user_name)
+                    if account_id is None:
+                        raise exception.ValidationError(attribute='account',
                                                     target='user')
+                    user_info['account'] = { "id": account_id}
                 account_ref = self._lookup_account(user_info['account'])
                 user_ref = self.identity_api.get_user_by_name(
                     user_name, account_ref['id'])
