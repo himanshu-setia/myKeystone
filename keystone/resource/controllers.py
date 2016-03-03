@@ -225,7 +225,7 @@ class AccountV3(controller.V3Controller):
         policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy, True, True)
         for id in user_ids:
             self.jio_policy_api.attach_policy_to_user(policy.get('id'), id)
-        return self.resource_api.update_account_type(account_id, 'csa')
+        return self.resource_api.update_account_csa(account_id, services)
 
     @controller.filterprotected('enabled', 'name')
     def list_accounts(self, context, filters):
@@ -237,6 +237,7 @@ class AccountV3(controller.V3Controller):
         ref = self.resource_api.get_account(account_id)
         return AccountV3.wrap_member(context, ref)
 
+    @controller.iam_csa_protected()
     @validation.validated(schema.account_update, 'account')
     def update_account(self, context, account_id, account):
         self._require_matching_id(account_id, account)

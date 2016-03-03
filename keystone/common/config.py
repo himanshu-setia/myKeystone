@@ -860,8 +860,29 @@ FILE_OPTIONS = {
                    help='Number of days after which password is expired'),
         cfg.IntOpt('num_password_saved', default=3,
                    help='Number of old password saved'),
-        cfg.StrOpt('error_message', default='Password should contain atleast 8 characters, including a uppercase, a lower case, a numeric and a special character.', help='Validation error message.'),
-        cfg.StrOpt('old_password_error_message', default='Last 3 passwords cannot be repeated', help='validation of old password')
+        cfg.StrOpt('error_message',
+                    default='Password should contain atleast 8 characters, including a uppercase, a lower case, a numeric and a special character.',
+                    help='Validation error message.'),
+        cfg.StrOpt('old_password_error_message',
+                    default='Last 3 passwords cannot be repeated',
+                    help='validation of old password')
+    ],
+    'limits': [
+        cfg.IntOpt('account_users', default=500,
+                    help='Maximum users allowed in an account.'),
+        cfg.IntOpt('account_groups', default =20,
+                    help='Maximum groups allowed in an account'),
+        cfg.IntOpt('account_policies', default=1000,
+                    help='Maximum jio policies allowed in an account'),
+        cfg.IntOpt('account_group_users', default=100,
+                    help='Maximum users allowed in a group'),
+        cfg.IntOpt('account_user_assign_group', default=20,
+                    help='Maximum groups allowed to be assigned to a user.'),
+        cfg.IntOpt('account_user_attach_policy', default=20,
+                    help='Maximum policies allowed to be attached to a user.'),
+        cfg.IntOpt('account_group_attach_policy', default=20,
+                    help='Maximum policies allowed to be attached to a group.'),
+
     ],
     'actions': [
          cfg.ListOpt('default_actions', default=['CreateUser',

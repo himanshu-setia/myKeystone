@@ -39,6 +39,12 @@ class JioPolicyV3(controller.V3Controller):
                 'account_id']
         except KeyError:
             raise exception.Forbidden('Cannot find account_id in context.')
+        account_policies_limit = self.resource_api.get_account_users_limit(account_id)
+        account_policies_cnt = self.jio_policy_api.get_policies_count_in_account(account_id)
+        if account_policies_cnt >= account_policies_limit:
+            raise exception.Forbidden(
+                'Maximum limit reached for number of policies in the account. Only %s policies are permitted'
+                %account_policies_limit)
         policy = self.jio_policy_api.create_policy(account_id, policy_id,
                                                    policy)
         return JioPolicyV3.wrap_member(context, policy)
@@ -108,6 +114,15 @@ class JioPolicyV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args=['Policy','User'])
     def attach_policy_to_user(self, context, jio_policy_id, user_id):
+        ref = self.identity_api.get_user(user_id)
+        account_id = ref.get('account_id')
+        account_user_attach_policy_limit = self.resource_api.get_account_user_attach_policy_limit(account_id)
+        account_user_attach_policy_cnt = self.jio_policy_api.get_user_attach_policy_count_in_account(user_id)
+        if account_user_attach_policy_cnt >= account_user_attach_policy_limit:
+            raise exception.Forbidden(
+                'Maximum limit reached for number policies to be attached to user in the account. Only %s policies are permitted'
+                %account_user_attach_policy_limit)
+
         return self.jio_policy_api.attach_policy_to_user(jio_policy_id,
                                                          user_id)
 
@@ -118,6 +133,14 @@ class JioPolicyV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args=['Policy','Group'])
     def attach_policy_to_group(self, context, jio_policy_id, group_id):
+        ref = self.identity_api.get_group(group_id)
+        account_id = ref.get('account_id')
+        account_group_attach_policy_limit = self.resource_api.get_account_group_attach_policy_limit(account_id)
+        account_group_attach_policy_cnt = self.jio_policy_api.get_group_attach_policy_count_in_account(group_id)
+        if account_group_attach_policy_cnt >= account_group_attach_policy_limit:
+            raise exception.Forbidden(
+                'Maximum limit reached for number policies to be attached to group in the account. Only %s policies are permitted'
+                %account_group_attach_policy_limit)
         return self.jio_policy_api.attach_policy_to_group(jio_policy_id,
                                                           group_id)
 
@@ -147,7 +170,7 @@ class JioPolicyV3(controller.V3Controller):
 
         sum_list = refs['Attached Entities']
         for ref in sum_list:
-	    
+
             if ref['Type'] == 'UserPolicy':
                 ref['user_name'] = (self.identity_api.get_user(ref['Id']))['name']
             else:
@@ -168,7 +191,7 @@ class JioPolicyV3(controller.V3Controller):
             raise exception.ValidationError(attribute='action name', target='action_name')
 
         service = ls[2]
-        if service == None: 
+        if service == None:
                 raise exception.ValidationError(attribute='Service name cannot be null.', target = 'service')
         action = ls[3]
         if action == None or (action != '*' and (action.isalpha() is False or action[0].isupper() is False)):
@@ -180,13 +203,13 @@ class JioPolicyV3(controller.V3Controller):
     @controller.isa_protected()
     def create_resource_type(self, context, resource_type, service):
         resource_type_id = uuid.uuid4().hex
-        if service == None: 
+        if service == None:
                 raise exception.ValidationError(attribute='Service name cannot be null.', target = 'service')
         if resource_type == None or (
                 resource_type != '*' and (
                     resource_type.isalpha() is False or resource_type[0].isupper() is False)):
             raise exception.ValidationError(
-                            attribute='Resource type name should contain only alphabets and in pascal case.', 
+                            attribute='Resource type name should contain only alphabets and in pascal case.',
                             target='ResourceType')
 
         ref = self.jio_policy_api.create_resource_type(resource_type_id, resource_type, service)

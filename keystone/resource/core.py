@@ -366,6 +366,62 @@ class Manager(manager.Manager):
         return self.driver.get_account(account_id)
 
     @MEMOIZE
+    def get_account_users_limit(self, account_id):
+        ref = self.driver.get_account(account_id)
+        count = CONF.limits.account_users
+        if ref.get('extra') is not None and 'account_users' in ref.get('extra'):
+            count = int(ref.get('extra').get('account_users'))
+        return count
+
+    @MEMOIZE
+    def get_account_groups_limit(self, account_id):
+        ref = self.driver.get_account(account_id)
+        count = CONF.limits.account_groups
+        if ref.get('extra') is not None and 'account_groups' in ref.get('extra'):
+            count = int(ref.get('extra').get('account_groups'))
+        return count
+
+    @MEMOIZE
+    def get_account_policies_limit(self, account_id):
+        ref = self.driver.get_account(account_id)
+        count = CONF.limits.account_policies
+        if ref.get('extra') is not None and 'account_policies' in ref.get('extra'):
+            count = int(ref.get('extra').get('account_policies'))
+        return count
+
+    @MEMOIZE
+    def get_account_group_users_limit(self, account_id):
+        ref = self.driver.get_account(account_id)
+        count = CONF.limits.account_group_users
+        if ref.get('extra') is not None and 'account_group_users' in ref.get('extra'):
+            count = int(ref.get('extra').get('account_group_users'))
+        return count
+
+    @MEMOIZE
+    def get_account_user_assign_group_limit(self, account_id):
+        ref = self.driver.get_account(account_id)
+        count = CONF.limits.account_user_assign_group
+        if ref.get('extra') is not None and 'account_user_assign_group' in ref.get('extra'):
+            count = int(ref.get('extra').get('account_user_assign_group'))
+        return count
+
+    @MEMOIZE
+    def get_account_user_attach_policy_limit(self, account_id):
+        ref = self.driver.get_account(account_id)
+        count = CONF.limits.account_user_attach_policy
+        if ref.get('extra') is not None and 'account_user_attach_policy' in ref.get('extra'):
+            count = int(ref.get('extra').get('account_user_attach_policy'))
+        return count
+
+    @MEMOIZE
+    def get_account_group_attach_policy_limit(self, account_id):
+        ref = self.driver.get_account(account_id)
+        count = CONF.limits.account_group_attach_policy
+        if ref.get('extra') is not None and 'account_group_attach_policy' in ref.get('extra'):
+            count = int(ref.get('extra').get('account_group_attach_policy'))
+        return count
+
+    @MEMOIZE
     def get_account_by_name(self, account_name):
         return self.driver.get_account_by_name(account_name)
 
@@ -404,6 +460,15 @@ class Manager(manager.Manager):
         :type account_id: string
         """
         pass
+
+    def update_account_csa(self, account_id, service, initiator=None):
+        original_account = self.driver.get_account(account_id)
+        account = dict()
+        account['type'] = 'csa'
+        account['csa_service']= service
+        ret = self.driver.update_account(account_id, account)
+        notifications.Audit.updated(self._ACCOUNT, account_id, initiator)
+        return ret
 
     def update_account_type(self, account_id, account_type, initiator=None):
         original_account = self.driver.get_account(account_id)
@@ -469,6 +534,9 @@ class Manager(manager.Manager):
 
     def is_customer_account(self, account_id):
         return self.driver.is_customer_account(account_id)
+
+    def is_iam_customer_service_account(self, account_id):
+        return self.driver.is_iam_customer_service_account(account_id)
 
     def _delete_account_contents(self, account_id):
         """Delete the contents of a account.

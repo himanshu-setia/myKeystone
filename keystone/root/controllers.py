@@ -61,7 +61,7 @@ class RootV3(controller.V3Controller):
                 context['environment']['KEYSTONE_AUTH_CONTEXT']['account_id'] = query_string['AccountId']
 
         user_controller = identity.controllers.UserV3()
-               
+
         if Action == 'CreateUser':
             user = {}
             if 'Email' in query_string:
@@ -123,7 +123,7 @@ class RootV3(controller.V3Controller):
 
         elif Action == 'ListGroups':
             return group_controller.list_groups(context)
-          
+
         elif Action == 'UpdateGroup':
             group = {}
             if 'Description' in query_string:
@@ -242,11 +242,28 @@ class RootV3(controller.V3Controller):
             account['password'] = query_string['Password']
             account['type'] = query_string['AccountType']
             return account_controller.create_console_account(context, account)
+        elif Action == "UpdateAccount":
+            account= {}
+            if 'AccountUsersLimit' in query_string:
+                account['account_users'] = query_string['AccountUsersLimit']
+            if 'AccountGroupsLimit' in query_string:
+                account['account_groups'] = query_string['AccountGroupsLimit']
+            if 'AccountPoliciesLimit' in query_string:
+                account['account_policies'] = query_string['AccountPoliciesLimit']
+            if 'AccountGroupUsersLimit' in query_string:
+                account['account_group_users'] = query_string['AccountGroupUsersLimit']
+            if 'AccountUserAssignGroupLimit' in query_string:
+                account['account_user_assign_group'] = query_string['AccountUserAssignGroupLimit']
+            if 'AccountUserAttachPolicyLimit' in query_string:
+                account['account_user_attach_policy'] = query_string['AccountUserAttachPolicyLimit']
+            if 'AccountGroupAttachPolicyLimit' in query_string:
+                account['account_group_attach_policy'] = query_string['AccountGroupAttachPolicyLimit']
+            return account_controller.update_account(context, query_string['Id'], account)
 
         elif Action == "DeleteAccount":
             account_id = query_string['AccountId']
             return account_controller.delete_account(context, account_id)
- 
+
         elif Action == 'CreateResourceBasedPolicy':
             policy_document = json.loads(query_string['PolicyDocument'])
             return jio_policy_controller.create_resource_based_policy(context, policy_document)
@@ -264,7 +281,7 @@ class RootV3(controller.V3Controller):
             return jio_policy_controller.get_resource_based_policy(context, jio_policy_id)
         elif Action == 'GetResourceBasedPolicySummary':
             jio_policy_id = query_string['Id']
-            return jio_policy_controller.get_resource_based_policy_summary(context, jio_policy_id)        
+            return jio_policy_controller.get_resource_based_policy_summary(context, jio_policy_id)
         elif Action == 'AttachPolicyToResource':
             jio_policy_id = query_string['PolicyId']
             resource = json.loads(query_string['Resource'])
@@ -272,6 +289,6 @@ class RootV3(controller.V3Controller):
         elif Action == 'DetachPolicyFromResource':
             jio_policy_id = query_string['PolicyId']
             resource = json.loads(query_string['Resource'])
-            return jio_policy_controller.detach_policy_from_resource(context, jio_policy_id, resource['resource'])        
+            return jio_policy_controller.detach_policy_from_resource(context, jio_policy_id, resource['resource'])
 
         raise exception.ActionNotFound(action = Action)

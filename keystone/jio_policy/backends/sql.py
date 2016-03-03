@@ -459,6 +459,27 @@ class Policy(jio_policy.Driver):
         ret['attachment_count'] = int(attachment_count)
         return ret
 
+    def get_policies_count_in_account(self, account_id):
+        session = sql.get_session()
+        count = session.query(JioPolicyModel).filter_by(account_id=account_id).count()
+        return count
+
+    #Function returns policy count for user in account
+    def get_user_attach_policy_count_in_account(self, user_id):
+        session = sql.get_session()
+        query = session.query(PolicyUserGroupModel)
+        query = query.filter(PolicyUserGroupModel.user_group_id == user_id)
+        query = query.filter(PolicyUserGroupModel.type == 'UserPolicy')
+        return query.count()
+
+    def get_group_attach_policy_count_in_account(self, group_id):
+        session = sql.get_session()
+        query = session.query(PolicyUserGroupModel)
+        query = query.filter(PolicyUserGroupModel.user_group_id == group_id)
+        query = query.filter(PolicyUserGroupModel.type == 'GroupPolicy')
+        count = query.count()
+        return count
+
     def get_resource_based_policy(self, policy_id):
         session = sql.get_session()
         ref = session.query(JioPolicyModel).get(policy_id)

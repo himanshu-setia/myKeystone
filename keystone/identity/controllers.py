@@ -256,9 +256,19 @@ class UserV3(controller.V3Controller):
         self._require_attribute(user, 'name')
         expiry_days = CONF.password_policy.expiry_days
         user['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
-         #The manager layer will generate the unique ID for users
+        #The manager layer will generate the unique ID for users
         ref = self._normalize_dict(user)
         ref = self._normalize_account_id(context, ref)
+        if 'account_id' not in ref or ref.get('account_id') is None:
+            LOG.error('account_id not in context')
+            raise exception.ValidationError(target='user and context',
+                                            attribute='account_id',
+                                            message='account_id missing from user and context.')
+        account_id = ref.get('account_id')
+        account_users_limit = self.resource_api.get_account_users_limit(account_id)
+        account_user_cnt = self.identity_api.get_users_count_in_account(account_id)
+        if account_user_cnt >= account_users_limit:
+            raise exception.Forbidden('Maximum limit reached for number of users in the account. Only %s users are permitted'%account_users_limit)
         initiator = notifications._get_request_audit_info(context)
         password = user.get('password')
         if password is not None:
@@ -281,7 +291,7 @@ class UserV3(controller.V3Controller):
         refs = self.identity_api.list_users(account_id,
             account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
-        
+
         new_refs = self.updated_ref_list(refs)
         return UserV3.wrap_collection(context, new_refs, hints=hints)
 
@@ -306,12 +316,12 @@ class UserV3(controller.V3Controller):
         if 'password' in user:
             password = user.get('password')
             if password is None:
-               raise exception.ValidationError(target='user', 
+               raise exception.ValidationError(target='user',
                             attribute='password')
             if not self.checkPasswordPolicy(password):
                 raise exception.ValidationError(target='user',
                                  attribute='password',
-                                 message=CONF.password_policy.error_message) 
+                                 message=CONF.password_policy.error_message)
             if self.match_previous_passwords(user_id, password):
                 raise exception.ValidationError(target='user',
                                              attribute='password',
@@ -326,6 +336,22 @@ class UserV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args=['User','Group'])
     def add_user_to_group(self, context, user_id, group_id):
+        group_ref = self.identity_api.get_group(group_id)
+        group_account_id = group_ref.get('account_id')
+        account_group_users_limit = self.resource_api.get_account_group_users_limit(group_account_id)
+        account_group_users_cnt = self.identity_api.get_group_users_count_in_account(group_id)
+        if account_group_users_cnt >= account_group_users_limit:
+            raise exception.Forbidden(
+                'Maximum limit reached for number of users in the group. Only %s users are permitted'
+                %account_group_users_limit)
+        ref = self.identity_api.get_user(user_id)
+        account_id = ref.get('account_id')
+        account_user_assign_group_limit = self.resource_api.get_account_user_assign_group_limit(account_id)
+        account_user_assign_group_cnt = self.identity_api.get_user_assign_group_count(user_id)
+        if account_user_assign_group_cnt >= account_user_assign_group_limit:
+            raise exception.Forbidden(
+                'Maximum limit reached for number of groups a user can be assigned to. Only %s groups are permitted'
+                %account_user_assign_group_limit)
         self.identity_api.add_user_to_group(user_id, group_id)
 
     @controller.jio_policy_filterprotected(args=['User','Group'])
@@ -419,6 +445,12 @@ class GroupV3(controller.V3Controller):
         # The manager layer will generate the unique ID for groups
         ref = self._normalize_dict(group)
         ref = self._normalize_account_id(context, ref)
+        account_id = ref.get('account_id')
+        account_groups_limit = self.resource_api.get_account_groups_limit(account_id)
+        account_groups_cnt = self.identity_api.get_groups_count_in_account(account_id)
+        if account_groups_cnt >= account_groups_limit:
+            raise exception.Forbidden('Maximum limit reached for number of groups in the account. Only %s groups are permitted'%account_groups_limit)
+
         initiator = notifications._get_request_audit_info(context)
         ref = self.identity_api.create_group(ref, initiator)
         return GroupV3.wrap_member(context, ref)
@@ -438,8 +470,8 @@ class GroupV3(controller.V3Controller):
         for indx,ref in enumerate(refs):
             groupid = ref['id']
             policies = self.jio_policy_api.get_group_policies(groupid)
-            if not policies: 
-                refs[indx]['Policies'] = '' 
+            if not policies:
+                refs[indx]['Policies'] = ''
             else:
                 refs[indx]['Policies'] = policies
 

@@ -150,6 +150,16 @@ class Manager(manager.Manager):
     def create_action_resource_type_mapping(self, action_name, resource_type_name, resource_type_service):
         return self.driver.create_action_resource_type_mapping(action_name, resource_type_name, resource_type_service)
 
+    def get_policies_count_in_account(self, account_id):
+        return self.driver.get_policies_count_in_account(account_id)
+
+    def get_user_attach_policy_count_in_account(self, user_id):
+        return self.driver.get_user_attach_policy_count_in_account(user_id)
+
+    def get_group_attach_policy_count_in_account(self, group_id):
+        return self.driver.get_group_attach_policy_count_in_account(group_id)
+
+
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
 
@@ -257,3 +267,25 @@ class Driver(object):
     @abc.abstractmethod
     def create_action_resource_type_mapping(self, action_name, resource_type_name):
         raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_policies_count_in_account(self, account_id):
+        """
+        Get policy count in the account
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_user_attach_policy_count_in_account(self, user_id):
+        """
+        get attached policy count for user
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_group_attach_policy_count_in_account(self, group_id):
+        """
+        get attached policy count for group
+        """
+        raise exception.NotImplemented()
+

@@ -815,6 +815,10 @@ class Manager(manager.Manager):
         return self._set_account_id_and_mapping(
             ref_list, account_scope, driver, mapping.EntityType.USER)
 
+    @MEMOIZE
+    def get_users_count_in_account(self, account_id):
+        driver = self._select_identity_driver(None)
+        return driver.get_users_count_in_account(account_id)
 
     @accounts_configured
     @exception_translated('group')
@@ -877,7 +881,7 @@ class Manager(manager.Manager):
 
         if user.get('password') is not None:
             self.update_user_history(old_user_ref.get('id'), old_user_ref.get('password'), CONF.password_policy.num_password_saved, True)
-        
+
         return self._set_account_id_and_mapping(
             ref, account_id, driver, mapping.EntityType.USER)
 
@@ -1128,6 +1132,19 @@ class Manager(manager.Manager):
         update_dict = {'password': new_password}
         self.update_user(user_id, update_dict)
 
+    @MEMOIZE
+    def get_groups_count_in_account(self, account_id):
+        driver = self._select_identity_driver(account_id)
+        return driver.get_groups_count_in_account(account_id)
+
+    def get_group_users_count_in_account(self, group_id):
+        driver = self._select_identity_driver(None)
+        return driver.get_group_users_count_in_account(group_id)
+
+    def get_user_assign_group_count(self, user_id):
+        driver = self._select_identity_driver(None)
+        return driver.get_user_assign_group_count(user_id)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -1184,6 +1201,14 @@ class Driver(object):
 
         """
         raise exception.NotImplemented()  # pragma: no cover
+
+    @abc.abstractmethod
+    def get_users_count_in_account(self, account_id):
+        """ Gets total user count
+
+            in an account
+        """
+        raise exception.NotImplemented()
 
     @abc.abstractmethod
     def list_users_in_group(self, group_id, hints):
@@ -1349,6 +1374,27 @@ class Driver(object):
 
         """
         raise exception.NotImplemented()  # pragma: no cover
+
+    @abc.abstractmethod
+    def get_groups_count_in_account(self, account_id):
+        """
+        Get the group count in account
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_group_users_count_in_account(self, group_id):
+        """
+        Get the user count in the group
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_user_assign_group_count(self, user_id):
+        """
+        Get the group count user is assigned to
+        """
+        raise exception.NotImplemented()
 
     # end of identity
 

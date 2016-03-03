@@ -150,6 +150,11 @@ class Identity(identity.Driver):
 
         return ref_list
 
+    def get_users_count_in_account(self, account_id):
+        session = sql.get_session()
+        count = session.query(User).filter_by(account_id = account_id).count()
+        return count
+
     def get_user_summary_for_group(self, group_id):
         session = sql.get_session()
         group = self._get_group(session,group_id)
@@ -316,6 +321,22 @@ class Identity(identity.Driver):
             session.add(UserGroupMembership(user_id=user_id,
                                             group_id=group_id))
 
+    def get_group_users_count_in_account(self, group_id):
+        session = sql.get_session()
+        self.get_group(group_id)
+        query = session.query(UserGroupMembership)
+        query = query.filter_by(group_id=group_id)
+        count = query.count()
+        return count
+
+    def get_user_assign_group_count(self, user_id):
+        session = sql.get_session()
+        self.get_user(user_id)
+        query = session.query(UserGroupMembership)
+        query = query.filter_by(user_id=user_id)
+        count = query.count()
+        return count
+
     def check_user_in_group(self, user_id, group_id):
         session = sql.get_session()
         self.get_group(group_id)
@@ -421,7 +442,7 @@ class Identity(identity.Driver):
         session = sql.get_session()
         query = session.query(Group).filter_by(account_id = account_id)
         refs = sql.filter_limit_query(Group, query, hints)
-	
+
         ref_list = []
         for ref in refs:
             dict = ref.to_dict()
@@ -429,7 +450,7 @@ class Identity(identity.Driver):
             ref_list.append(dict)
 
         return ref_list
-	
+
     def _get_group(self, session, group_id):
         ref = session.query(Group).get(group_id)
         if not ref:
@@ -439,6 +460,11 @@ class Identity(identity.Driver):
     def get_group(self, group_id):
         session = sql.get_session()
         return self._get_group(session, group_id).to_dict()
+
+    def get_groups_count_in_account(self, account_id):
+        session = sql.get_session()
+        count = session.query(Group).filter_by(account_id = account_id).count()
+        return count
 
     def get_group_by_name(self, group_name, account_id):
         session = sql.get_session()
