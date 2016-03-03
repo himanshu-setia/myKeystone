@@ -231,22 +231,24 @@ class UserV3(controller.V3Controller):
         return True
 
     def updated_ref_list(self,refs):
-        attrs_to_return = ['id', 'name', 'account_id', 'GroupCount', 'password', 'email', 'enabled', 'expiry']
+        attrs_to_return = ['id', 'name', 'account_id', 'GroupCount', 'password', 'email', 'enabled']
         ret = []
         for ref in refs:
             new_ref = {}
             for r in attrs_to_return:
                 if r in ref:
                     new_ref[r] = ref.get(r)
+            new_ref['password_expiry'] = ref.get('expiry')
             ret.append(new_ref)
         return ret
 
     def updated_ref(self,ref):
-        attrs_to_return = ['id', 'name', 'account_id', 'GroupCount', 'password', 'email', 'enabled', 'expiry']
+        attrs_to_return = ['id', 'name', 'account_id', 'GroupCount', 'password', 'email', 'enabled']
         new_ref = {}
         for r in attrs_to_return:
             if r in ref:
                 new_ref[r] = ref.get(r)
+            new_ref['password_expiry'] = ref.get('expiry')
         return new_ref
 
     @controller.jio_policy_filterprotected(args='User')
