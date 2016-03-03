@@ -418,8 +418,7 @@ class Auth(controller.V3Controller):
             # trusts and have successfully issued a token.
             if trust:
                 self.trust_api.consume_use(trust['id'])
-            response=dict(expires_at=token_data["token"]["expires_at"],
-                          user_id=token_data["token"]["user"]["id"])
+            response = self.format_auth_response(token_data)
             return render_token_data_response(token_id, response,
                                               created=True)
         except exception.TrustNotFound as e:

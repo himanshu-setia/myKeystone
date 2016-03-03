@@ -26,7 +26,6 @@ class Routers(wsgi.RoutersBase):
             mapper, auth_controller,
             path='/auth/tokens',
             get_action='validate_token',
-            head_action='check_token',
             post_action='authenticate_for_token',
             delete_action='revoke_token',
             rel=json_home.build_v3_resource_relation('auth_tokens'))
