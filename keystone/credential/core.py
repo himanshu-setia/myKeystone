@@ -53,6 +53,7 @@ class Manager(manager.Manager):
         ec2_credential_id = utils.hash_access_key(access)
         creds = self.driver.get_credential(ec2_credential_id)
         secret = creds['blob'].split('"')[7]
+        secret = str(secret)
         cipher = AES.new(secret, AES.MODE_ECB)
         decoded_password = cipher.decrypt(base64.b64decode(password))
         return decoded_password.strip()
