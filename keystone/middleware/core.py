@@ -377,7 +377,7 @@ class AuthContextMiddleware(wsgi.Middleware):
                 console_token_id = tokens[1]
                 try:
                     console_token_data=self.token_provider_api.validate_token(console_token_id)
-                    account_type = console_token_data['token']['account']['type']
+                    account_type = console_token_data['token']['user']['account']['type']
                     if account_type != 'console':
                         msg = _LW('Caller token is invalid')
                         raise exception.Forbidden(msg)
