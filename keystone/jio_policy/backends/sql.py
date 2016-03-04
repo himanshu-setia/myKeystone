@@ -644,18 +644,21 @@ class Policy(jio_policy.Driver):
     def get_user_policies(self,userid):
         session = sql.get_session()
 
-        group_query = session.query(JioPolicyModel.name,PolicyUserGroupModel)
+        group_query = session.query(JioPolicyModel,PolicyUserGroupModel)
         group_query = group_query.filter(PolicyUserGroupModel.policy_id==JioPolicyModel.id)
         group_query = group_query.filter(PolicyUserGroupModel.user_group_id==userid)
-        group_query = group_query.filter(PolicyUserGroupModel.type == 'UserPolicy').all()
+        group_query = group_query.filter(PolicyUserGroupModel.type == 'UserPolicy')
+        group_query = group_query.filter(JioPolicyModel.hidden != True).all()
         #if group_query.count() == 0:
           #  return
-
         if not group_query:
             return False
         policy_list = []
         for row in group_query:
-            policy_list.append(row.name)
+            policy = dict()
+            policy['policy_id'] = row[0].id
+            policy['policy_name'] = row[0].name
+            policy_list.append(policy)
 
         return policy_list
 
