@@ -288,26 +288,30 @@ def jio_policy_user_filterprotected(**params):
                 action = jio_namespace + jio_delimiter + action_default_service + jio_delimiter + action_name
                 project_id = auth_context.get('project_id')
                 resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
-                resource = resource_pre + project_id  + jio_delimiter
                 resources = []
                 #TODO(roopali): simplify and optimise.
                 if params and 'args' in params:
                     items = params.get('args')
-
                     if not isinstance(items, list):
                         items = items.split()
-
                     for item in items:
-                        resourceId=None
-                        resource_item = resource + item + jio_delimiter
+                        UserId=None
+                        resource_type = item
                         if not isinstance(params.get('args'), list):
                             item = res_postfix
                         else:
                             item = item + res_postfix
                         if item in context['query_string']:
-                            resourceId= context['query_string'][item]
-                        if resourceId is not None:
-                            resources.append(resource_item + resourceId)
+                            UserId= context['query_string'][item]
+                            entity = self.identity_api.get_user(UserId)
+                            account_id = entity['account_id']
+                        else:
+                            account_id = project_id
+                        resource = resource_pre + account_id + jio_delimiter
+                        resource_item = resource + resource_type + jio_delimiter
+
+                        if UserId is not None:
+                            resources.append(resource_item + UserId)
                         else:
                             resources.append(resource_item)
                 else:
@@ -333,6 +337,20 @@ def jio_policy_user_filterprotected(**params):
     return _filterprotected
 
 def jio_policy_filterprotected(**params):
+    def get_account_id(self,resource_type,resource_id,action):
+        entity = {}
+        if action in ['DeleteCredential']: 
+            entity = self.credential_api.get_credential(resource_id)
+            return entity['project_id']
+        elif resource_type == 'User':
+            entity = self.identity_api.get_user(resource_id)
+            return entity['account_id']
+        elif resource_type == 'Group':
+            entity = self.identity_api.get_group(resource_id)
+            return entity['account_id']
+        elif resource_type == 'Policy':
+            return self.jio_policy_api._get_policy_account(resource_id)
+
     def _filterprotected(f):
         @functools.wraps(f)
         def wrapper(self, context, *args, **kwargs):
@@ -345,26 +363,29 @@ def jio_policy_filterprotected(**params):
             user_id = auth_context.get('user_id')
             project_id = auth_context.get('project_id')
             resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
-            resource = resource_pre + project_id + jio_delimiter
             resources = []
             #TODO(roopali): simplify and optimise.
             #if params and 'resource' in params:
             #    resource = resource_pre + params.get('resource')
             if params and 'args' in params:
                 items = params.get('args')
-
                 if not isinstance(items, list):
                     items = items.split()
-
                 for item in items:
                     resourceId=None
-                    resource_item = resource + item + jio_delimiter
+                    resource_type = item
                     if not isinstance(params.get('args'), list):
                         item = res_postfix
                     else:
                         item = item + res_postfix
                     if item in context['query_string']:
                         resourceId= context['query_string'][item]
+                        account_id = get_account_id(self,resource_type,resourceId, action_name)
+                    else:
+                        account_id = project_id
+                    resource = resource_pre + account_id + jio_delimiter
+                    resource_item = resource + resource_type + jio_delimiter
+                    
                     if resourceId is not None:
                         resources.append(resource_item + resourceId)
                     else:
@@ -609,7 +630,7 @@ class V2Controller(wsgi.Application):
         return o
 
 
-@dependency.requires('policy_api', 'token_provider_api', 'jio_policy_api', 'resource_api')
+@dependency.requires('policy_api', 'token_provider_api', 'jio_policy_api', 'identity_api','credential_api', 'resource_api')
 class V3Controller(wsgi.Application):
     """Base controller class for Identity API v3.
 

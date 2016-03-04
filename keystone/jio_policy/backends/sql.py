@@ -409,6 +409,14 @@ class Policy(jio_policy.Driver):
 
         return query.count()
 
+    def _get_policy_account(session, policy_id):
+        session = sql.get_session()
+        """Private method to get a policy model object (NOT a dictionary)."""
+        ref = session.query(JioPolicyModel).get(policy_id)
+        if not ref:
+            raise exception.PolicyNotFound(policy_id=policy_id)
+        return ref.account_id
+
     def _get_policy(self, session, policy_id):
         """Private method to get a policy model object (NOT a dictionary)."""
         ref = session.query(JioPolicyModel).get(policy_id)

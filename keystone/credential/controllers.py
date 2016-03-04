@@ -78,7 +78,7 @@ class CredentialV3(controller.V3Controller):
             user_id)
         return len(credential_refs)
 
-    @controller.jio_policy_filterprotected(args='Credential')
+    @controller.jio_policy_filterprotected(args=['User'])
     @validation.validated(schema.credential_create, 'credential')
     def create_credential(self, context, credential):
         if 'user_id' not in credential:
@@ -127,7 +127,7 @@ class CredentialV3(controller.V3Controller):
         else:
             return ref
 
-    @controller.jio_policy_filterprotected(args='Credential',filters=['UserId'])
+    @controller.jio_policy_filterprotected(args='User',filters=['UserId'])
     def list_credentials(self, context, filters):
         hints = CredentialV3.build_driver_hints(context, filters)
         refs = self.credential_api.list_credentials(hints)
@@ -137,7 +137,7 @@ class CredentialV3(controller.V3Controller):
         return CredentialV3.wrap_collection(context, ret_refs,
                                             hints=hints)
 
-    @controller.jio_policy_filterprotected(args='Credential')
+    @controller.jio_policy_filterprotected(args=['User'])
     def get_user_credentials(self, context, user_id):
         if user_id is None:
             user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
@@ -148,13 +148,13 @@ class CredentialV3(controller.V3Controller):
             self._improve_response(ref)
         return CredentialV3.wrap_collection(context, ret_refs)
 
-    @controller.jio_policy_user_filterprotected(args='Credential')
+    @controller.jio_policy_user_filterprotected(args='User')
     def get_credential(self, context, credential_id):
         ref = self.credential_api.get_credential(credential_id)
         ret_ref = self._blob_to_json(ref)
         self._improve_response(ref)
         return CredentialV3.wrap_member(context, ret_ref)
 
-    @controller.jio_policy_filterprotected(args='Credential')
+    @controller.jio_policy_filterprotected(args='User')
     def delete_credential(self, context, credential_id):
         return self.credential_api.delete_credential(credential_id)
