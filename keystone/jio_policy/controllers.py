@@ -149,9 +149,9 @@ class JioPolicyV3(controller.V3Controller):
         for ref in sum_list:
 	    
             if ref['Type'] == 'UserPolicy':
-                ref['Entity Name'] = (self.identity_api.get_user(ref['Entity Name']))['name']
+                ref['user_name'] = (self.identity_api.get_user(ref['Id']))['name']
             else:
-                ref['Entity Name'] = (self.identity_api.get_group(ref['Entity Name']))['name']
+                ref['group_name'] = (self.identity_api.get_group(ref['Id']))['name']
 
         return refs
 

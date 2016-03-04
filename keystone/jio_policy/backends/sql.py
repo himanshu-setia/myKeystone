@@ -1035,7 +1035,7 @@ class Policy(jio_policy.Driver):
         sum_list = []
         for row in query:
             dict = {}
-            dict['Entity Name'] = row.user_group_id
+            dict['Id'] = row.user_group_id
             dict['Type'] = row.type
             sum_list.append(dict)
 
