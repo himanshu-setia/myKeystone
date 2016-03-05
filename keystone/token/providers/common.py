@@ -458,6 +458,9 @@ class V3TokenDataHelper(object):
         self._populate_audit_info(token_data, audit_info)
         self._populate_token_dates(token_data, expires=expires, trust=trust,
                                    issued_at=issued_at)
+        if 'user' in token_data and 'account' not in token_data:
+            token_data['account'] = token_data['user']['account']
+        LOG.debug('token_data: %s', token_data)
         return {'token': token_data}
 
 
