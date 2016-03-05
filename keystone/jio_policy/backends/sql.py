@@ -125,6 +125,14 @@ class Policy(jio_policy.Driver):
         return ls[2]
 
     @classmethod
+    def _get_action_service_name(cls, action_name):
+        ls = action_name.split(':')
+        if len(ls) < 3:
+            raise exception.ValidationError(attribute='service name',
+                                            target='action')
+        return ls[2]
+
+    @classmethod
     def _get_resource_type(cls, resource):
         ls = resource.split(':')
         if len(ls) < 5:
@@ -190,16 +198,19 @@ class Policy(jio_policy.Driver):
                 resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                 try:
                     zip_resource = zip(resource_ids, resource)
-                    is_cross_account_access = False
 
                     #For RBP,same resource will be used in UBP, so these resources will be
                     #redundant, need to remove them
                     for pair in zip_resource:
-                            session.add(ResourceModel(id=pair[0], name=pair[1],
+                        resource = pair[1].split(':')
+                        resource[3] = account_id
+                        res_name = ':'.join(resource) 
+                        session.add(ResourceModel(id=pair[0], name=res_name,
                                     service_type=Policy._get_service_name(
                                         pair[1])))
 
                     for pair in itertools.product(action, zip_resource):
+                        is_cross_account_access = False
                         resource = Policy._get_resource_list(pair[1][1])
                         res_acc_id = resource[3]
 
@@ -244,10 +255,7 @@ class Policy(jio_policy.Driver):
                              raise exception.ValidationError(
                                      attribute='valid resource type', target='resource')
 
-                        if is_cross_account_access:
-                            resource_id = resource_ids[0]
-                        else:
-                            resource_id = pair[1][0]
+                        resource_id = pair[1][0]
 
                         session.add(
                             PolicyActionResourceModel(
@@ -297,7 +305,11 @@ class Policy(jio_policy.Driver):
                 try:
 
                     for pair in itertools.product(action, principle):
-
+                        action_service_name = self._get_action_service_name(pair[0])
+                        if action_service_name != 'dss':
+                             raise exception.ValidationError(
+                                     attribute='valid service name', target='action')
+                        
                         action_id = session.query(ActionModel).filter_by(
                                 action_name=pair[0]).with_entities(
                                         ActionModel.id).one()[0]
@@ -558,6 +570,11 @@ class Policy(jio_policy.Driver):
                     try:
 
                         for pair in itertools.product(action, principle):
+                            action_service_name = self._get_action_service_name(pair[0])
+                            if action_service_name != 'dss':
+                               raise exception.ValidationError(
+                                     attribute='valid service name', target='action')
+                        
                             #check if action is allowed in resource type
                             action_id = session.query(ActionModel).filter_by(
                                     action_name=pair[0]).with_entities(
@@ -974,6 +991,7 @@ class Policy(jio_policy.Driver):
 
                 for pair in itertools.product(actions, zip_resource):
                     #check if action is allowed in resource type
+
                     resource_type = Policy._get_resource_type(pair[1][1])
                     if resource_type is not None and resource_type is not '*' and self.is_action_resource_type_allowed(session, pair[0], resource_type) is False:
                         raise exception.ValidationError(
@@ -982,6 +1000,11 @@ class Policy(jio_policy.Driver):
                 for pair in zip_resource:
                     resource = Policy._get_resource_list(pair[1])
                     res_acc_id = resource[3]
+                    resource_service_name = resource[2]
+
+                    if resource_service_name != 'dss':
+                        raise exception.ValidationError(
+                            attribute='valid service name', target='resource')
 
                     if res_acc_id != account_id:
                         raise exception.ValidationError(
