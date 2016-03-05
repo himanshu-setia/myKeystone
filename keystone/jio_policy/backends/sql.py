@@ -317,8 +317,9 @@ class Policy(jio_policy.Driver):
                         self.resource_api.get_account(principle_acc_id)
 
                         if principle_acc_id == account_id:
-                             raise exception.ValidationError(
-                                     attribute='valid account id', target='principle')
+                             msg = ('Cannot create Resource Based Policy for caller\'s account.'+\
+                             ' Resource based policies are only for cross account access')
+                             raise exception.ValidationError(message=msg)
 
                         if principle_type == 'User' and principle_id !='*':
                             user = self.identity_api.get_user(principle_id)
