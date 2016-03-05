@@ -52,6 +52,9 @@ class Manager(manager.Manager):
     def decrypt_password_in_context(self, access, password):
         ec2_credential_id = utils.hash_access_key(access)
         creds = self.driver.get_credential(ec2_credential_id)
+        if creds is None:
+            msg = 'Could not find access key: %s' % access
+            raise exception.CredentialNotFound(msg)
         secret = creds['blob'].split('"')[7]
         secret = str(secret)
         cipher = AES.new(secret, AES.MODE_ECB)

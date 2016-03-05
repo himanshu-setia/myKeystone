@@ -57,13 +57,15 @@ class Credential(credential.Driver):
 
     def _get_credential(self, session, credential_id):
         ref = session.query(CredentialModel).get(credential_id)
-        if ref is None:
-            raise exception.CredentialNotFound(credential_id=credential_id)
         return ref
 
     def get_credential(self, credential_id):
         session = sql.get_session()
-        return self._get_credential(session, credential_id).to_dict()
+        ref =  self._get_credential(session, credential_id)
+        if ref is None:
+            return None
+        else:
+            return ref.to_dict()
 
     @sql.handle_conflicts(conflict_type='credential')
     def update_credential(self, credential_id, credential):
@@ -85,6 +87,8 @@ class Credential(credential.Driver):
 
         with session.begin():
             ref = self._get_credential(session, credential_id)
+            if ref is None:
+                raise exception.CredentialNotFound(credential_id=credential_id) 
             session.delete(ref)
 
     def delete_credentials_for_project(self, project_id):
