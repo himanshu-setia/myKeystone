@@ -285,7 +285,7 @@ class UserV3(controller.V3Controller):
         new_refs = self.updated_ref_list(refs)
         return UserV3.wrap_collection(context, new_refs, hints=hints)
 
-    @controller.jio_policy_filterprotected(args=['Group'], filters=['account_id', 'enabled', 'name'])
+    @controller.jio_policy_filterprotected(args='Group', filters=['account_id', 'enabled', 'name'])
     def list_users_in_group(self, context, filters, group_id):
         hints = UserV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_users_in_group(group_id, hints=hints)

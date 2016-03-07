@@ -126,7 +126,7 @@ class JioPolicyV3(controller.V3Controller):
         return self.jio_policy_api.detach_policy_from_group(jio_policy_id,
                                                             group_id)
 
-    @controller.jio_policy_filterprotected(args=['Policy','Resource'])
+    @controller.jio_policy_filterprotected(args=['Policy'])
     def attach_policy_to_resource(self, context, jio_policy_id, resource):
         try:
             account_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
@@ -136,7 +136,7 @@ class JioPolicyV3(controller.V3Controller):
         return self.jio_policy_api.attach_policy_to_resource(jio_policy_id, account_id,
                                                          resource)
 
-    @controller.jio_policy_filterprotected(args=['Policy','Resource'])
+    @controller.jio_policy_filterprotected(args=['Policy'])
     def detach_policy_from_resource(self, context, jio_policy_id, resource):
         return self.jio_policy_api.detach_policy_from_resource(jio_policy_id,
                                                            resource)
