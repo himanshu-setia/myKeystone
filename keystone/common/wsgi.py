@@ -227,9 +227,19 @@ class Application(BaseApplication):
         # NOTE(morganfainberg): use the request method to normalize the
         # response code between GET and HEAD requests. The HTTP status should
         # be the same.
-        LOG.info('%(req_method)s %(uri)s', {
+        req_headers = 'EMPTY'
+        if 'openstack.context' in  req.environ and 'headers' in req.environ['openstack.context']:
+            req_headers = req.environ['openstack.context'].get('headers')
+
+        req_body = 'EMPTY'
+        if 'openstack.context' in  req.environ and 'environment' in req.environ['openstack.context'] and 'openstack.params' in req.environ['openstack.context']['environment']:
+            req_body = req.environ['openstack.context']['environment']['openstack.params']
+
+        LOG.info('%(req_method)s %(uri)s HEADERS: %(list_of_headers)s BODY: %(body)s', {
             'req_method': req.environ['REQUEST_METHOD'].upper(),
             'uri': wsgiref.util.request_uri(req.environ),
+            'list_of_headers': req_headers,
+            'body': req_body
         })
 
         params = self._normalize_dict(params)
