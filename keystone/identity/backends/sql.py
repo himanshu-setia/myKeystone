@@ -308,16 +308,11 @@ class Identity(identity.Driver):
                                             password=original_password,
                                             date=datetime.datetime.now()))
 
+    @sql.handle_conflicts(conflict_type='user & group mapping')
     def add_user_to_group(self, user_id, group_id):
         session = sql.get_session()
         self.get_group(group_id)
         self.get_user(user_id)
-        query = session.query(UserGroupMembership)
-        query = query.filter_by(user_id=user_id)
-        query = query.filter_by(group_id=group_id)
-        rv = query.first()
-        if rv:
-            return
 
         with session.begin():
             session.add(UserGroupMembership(user_id=user_id,
