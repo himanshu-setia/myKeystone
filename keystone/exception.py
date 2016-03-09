@@ -477,3 +477,8 @@ class OAuthHeadersMissingError(UnexpectedError):
 
 class PasswordExpired(ValidationError):
     message_format = _('User password has expired.')
+
+class QueryParameterNotFound(Error):
+    message_format = _("Expecting to find %(parameter)s in query string.")
+    code = 400
+    title = 'Bad Request'
