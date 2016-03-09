@@ -786,6 +786,7 @@ class Policy(jio_policy.Driver):
             raise exception.ActionNotFound(action=action)        
 
         action_generic = list()
+        action_generic.append(action)
         action_generic.append('jrn:jcs:*')
         if len(action.split(':')) > 3:
             action_generic.append('jrn:jcs:'+action.split(':')[2]+':*')
