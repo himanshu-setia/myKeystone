@@ -136,7 +136,9 @@ class Identity(identity.Driver):
     @sql.truncated
     def list_users(self, hints, account_id):
         session = sql.get_session()
-        query = session.query(User).filter_by(account_id = account_id)
+        query = session.query(User)
+        query = query.filter_by(account_id = account_id)
+        query = query.filter_by(type = 'regular')
         user_refs = sql.filter_limit_query(User, query, hints)
         ref_list = []
         for ref in user_refs:
