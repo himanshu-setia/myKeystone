@@ -131,6 +131,10 @@ class Identity(identity.Driver):
         with session.begin():
             user_ref = User.from_dict(user)
             session.add(user_ref)
+            if 'password' in user:
+                session.add(UserHistory(userid=user_ref['id'],
+                                        password=user['password'],
+                                        date=datetime.datetime.now()))
         return identity.filter_user(user_ref.to_dict())
 
     @sql.truncated
