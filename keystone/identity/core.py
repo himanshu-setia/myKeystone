@@ -879,7 +879,7 @@ class Manager(manager.Manager):
         if enabled_change or user.get('password') is not None:
             self.emit_invalidate_user_token_persistence(user_id)
 
-        if user.get('password') is not None:
+        if old_user_ref.get('password') is not None:
             self.update_user_history(old_user_ref.get('id'), old_user_ref.get('password'), CONF.password_policy.num_password_saved, True)
 
         return self._set_account_id_and_mapping(

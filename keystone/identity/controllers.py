@@ -254,8 +254,9 @@ class UserV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='User')
     def create_user(self, context, user):
         self._require_attribute(user, 'name')
-        expiry_days = CONF.password_policy.expiry_days
-        user['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
+        if 'password' in user:
+            expiry_days = CONF.password_policy.expiry_days
+            user['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
         #The manager layer will generate the unique ID for users
         ref = self._normalize_dict(user)
         ref = self._normalize_account_id(context, ref)
