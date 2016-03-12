@@ -790,7 +790,7 @@ def render_response(body=None, status=None, headers=None, method=None):
         resp.body = b''
         for header, value in six.iteritems(stored_headers):
             resp.headers[header] = value
-
+    LOG.info('RESPONSE STATUS: %s  HEADERS: %s   BODY: %s', resp._status, resp._headerlist, resp._app_iter)
     return resp
 
 
