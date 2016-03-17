@@ -22,6 +22,8 @@ import grp
 import hashlib
 import os
 import pwd
+from Crypto.Cipher import AES
+import base64
 
 from oslo_config import cfg
 from oslo_log import log
@@ -107,6 +109,24 @@ def verify_length_and_trunc_password(password):
             return password
     except TypeError:
         raise exception.ValidationError(attribute='string', target='password')
+
+
+def aes_encrypt(params, secret_key):
+    params = str(params)
+    secret_key = str(secret_key)
+    params_length = len(params)
+    params = params.rjust(((params_length/16)+1)*16)
+    cipher = AES.new(secret_key,AES.MODE_ECB)
+    encoded = base64.b64encode(cipher.encrypt(params))
+    return encoded
+
+
+def aes_decrypt(encoded, secret_key):
+    encoded = str(encoded)
+    secret_key = str(secret_key)
+    cipher = AES.new(secret_key, AES.MODE_ECB)
+    decoded = cipher.decrypt(base64.b64decode(encoded))
+    return decoded.strip()
 
 
 def hash_access_key(access):
