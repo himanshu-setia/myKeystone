@@ -31,7 +31,8 @@ from keystone.contrib import federation
 from keystone import exception
 from keystone.i18n import _, _LI, _LW
 from keystone.resource import controllers as resource_controllers
-
+import datetime as dtime
+from keystone.common import utils
 
 LOG = log.getLogger(__name__)
 
@@ -643,6 +644,47 @@ class Auth(controller.V3Controller):
         response = self.format_auth_response(token_data)
         return self.render_response(response ,context)
 
+    def create_pre_signed_url(self, context, **kwargs):
+        token_data = self.validate_token_data(context)
+        try:
+            action = kwargs['action']
+            resource = kwargs['resource']
+        except KeyError as e:
+            raise exception.ValidationError(attribute=e,
+                                               target="request body")
+
+        # only single values are allowed in action and resource
+        if isinstance(action, list) or isinstance(resource, list):
+            raise exception.ValidationError(attribute="single value",
+                                  target="action and resource")
+
+        # unit is assumed to be second. Default value 7days = 604800 seconds
+        duration = int(kwargs.get('duration', CONF.PresignedUrlKey.MaxPresignedUrlKeyExpiryTime))
+        if duration < 1 or duration > CONF.PresignedUrlKey.MaxPresignedUrlKeyExpiryTime:
+            raise exception.ValidationError(
+                        attribute="positive integer which doesn't exceed %s seconds"%CONF.PresignedUrlKey.MaxPresignedUrlKeyExpiryTime,
+                                   target="duration")
+        LOG.debug('create_pre_signed_url for action: %s, resource: %s, duration: %s', action, resource, duration)
+
+        auth_context = self.get_auth_context(context)
+        user_id = token_data["token"]["user"]["id"]
+        account_id = token_data["token"]["account"]["id"]
+
+        self._validate_token_with_action_resource(
+                            [action], [resource], user_id, account_id, [False], context)
+        expires_at = datetime.utcnow() + timedelta(seconds=duration)
+        method_names = ['token']
+        (token_id, token_data) = self.token_provider_api.issue_v3_token(
+            user_id, method_names, expires_at, account_id,
+            account_id, auth_context, None, None, None,
+            parent_audit_id=None)
+
+        result =  'Token=' + token_id + '&Action=' + action + '&Resource=' +resource
+        key = CONF.PresignedUrlKey.ActivePresignedUrlKey
+        encrypted_result = utils.aes_encrypt(result, key)
+        headers = [('X-Url-Token', encrypted_result)]
+        return wsgi.render_response(headers=headers)
+
     def _validate_cross_account_with_token(self, user_id, user_acc_id,
                                            resource, action, is_implicit_allow, context):
 
@@ -662,7 +704,7 @@ class Auth(controller.V3Controller):
         if not is_authorized:
             raise exception.Forbidden(
                     message='Policy does not allow to perform this action')
- 
+
     def validate_token_with_action_resource_post(self, context, **kwargs):
         if 'query_string' in context and context['query_string'] != {}:
             msg = _('query parameters not allowed in url')

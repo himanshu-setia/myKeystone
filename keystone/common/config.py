@@ -884,6 +884,14 @@ FILE_OPTIONS = {
                     help='Maximum policies allowed to be attached to a group.'),
 
     ],
+    'PresignedUrlKey': [
+        cfg.StrOpt('ActivePresignedUrlKey', default='c4e0572cedb611e59ce95e5517507c66',
+            help='The Active Presigned Url Key'),
+        cfg.StrOpt('PassivePresignedUrlKey', default='d4e0598eedb611e59ce95e5517507c67',
+            help='The Passive Presigned Url Key'),
+        cfg.IntOpt('MaxPresignedUrlKeyExpiryTime', default=604800,
+            help='Maximum presigned url expiry time (seconds)')
+    ],
     'actions': [
          cfg.ListOpt('default_actions', default=['CreateUser',
         'GetUser',

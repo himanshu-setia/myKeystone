@@ -366,7 +366,7 @@ class AuthContextMiddleware(wsgi.Middleware):
         if AUTH_TOKEN_HEADER in request.headers:
             composite_token = request.headers.get(AUTH_TOKEN_HEADER).strip()
             if len(composite_token) < 65:
-                if request.path != '/v3/token-auth' and request.path != '/v3/token-auth-ex' and request.path != '/token-auth' and request.path != '/token-auth-ex':
+                if request.path != '/v3/token-auth' and request.path != '/v3/token-auth-ex' and request.path != '/token-auth' and request.path != '/token-auth-ex' and request.path != '/v3/get-presigned-url-token' and request.path != '/get-presigned-url-token':
                     LOG.warning(_LW('RBAC: Invalid AUTH token. Size is less than 65.'))
                     raise exception.Unauthorized()
             else:
