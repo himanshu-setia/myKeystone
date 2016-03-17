@@ -255,6 +255,7 @@ class UserV3(controller.V3Controller):
     @validation.validated(schema.user_create, 'user')
     @controller.jio_policy_filterprotected(args='User')
     def create_user(self, context, user):
+        LOG.debug('Create user: %q', user)
         self._require_attribute(user, 'name')
         if 'password' in user:
             expiry_days = CONF.password_policy.expiry_days
@@ -291,6 +292,7 @@ class UserV3(controller.V3Controller):
                 'account_id']
         except KeyError:
             raise exception.Forbidden('Cannot find account_id in context.')
+        LOG.debug('List user for account : %s ', account_id)
         refs = self.identity_api.list_users(account_id,
             account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
@@ -302,6 +304,7 @@ class UserV3(controller.V3Controller):
     def list_users_in_group(self, context, filters, group_id):
         hints = UserV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_users_in_group(group_id, hints=hints)
+        LOG.debug('List user in group for group : %s ', group_id)
         new_refs = self.updated_ref_list(refs)
         return UserV3.wrap_collection(context, new_refs, hints=hints)
 
@@ -337,10 +340,12 @@ class UserV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='User')
     @validation.validated(schema.user_update, 'user')
     def update_user(self, context, user_id, user):
+        LOG.debug('Update user call for id: %s. Values: %s', user_id, user)
         return self._update_user(context, user_id, user)
 
     @controller.jio_policy_filterprotected(args=['User','Group'])
     def add_user_to_group(self, context, user_id, group_id):
+        LOG.debug('Add user %s to group %s', user_id, group_id)
         group_ref = self.identity_api.get_group(group_id)
         group_account_id = group_ref.get('account_id')
         account_group_users_limit = self.resource_api.get_account_group_users_limit(group_account_id)
@@ -361,15 +366,18 @@ class UserV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args=['User','Group'])
     def check_user_in_group(self, context, user_id, group_id):
+        LOG.debug('Check user %s in group %s', user_id, group_id)
         return self.identity_api.check_user_in_group(user_id, group_id)
 
     @controller.jio_policy_filterprotected(args=['User','Group'])
     def remove_user_from_group(self, context, user_id, group_id):
+        LOG.debug('Remove user %s from group %s', user_id, group_id)
         self.identity_api.remove_user_from_group(user_id, group_id)
 
     @controller.jio_policy_filterprotected(args='User')
     def delete_user(self, context, user_id):
         initiator = notifications._get_request_audit_info(context)
+        LOG.debug('Delete user %s.', user_id)
         return self.identity_api.delete_user(user_id, initiator)
 
     def match_previous_passwords(self, user_id, password):
@@ -383,6 +391,7 @@ class UserV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args='User')
     def get_user_summary(self, context, user_id):
+        LOG.debug('Get summary for user %s.', user_id)
         refs = self.identity_api.get_group_summary_for_user(user_id)
         policy_refs = self.jio_policy_api.get_user_policies(user_id)
 
@@ -406,6 +415,7 @@ class UserV3(controller.V3Controller):
 
     @controller.jio_policy_user_filterprotected(args='User')
     def change_password(self, context, user_id, user):
+        LOG.debug('Change Password for user %s', user_id)
         original_password = user.get('original_password')
         if original_password is None:
             raise exception.ValidationError(target='user',
@@ -446,6 +456,7 @@ class GroupV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='Group')
     @validation.validated(schema.group_create, 'group')
     def create_group(self, context, group):
+        LOG.debug('Create group. Values %s.', group)
         self._require_attribute(group, 'name')
 
         # The manager layer will generate the unique ID for groups
@@ -469,6 +480,7 @@ class GroupV3(controller.V3Controller):
                 'account_id']
         except KeyError:
             raise exception.Forbidden('Cannot find account_id in context.')
+        LOG.debug('List group for account %s.', account_id)
         refs = self.identity_api.list_groups(account_id,
             account_scope=self._get_account_id_for_list_request(context),
             hints=hints)
@@ -485,18 +497,21 @@ class GroupV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args='User',filters=['name'])
     def list_groups_for_user(self, context, filters, user_id):
+        LOG.debug('List groups for user %s.', user_id)
         hints = GroupV3.build_driver_hints(context, filters)
         refs = self.identity_api.list_groups_for_user(user_id, hints=hints)
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
     @controller.jio_policy_filterprotected(args='Group')
     def get_group(self, context, group_id):
+        LOG.debug('Get group details for %s.', group_id)
         ref = self.identity_api.get_group(group_id)
         return GroupV3.wrap_member(context, ref)
 
     @controller.jio_policy_filterprotected(args='Group')
     @validation.validated(schema.group_update, 'group')
     def update_group(self, context, group_id, group):
+        LOG.debug('Update group %s', group_id)
         self._require_matching_id(group_id, group)
         self._require_matching_account_id(
             group_id, group, self.identity_api.get_group)
@@ -506,11 +521,13 @@ class GroupV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args='Group')
     def delete_group(self, context, group_id):
+        LOG.debug('Delete group %s', group_id)
         initiator = notifications._get_request_audit_info(context)
         self.identity_api.delete_group(group_id, initiator)
 
     @controller.jio_policy_filterprotected(args='Group')
     def get_group_summary(self, context, group_id):
+        LOG.debug('Group summary for group %s', group_id)
         refs = self.identity_api.get_user_summary_for_group(group_id)
         policy_refs = self.jio_policy_api.get_group_policies(group_id)
 
@@ -520,4 +537,3 @@ class GroupV3(controller.V3Controller):
             refs['policies'] = policy_refs
 
         return refs
-

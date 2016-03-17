@@ -126,7 +126,7 @@ class AccountV3(controller.V3Controller):
         self.get_member_from_driver = self.resource_api.get_account
 
     def attach_root_policy(self, user_id, account_id):
-        # For root user, account id is same as user id
+        LOG.debug('attaching root policy for user: %s of account:%s', user_id, account_id)
         resource = root_resource + account_id +':*'
         jio_policy = dict()
         jio_policy['id'] = uuid.uuid4().hex
@@ -170,13 +170,16 @@ class AccountV3(controller.V3Controller):
     @controller.console_protected()
     @validation.validated(schema.account_create, 'account')
     def create_customer_account(self, context, account):
+        LOG.debug('Parameters for create customer account:  %s', account)
         ref, user_id = self.create_account(context, account)
         return AccountV3.wrap_member(context, ref)
 
     @controller.isa_protected_for_create_console_acc()
     @validation.validated(schema.account_create, 'account')
     def create_console_account(self, context, account):
+        LOG.debug('Parameters for create console account:  %s', account)
         ref, user_id = self.create_account(context, account)
+        LOG.debug('Root user id  for console: %s', user_id)
         #create credentials for the root user.
         blob = {'access': uuid.uuid4().hex,
                 'secret': uuid.uuid4().hex }
@@ -191,14 +194,19 @@ class AccountV3(controller.V3Controller):
         ref['credentials'] = cred_ref.get('blob')
         return AccountV3.wrap_member(context, ref)
 
+    #Controller function to update a normal account to a service account.
+    #This can be called only by iam special account
     @controller.isa_protected()
     def update_service_account(self, context, services, account_id, user_ids=None):
+        LOG.debug('Update to customer service account(%s) request for account: %s.', services, account_id)
         if account_id is None:
             msg = 'Cannot upgrade without account id'
+            raise exception.ValidationError(msg)
         if not isinstance(services, list):
             services = services.split()
 
         if user_ids == None:
+        #(roopali): if user_ids are not present. Attach service policy to root user
             user_ids = []
             user = self.identity_api.get_root_user(account_id)
             user_ids.append(user.get('id'))
@@ -211,6 +219,8 @@ class AccountV3(controller.V3Controller):
 
         jio_policy = dict()
         jio_policy['id'] = uuid.uuid4().hex
+        #(roopali): Get the 12 digit of account id and form a policy name from it.
+        # This will make us escape 64 character length validation on policy
         account_id_len = len(account_id)
         if account_id_len > 12:
             len_to_trunc = account_id_len-12
@@ -223,6 +233,7 @@ class AccountV3(controller.V3Controller):
         statement['effect'] = 'allow'
         jio_policy['statement'] = [statement]
         policy = self.jio_policy_api.create_policy(account_id, jio_policy.get('id'), jio_policy, True, True)
+        LOG.debug('Root policy created. %s'%policy)
         for id in user_ids:
             self.jio_policy_api.attach_policy_to_user(policy.get('id'), id)
         return self.resource_api.update_account_csa(account_id, services)
@@ -237,9 +248,12 @@ class AccountV3(controller.V3Controller):
         ref = self.resource_api.get_account(account_id)
         return AccountV3.wrap_member(context, ref)
 
+    # update account can be called only by iam customer care accounts.
+    # Function enables csa to update limits for the account.
     @controller.iam_csa_protected()
     @validation.validated(schema.account_update, 'account')
     def update_account(self, context, account_id, account):
+        LOG.debug('Update account called for id: %s, parameters: %s.', account_id, account)
         self._require_matching_id(account_id, account)
         initiator = notifications._get_request_audit_info(context)
         ref = self.resource_api.update_account(account_id, account, initiator)
@@ -247,6 +261,7 @@ class AccountV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args='Account')
     def delete_account(self, context, account_id):
+        LOG.debug('Delete account called for id: %s.', account_id)
         initiator = notifications._get_request_audit_info(context)
         return self.resource_api.delete_account(account_id, initiator)
 

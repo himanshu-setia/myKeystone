@@ -35,18 +35,19 @@ LOG = log.getLogger(__name__)
 class RootV3(controller.V3Controller):
 
     def genericmapper(self, context):
-
         query_string = context.get('query_string', None)
         try:
             Action = query_string['Action']
         except KeyError, e:
             raise exception.QueryParameterNotFound(parameter=e)
 
+        LOG.debug("Action:%s"%Action)
         if 'console_token_id' in context and context['console_token_id'] != None:
             if 'Password' in query_string:
                 if 'AccessKey' in query_string:
                     password = query_string['Password']
                     access = query_string['AccessKey']
+                    LOG.debug("Api call from console with password: %s and acess key %s.", password, access)
                     query_string['Password'] = self.credential_api.decrypt_password_in_context(access, password)
                     if 'OldPassword' in query_string:
                         query_string['OldPassword'] = self.credential_api.decrypt_password_in_context(access,
@@ -56,13 +57,14 @@ class RootV3(controller.V3Controller):
                     raise exception.ValidationError(msg)
 
         if 'RequestAccType' in query_string and query_string['RequestAccType'] == 'service':
+            LOG.debug("Service account request.")
             # (roopali) This is a iam service account request. context's account needs to be replaced with the parameter accountid
-            if 'AccountId' not in query_string:
-                exception.ValidationError(attribute='Pass AccountId in query.', target='AccountId')
             # check if account is service account
             account_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['account_id']
             if self.resource_api.is_service_account(account_id):
-                LOG.warning(_LW('user belongs to a service account'))
+                if 'AccountId' not in query_string:
+                    exception.ValidationError(attribute='Pass AccountId in query.', target='AccountId')
+                LOG.warning(_LW('Customer Service Account request. User belongs to a service account. Calling for account: %s')%query_string['AccountId'])
                 context['environment']['KEYSTONE_AUTH_CONTEXT']['account_id'] = query_string['AccountId']
 
         account_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['account_id']

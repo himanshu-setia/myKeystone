@@ -24,7 +24,8 @@ from keystone.common import utils
 from keystone.credential import schema
 from keystone import exception
 from keystone.i18n import _
-
+from oslo_log import log
+LOG = log.getLogger(__name__)
 
 @dependency.requires('credential_api','identity_api')
 class CredentialV3(controller.V3Controller):
@@ -88,6 +89,7 @@ class CredentialV3(controller.V3Controller):
             user_id = credential['user_id']
             user_ref = self.identity_api.get_user(user_id)
             account_id = user_ref['account_id']
+        LOG.debug('Create credential for user_id : %s.', user_id)
         count = self._get_credentials_count(user_id)
         if count >= 2:
             e = "Not allowed to create more than two access-secret pairs."
@@ -101,11 +103,9 @@ class CredentialV3(controller.V3Controller):
                     'blob': jsonutils.dumps(blob),
                     'id': credential_id,
                     'type': 'ec2'}
-
         self.credential_api.create_credential(credential_id, cred_ref)
         self._improve_response(cred_ref)
         return cred_ref
-
 
     @staticmethod
     def _blob_to_json(ref):
@@ -142,6 +142,7 @@ class CredentialV3(controller.V3Controller):
         user_id = credential['user_id']
         if user_id is None:
             user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
+        LOG.debug('Get user credential for user_id : %s.', user_id)
         refs = self.credential_api.list_credentials_for_user(
                      user_id)
         ret_refs = [self._blob_to_json(r) for r in refs]
@@ -158,4 +159,5 @@ class CredentialV3(controller.V3Controller):
 
     @controller.jio_policy_filterprotected(args='User')
     def delete_credential(self, context, credential):
-        return self.credential_api.delete_credential(credential['id'])
+        LOG.debug('Delete credential for credential_id : %s.', credential['id'])
+        return self.credential_api.delete_credential(credential['id']) 
