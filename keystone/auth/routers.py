@@ -50,6 +50,12 @@ class Routers(wsgi.RoutersBase):
 
         self._add_resource(
             mapper, auth_controller,
+            path='/url-auth',
+            post_action='validate_url_with_action_resource_post',
+            rel=json_home.build_v3_resource_relation('url-auth'))
+
+        self._add_resource(
+            mapper, auth_controller,
             path='/auth/tokens/OS-PKI/revoked',
             get_action='revocation_list',
             rel=json_home.build_v3_extension_resource_relation(

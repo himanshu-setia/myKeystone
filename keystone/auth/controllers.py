@@ -14,7 +14,7 @@
 
 import sys
 from datetime import datetime, timedelta
-
+from urlparse import parse_qs, urlparse
 from keystoneclient.common import cms
 from oslo_config import cfg
 from oslo_log import log
@@ -26,6 +26,7 @@ import six
 from keystone.common import controller
 from keystone.common import dependency
 from keystone.common import wsgi
+from keystone.common import utils
 from keystone import config
 from keystone.contrib import federation
 from keystone import exception
@@ -385,7 +386,6 @@ class Auth(controller.V3Controller):
             else:
                 msg = _LW('access key not found')
                 raise exception.ValidationError(msg)
-
         try:
             auth_info = AuthInfo.create(context, auth=auth)
             auth_context = AuthContext(extras={},
@@ -727,6 +727,67 @@ class Auth(controller.V3Controller):
             project_id = token_data["token"]["user"]["account"]["id"]
             self._validate_token_with_action_resource(
                     action, resource, user_id, project_id, is_implicit_allow, context)
+        response = self.format_auth_response(token_data)
+        return self.render_response(response,context)
+
+    def validate_url_with_action_resource_post(self, context, **kwargs):
+        try:
+            encryption_key = CONF.PresignedUrlKey.PassivePresignedUrlKey
+            decrypted_string = utils.aes_decrypt(context['headers']['X-Url-Token'], encryption_key)
+            if not 'Token' in decrypted_string or not 'Action' in decrypted_string or not 'Resource' in decrypted_string:
+                encryption_key = CONF.PresignedUrlKey.ActivePresignedUrlKey
+                decrypted_string = utils.aes_decrypt(context['headers']['X-Url-Token'], encryption_key)
+        except Exception:
+            LOG.warning(_LW('Invalid pre-signed url %(url)s'), {'url' : context['headers']['X-Url-Token']})
+            raise exception.ValidationError(attribute="Valid pre-signed url", target="request")
+        
+        qstring = parse_qs(decrypted_string)
+
+        try:
+            token_id = qstring['Token'][0]
+            Action   = qstring['Action'][0]
+            Resource = qstring['Resource'][0]
+        except KeyError:
+                LOG.warning(_LW('Invalid pre-signed url %(url)s'), {'url' : context['headers']['X-Url-Token']})
+                raise exception.ValidationError(attribute="Valid pre-signed url",
+                                                target="request")
+
+        #Catching all exceptions raised from validate token
+        try:
+            token_data = self.token_provider_api.validate_v3_token(
+                token_id)
+        except Exception:
+           LOG.warning(_LW('Pre-signed  url token %(token)s not validated'), {'token' : token_id})
+           raise exception.Unauthorized()
+
+        act_res_list = kwargs.get('action_resource_list', None)
+        if act_res_list:
+            try:
+                action = act_res_list[0]['action']
+                resource = act_res_list[0]['resource']
+
+                if Action != action or Resource != resource:
+                    raise exception.ValidationError(attribute="matching action & resource from the presigned url",
+                                                target="body")
+            except KeyError as e:
+                raise exception.ValidationError(attribute="action, resource",
+                                                target="body")
+
+            auth_context = self.get_auth_context(context)
+            user_id = token_data["token"]["user"]["id"]
+            project_id = token_data["token"]["user"]["account"]["id"]
+
+
+            is_authorized = self.jio_policy_api.\
+                is_user_authorized(user_id, project_id, action, resource, False)
+
+            if not is_authorized:
+                raise exception.Forbidden(
+                    message='Policy does not allow to perform this action')
+        else:
+            raise exception.ValidationError(attribute="action_resource_list",
+                                                target="body")
+
         response = self.format_auth_response(token_data)
         return self.render_response(response,context)
 
