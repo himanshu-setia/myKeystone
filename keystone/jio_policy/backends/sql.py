@@ -893,6 +893,21 @@ class Policy(jio_policy.Driver):
                 user_group_id=user_group_id).filter_by(policy_id=policy_id).\
                 filter_by(type=type).delete()
 
+    def _delete_user_group_policy_mapping(self, user_group_id,
+                                       type=None):
+        session = sql.get_session()
+        with session.begin():
+            session.query(PolicyUserGroupModel).filter_by(
+                user_group_id=user_group_id).\
+                filter_by(type=type).delete()
+
+    def detach_user_policy(self, user_id):
+        self._delete_user_group_policy_mapping(user_id,
+                        type='UserPolicy')
+
+    def detach_group_policy(self, group_id):
+        self._delete_user_group_policy_mapping(group_id,
+                        type='GroupPolicy')
 
     def attach_policy_to_user(self, policy_id, user_id):
         self._attach_policy_to_user_group(policy_id, user_id,

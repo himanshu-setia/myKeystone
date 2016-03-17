@@ -367,7 +367,7 @@ def exception_translated(exception_type):
 
 @dependency.provider('identity_api')
 @dependency.requires('assignment_api', 'credential_api', 'id_mapping_api',
-                     'resource_api', 'revoke_api')
+                     'resource_api', 'revoke_api', 'jio_policy_api')
 class Manager(manager.Manager):
     """Default pivot point for the Identity backend.
 
@@ -897,6 +897,7 @@ class Manager(manager.Manager):
             self._get_account_driver_and_entity_id(user_id))
         # Get user details to invalidate the cache.
         user_old = self.get_user(user_id)
+        driver.remove_user_membership(user_id)
         driver.delete_user(entity_id)
         self.assignment_api.delete_user(user_id)
         self.get_user.invalidate(self, user_id)
@@ -904,6 +905,7 @@ class Manager(manager.Manager):
                                          user_old['account_id'])
         self.credential_api.delete_credentials_for_user(user_id)
         self.id_mapping_api.delete_id_mapping(user_id)
+        self.jio_policy_api.detach_user_policy(user_id)
         notifications.Audit.deleted(self._USER, user_id, initiator)
 
     @accounts_configured

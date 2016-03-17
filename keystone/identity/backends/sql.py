@@ -371,6 +371,13 @@ class Identity(identity.Driver):
         with session.begin():
             session.delete(membership_ref)
 
+    def remove_user_membership(self, user_id):
+        session = sql.get_session()
+        # We don't check if user or group are still valid and let the remove
+        # be tried anyway - in case this is some kind of clean-up operation
+        with session.begin():
+            session.query(UserGroupMembership).filter_by(user_id=user_id).delete()
+
     def list_groups_for_user(self, user_id, hints):
         # TODO(henry-nash) We could implement full filtering here by enhancing
         # the join below.  However, since it is likely to be a fairly rare

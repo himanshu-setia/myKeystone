@@ -98,6 +98,12 @@ class Manager(manager.Manager):
         self.identity_api.get_user(user_id)
         self.driver.detach_policy_from_user(policy_id, user_id)
 
+    def detach_user_policy(self, user_id):
+        self.driver.detach_user_policy(user_id)
+
+    def detach_group_policy(self, group_id):
+        self.driver.detach_group_policy(group_id)
+
     def attach_policy_to_resource(self, policy_id,account_id,resource):
         self.driver.attach_policy_to_resource(policy_id, account_id, resource)
 
