@@ -380,8 +380,8 @@ class Policy(jio_policy.Driver):
 	    #The logic to find the users anf groups for the policy should be ideally be
             #done in one pass through the table. Currently its done in 2 passes to keep
             #it separate for groups and users, but for optimization can be done in 1 pass.
-            new_ref['Attached Groups'] = self.count_groups_for_policy(new_ref['id'])
-            new_ref['Attached Users'] = self.count_users_for_policy(new_ref['id'])
+            new_ref['attached_groups'] = self.count_groups_for_policy(new_ref['id'])
+            new_ref['attached_users'] = self.count_users_for_policy(new_ref['id'])
             ret.append(new_ref)
         return ret
 
@@ -993,18 +993,18 @@ class Policy(jio_policy.Driver):
                     PolicyUserGroupModel.user_group_id, PolicyUserGroupModel.type)
 
         summary_list = {}
-        summary_list['Policy Document'] =policy.policy_blob
-        summary_list['Policy JRN'] = 'jrn:jcs:iam:' + policy.account_id + ':Policy:' + policy.name
-        summary_list['Creation Time'] = policy.created_at
+        summary_list['policy_document'] =policy.policy_blob
+        summary_list['policy_jrn'] = 'jrn:jcs:iam:' + policy.account_id + ':Policy:' + policy.name
+        summary_list['creation_time'] = policy.created_at
 	
         sum_list = []
         for row in query:
             dict = {}
-            dict['Id'] = row.user_group_id
-            dict['Type'] = row.type
+            dict['id'] = row.user_group_id
+            dict['type'] = row.type
             sum_list.append(dict)
 
-        summary_list['Attached Entities'] = sum_list
+        summary_list['attached_entities'] = sum_list
         return summary_list
 
     def get_resource_based_policy_summary(self,policy_id):
@@ -1018,19 +1018,19 @@ class Policy(jio_policy.Driver):
                     ResourceModel.name)
 
         summary_list = {}
-        summary_list['Policy Document'] =policy.policy_blob
-        summary_list['Policy JRN'] = 'jrn:jcs:iam:' + policy.account_id + ':Policy:' + policy.name
-        summary_list['Creation Time'] = policy.created_at
+        summary_list['policy_document'] =policy.policy_blob
+        summary_list['policy_jrn'] = 'jrn:jcs:iam:' + policy.account_id + ':Policy:' + policy.name
+        summary_list['creation_time'] = policy.created_at
 
         sum_list = []
         for row in query:
             dict = {}
             resource = Policy._get_resource_list(row.name)
-            dict['Resource Id'] = resource[5]
-            dict['Type'] = resource[4]
+            dict['resource_id'] = resource[5]
+            dict['resource_type'] = resource[4]
             sum_list.append(dict)
 
-        summary_list['Attached Entities'] = sum_list
+        summary_list['attached_entities'] = sum_list
         return summary_list
 
     def is_action_resource_type_allowed(self, session, action_name, resource_type):

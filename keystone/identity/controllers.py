@@ -231,7 +231,7 @@ class UserV3(controller.V3Controller):
         return True
 
     def updated_ref_list(self,refs):
-        attrs_to_return = ['id', 'name', 'account_id', 'GroupCount', 'password', 'email', 'enabled']
+        attrs_to_return = ['id', 'name', 'account_id', 'group_count', 'password', 'email', 'enabled']
         ret = []
         for ref in refs:
             new_ref = {}
@@ -243,7 +243,7 @@ class UserV3(controller.V3Controller):
         return ret
 
     def updated_ref(self,ref):
-        attrs_to_return = ['id', 'name', 'account_id', 'GroupCount', 'password', 'email', 'enabled']
+        attrs_to_return = ['id', 'name', 'account_id', 'group_count', 'password', 'email', 'enabled']
         new_ref = {}
         for r in attrs_to_return:
             if r in ref:
@@ -383,9 +383,9 @@ class UserV3(controller.V3Controller):
         policy_refs = self.jio_policy_api.get_user_policies(user_id)
 
         if not policy_refs:
-            refs['Policies'] = ''
+            refs['policies'] = ''
         else:
-            refs['Policies'] = policy_refs
+            refs['policies'] = policy_refs
 
         return refs
 
@@ -472,9 +472,9 @@ class GroupV3(controller.V3Controller):
             groupid = ref['id']
             policies = self.jio_policy_api.get_group_policies(groupid)
             if not policies:
-                refs[indx]['Policies'] = ''
+                refs[indx]['policies'] = ''
             else:
-                refs[indx]['Policies'] = policies
+                refs[indx]['policies'] = policies
 
         return GroupV3.wrap_collection(context, refs, hints=hints)
 
@@ -509,9 +509,9 @@ class GroupV3(controller.V3Controller):
         policy_refs = self.jio_policy_api.get_group_policies(group_id)
 
         if not policy_refs:
-            refs['Policies'] = ''
+            refs['policies'] = ''
         else:
-            refs['Policies'] = policy_refs
+            refs['policies'] = policy_refs
 
         return refs
 

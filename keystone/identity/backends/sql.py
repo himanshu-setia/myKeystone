@@ -143,7 +143,7 @@ class Identity(identity.Driver):
         ref_list = []
         for ref in user_refs:
             dict = ref.to_dict()
-            dict['GroupCount'] = self.count_groups_for_user(ref.id)
+            dict['group_count'] = self.count_groups_for_user(ref.id)
             if not dict['password']:
                 dict['password'] = 'No'
             else:
@@ -164,8 +164,8 @@ class Identity(identity.Driver):
         query = query.filter(UserGroupMembership.group_id == group_id)
 
         ref_list = {}
-        ref_list['Group JRN'] = 'jrn:jcs:iam:' + group.account_id + ':group:' + group.name
-        ref_list['Attached Users'] = query.count()
+        ref_list['group_jrn'] = 'jrn:jcs:iam:' + group.account_id + ':Group:' + group.name
+        ref_list['attached_users'] = query.count()
 
         dict_list = []
         for ref in query:
@@ -174,7 +174,7 @@ class Identity(identity.Driver):
             dict['name'] = ref.name
             dict_list.append(dict)
 
-        ref_list['Users'] = dict_list
+        ref_list['users'] = dict_list
         return ref_list
 
     def get_group_summary_for_user(self, user_id):
@@ -184,9 +184,9 @@ class Identity(identity.Driver):
         query = query.filter(UserGroupMembership.user_id == user_id)
 
         ref_list = {}
-        ref_list['User JRN'] = 'jrn:jcs:iam:' + user.account_id + ':user:' + user.name
-        ref_list['Has Password'] = ('No','Yes')[user.password is not None]
-        ref_list['Attached Groups'] = query.count()
+        ref_list['user_jrn'] = 'jrn:jcs:iam:' + user.account_id + ':User:' + user.name
+        ref_list['has_password'] = ('No','Yes')[user.password is not None]
+        ref_list['attached_groups'] = query.count()
 
         dict_list = []
         for ref in query:
@@ -195,7 +195,7 @@ class Identity(identity.Driver):
             dict['name'] = ref.name
             dict_list.append(dict)
 
-        ref_list['Groups'] = dict_list
+        ref_list['groups'] = dict_list
         return ref_list
 
     def _get_user(self, session, user_id):
@@ -443,7 +443,7 @@ class Identity(identity.Driver):
         ref_list = []
         for ref in refs:
             dict = ref.to_dict()
-            dict['UserCount'] = self.count_users_in_group(ref.id)
+            dict['user_count'] = self.count_users_in_group(ref.id)
             ref_list.append(dict)
 
         return ref_list

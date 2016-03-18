@@ -168,7 +168,7 @@ class JioPolicyV3(controller.V3Controller):
     def get_policy_summary(self, context, jio_policy_id):
         refs = self.jio_policy_api.get_policy_summary(jio_policy_id)
 
-        sum_list = refs['Attached Entities']
+        sum_list = refs['attached_entities']
         for ref in sum_list:
 
             if ref['Type'] == 'UserPolicy':
