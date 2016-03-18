@@ -165,6 +165,9 @@ class Manager(manager.Manager):
     def get_group_attach_policy_count_in_account(self, group_id):
         return self.driver.get_group_attach_policy_count_in_account(group_id)
 
+    def get_policy_by_name(self, policy_name, account_id):
+        return self.driver.get_policy_by_name(policy_name, account_id)
+
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -295,3 +298,9 @@ class Driver(object):
         """
         raise exception.NotImplemented()
 
+    @abc.abstractmethod
+    def get_policy_by_name(self, policy_name, account_id):
+        """
+        get policy by name and accountid
+        """
+        raise exception.NotImplemented()

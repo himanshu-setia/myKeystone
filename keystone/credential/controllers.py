@@ -138,7 +138,8 @@ class CredentialV3(controller.V3Controller):
                                             hints=hints)
 
     @controller.jio_policy_filterprotected(args=['User'])
-    def get_user_credentials(self, context, user_id):
+    def get_user_credentials(self, context, credential):
+        user_id = credential['user_id']
         if user_id is None:
             user_id = context["environment"]["KEYSTONE_AUTH_CONTEXT"]["user_id"]
         refs = self.credential_api.list_credentials_for_user(
@@ -156,5 +157,5 @@ class CredentialV3(controller.V3Controller):
         return CredentialV3.wrap_member(context, ret_ref)
 
     @controller.jio_policy_filterprotected(args='User')
-    def delete_credential(self, context, credential_id):
-        return self.credential_api.delete_credential(credential_id)
+    def delete_credential(self, context, credential):
+        return self.credential_api.delete_credential(credential['id'])

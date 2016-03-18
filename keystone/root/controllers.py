@@ -25,12 +25,13 @@ from keystone import jio_policy
 from keystone import credential as cred
 from keystone import resource as res
 from keystone.common import dependency
+from keystone.common import utils
 
 import json
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
-@dependency.requires('resource_api', 'credential_api')
+@dependency.requires('identity_api', 'resource_api', 'credential_api')
 class RootV3(controller.V3Controller):
 
     def genericmapper(self, context):
@@ -60,6 +61,80 @@ class RootV3(controller.V3Controller):
                 LOG.warning(_LW('user belongs to a service account'))
                 context['environment']['KEYSTONE_AUTH_CONTEXT']['account_id'] = query_string['AccountId']
 
+        account_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['account_id']
+        #These are the actions which take Id(User) as input param)
+        if Action == 'DeleteUser' or Action == 'UpdateUser' or Action == 'GetUser' or Action == 'GetUserSummary'\
+                or Action == 'ListGroupsForUser':
+            if 'Name' in query_string:
+                user_ref = self.identity_api.get_user_by_name(query_string['Name'], account_id)
+                query_string['Id'] = user_ref['id']
+                LOG.debug('UserId:%s UserName:%s', query_string['Id'], query_string['Name'])
+            if 'Id' in query_string:
+                user_ref = self.identity_api.get_user(query_string['Id'])
+                query_string['Name'] = user_ref['name']
+                LOG.debug('UserId:%s UserName:%s', query_string['Id'], query_string['Name'])
+
+        #These are the actions which take UserId as input param)
+        if Action == 'CreateCredential' or Action == 'GetUserCredential' \
+                or Action == 'AssignUserToGroup' or Action == 'CheckUserInGroup' or Action == 'RemoveUserFromGroup'\
+                or Action == 'AttachPolicyToUser' or Action == 'DetachPolicyFromUser':
+            if 'UserName' in query_string:
+                user_ref = self.identity_api.get_user_by_name(query_string['UserName'], account_id)
+                query_string['UserId'] = user_ref['id']
+                LOG.debug('UserId:%s UserName:%s', query_string['UserId'], query_string['UserName'])
+            if 'UserId' in query_string:
+                user_ref = self.identity_api.get_user(query_string['UserId'])
+                query_string['UserName'] = user_ref['name']
+                LOG.debug('UserId:%s UserName:%s', query_string['UserId'], query_string['UserName'])
+
+        #These are the actions which take Id(Credential) as input param)
+        if Action == 'DeleteCredential':
+            if 'AccessKey' in query_string:
+                query_string['Id'] = utils.hash_access_key(query_string['AccessKey'])
+                LOG.debug('CredId:%s AccessKey:%s', query_string['Id'], query_string['AccessKey'])
+
+        #These are the actions which take Id(Group) as input param)
+        if Action == 'GetGroup' or Action == 'UpdateGroup' or Action == 'DeleteGroup' \
+                or Action == 'ListUserInGroup' or Action == 'GetGroupSummary':
+            if 'Name' in query_string:
+                group_ref = self.identity_api.get_group_by_name(query_string['Name'], account_id)
+                query_string['Id'] = group_ref['id']
+                LOG.debug('GroupId:%s GroupName:%s', query_string['Id'], query_string['Name'])
+            if 'Id' in query_string:
+                group_ref = self.identity_api.get_group(query_string['Id'])
+                query_string['Name'] = group_ref['name']
+                LOG.debug('GroupId:%s GroupName:%s', query_string['Id'], query_string['Name'])
+
+        #These are the actions which take GroupId as input param)
+        if Action == 'AssignUserToGroup' or Action == 'CheckUserInGroup' or Action == 'RemoveUserFromGroup'\
+                or Action == 'AttachPolicyToGroup' or Action == 'DetachPolicyFromGroup':
+            if 'GroupName' in query_string:
+                group_ref = self.identity_api.get_group_by_name(query_string['GroupName'], account_id)
+                query_string['GroupId'] = group_ref['id']
+                LOG.debug( _LW('GroupId:%(Id)s GroupName:%(Name)s.'), {'Id': query_string['GroupId'], 'Name': query_string['GroupName']})
+            if 'GroupId' in query_string:
+                group_ref = self.identity_api.get_group(query_string['GroupId'])
+                query_string['GroupName'] = group_ref['name']
+                LOG.debug('GroupId:%s GroupName:%s', query_string['GroupId'], query_string['GroupName'])
+
+        #These are the actions which take Id(Policy) as input param)
+        if Action == 'GetPolicy' or Action == 'DeletePolicy' or Action == 'UpdatePolicy' or Action == 'GetPolicySummary'\
+                or Action == 'GetResourceBasedPolicy' or Action == 'DeleteResourceBasedPolicy' \
+                or Action == 'UpdateResourceBasedPolicy' or Action == 'GetResourceBasedPolicySummary':
+            if 'Name' in query_string:
+                policy_ref = self.jio_policy_api.get_policy_by_name(query_string['Name'], account_id)
+                query_string['Id'] = policy_ref['id']
+                LOG.debug('PolicyId:%s PolicyName:%s', query_string['Id'], query_string['Name'])
+
+        #These are the actions which take PolicyId as input param)
+        if Action == 'AttachPolicyToUser' or Action == 'DetachPolicyFromUser' \
+                or Action == 'AttachPolicyToGroup' or Action == 'DetachPolicyFromGroup'\
+                or Action == 'AttachPolicyToResource' or Action == 'DetachPolicyFromResource' :
+            if 'PolicyName' in query_string:
+                policy_ref = self.jio_policy_api.get_policy_by_name(query_string['PolicyName'], account_id)
+                query_string['PolicyId'] = policy_ref['id']
+                LOG.debug('PolicyId:%s PolicyName:%s', query_string['PolicyId'], query_string['PolicyName'])
+
         try:
             user_controller = identity.controllers.UserV3()
 
@@ -84,14 +159,14 @@ class RootV3(controller.V3Controller):
                 return user_controller.list_users(context)
             elif Action == 'UpdateUser':
                 user = {}
-                if 'Email' in query_string:
-                    user['email'] = query_string['Email']
+                if 'NewEmail' in query_string:
+                    user['email'] = query_string['NewEmail']
                 if 'Enabled' in query_string:
                     user['enabled'] = (False, True) [query_string['Enabled'] == 'Yes']
-                if 'Name' in query_string:
-                    user['name'] = query_string['Name']
-                if 'Password' in query_string:
-                    user['password'] = query_string['Password']
+                if 'NewName' in query_string:
+                    user['name'] = query_string['NewName']
+                if 'NewPassword' in query_string:
+                    user['password'] = query_string['NewPassword']
 
                 return user_controller.update_user(context,query_string['Id'],user=user)
 
@@ -110,7 +185,8 @@ class RootV3(controller.V3Controller):
                 group = {}
                 if 'Description' in query_string:
                     group['description'] = query_string['Description']
-                group['name'] = query_string['Name']
+                if 'Name' in query_string:
+                    group['name'] = query_string['Name']
 
                 return group_controller.create_group(context,group=group)
 
@@ -125,10 +201,10 @@ class RootV3(controller.V3Controller):
 
             elif Action == 'UpdateGroup':
                 group = {}
-                if 'Description' in query_string:
-                    group['description'] = query_string['Description']
-                if 'Name' in query_string:
-                    group['name'] = query_string['Name']
+                if 'NewDescription' in query_string:
+                    group['description'] = query_string['NewDescription']
+                if 'NewName' in query_string:
+                    group['name'] = query_string['NewName']
 
                 return group_controller.update_group(context,query_string['Id'],group=group)
 
@@ -155,16 +231,31 @@ class RootV3(controller.V3Controller):
                     credential['type'] = query_string['Type']
                 if 'UserId' in query_string:
                     credential['user_id'] = query_string['UserId']
+                if 'UserName' in query_string:
+                    credential['user_name'] = query_string['UserName']
                 return credential_controller.create_credential(context,credential)
             elif Action == 'ListCredentials':
                 return credential_controller.list_credentials(context)
             elif Action == 'DeleteCredential':
-                return credential_controller.delete_credential(context,query_string['Id'])
+                credential = {}
+                if 'AccessKey' in query_string:
+                    credential['access_key'] = query_string['AccessKey']
+                if 'Id' in query_string:
+                    credential['id'] = query_string['Id']
+                cred_ref = self.credential_api.get_credential(credential['id'])
+                credential['user_id'] = cred_ref['user_id']
+                if cred_ref['project_id'] != account_id:
+                    raise exception.ValidationError("Invalid AccessKey/Credential Id")
+                user_ref = self.identity_api.get_user(credential['user_id'])
+                credential['user_name'] = user_ref['name']
+                return credential_controller.delete_credential(context,credential)
             elif Action == 'GetUserCredential':
-                user_id = None
+                credential = {}
                 if 'UserId' in query_string:
-                    user_id = query_string['UserId']
-                return credential_controller.get_user_credentials(context, user_id)
+                    credential['user_id'] = query_string['UserId']
+                if 'UserName' in query_string:
+                    credential['user_name'] = query_string['UserName']
+                return credential_controller.get_user_credentials(context, credential)
 
             jio_policy_controller = jio_policy.controllers.JioPolicyV3()
 

@@ -247,6 +247,8 @@ class MetadataNotFound(NotFound):
 class PolicyNotFound(NotFound):
     message_format = _("Could not find policy: %(policy_id)s")
 
+class PolicyNameNotFound(NotFound):
+    message_format = _("Could not find policy: %(policy_id)s in account:  %(account_id)s")
 
 class PolicyAssociationNotFound(NotFound):
     message_format = _("Could not find policy association")

@@ -1106,6 +1106,17 @@ class Policy(jio_policy.Driver):
                                 target='ActionName, ResourceType or ResourceTypeSevice')
         return ref
 
+    def get_policy_by_name(self, policy_name, account_id):
+        session = sql.get_session()
+        query = session.query(JioPolicyModel)
+        query = query.filter_by(name=policy_name)
+        query = query.filter_by(account_id=account_id)
+        try:
+            policy_ref = query.one()
+        except sql.NotFound:
+                raise exception.PolicyNameNotFound(policy_id=policy_name, account_id=account_id)
+        return policy_ref
+
 def create_action(action_id, action_name, service_type):
     ref = dict()
     ref['id'] = action_id
