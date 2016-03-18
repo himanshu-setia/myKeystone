@@ -664,6 +664,9 @@ class Auth(controller.V3Controller):
                     message='Policy does not allow to perform this action')
  
     def validate_token_with_action_resource_post(self, context, **kwargs):
+        if 'query_string' in context and context['query_string'] != {}:
+            msg = _('query parameters not allowed in url')
+            raise exception.ValidationError(message=msg)
         token_data = self.validate_token_data(context)
         act_res_list = kwargs.get('action_resource_list', None)
         if act_res_list:
