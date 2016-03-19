@@ -316,15 +316,16 @@ class UserV3(controller.V3Controller):
         initiator = notifications._get_request_audit_info(context)
         if 'password' in user:
             password = user.get('password')
-            if password is None:
-               raise exception.ValidationError(target='user',
-                            attribute='password')
-            if not self.checkPasswordPolicy(password):
-                raise exception.ValidationError(target='user',
+            if password == '':
+                password = None
+                user['password'] = password
+            if password is not None:
+                if not self.checkPasswordPolicy(password):
+                    raise exception.ValidationError(target='user',
                                  attribute='password',
                                  message=CONF.password_policy.error_message)
-            if self.match_previous_passwords(user_id, password):
-                raise exception.ValidationError(target='user',
+                if self.match_previous_passwords(user_id, password):
+                    raise exception.ValidationError(target='user',
                                              attribute='password',
                                              message=CONF.password_policy.old_password_error_message)
         ref = self.identity_api.update_user(user_id, user, initiator)
