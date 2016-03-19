@@ -123,11 +123,17 @@ class JioPolicyV3(controller.V3Controller):
                 'Maximum limit reached for number policies to be attached to user in the account. Only %s policies are permitted'
                 %account_user_attach_policy_limit)
 
+        if ref.get('type') == 'root':
+            raise exception.Forbidden('Policy cannot be attached to root user')
+
         return self.jio_policy_api.attach_policy_to_user(jio_policy_id,
                                                          user_id)
 
     @controller.jio_policy_filterprotected(args=['Policy','User'])
     def detach_policy_from_user(self, context, jio_policy_id, user_id):
+        ref = self.identity_api.get_user(user_id)
+        if ref.get('type') == 'root':
+            raise exception.Forbidden('Policy cannot be detached from root user')
         return self.jio_policy_api.detach_policy_from_user(jio_policy_id,
                                                            user_id)
 
