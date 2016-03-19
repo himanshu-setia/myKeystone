@@ -654,7 +654,7 @@ class Policy(jio_policy.Driver):
 
         with session.begin():
             policy_ref = self._get_policy(session, policy_id)
-            if policy_ref.hidden:
+            if policy_ref.hidden or policy_ref.type != 'UserBased':
                 raise exception.PolicyNotFound(policy_id=policy_id)
             policy_action_resource = session.query(PolicyActionResourceModel).\
                 filter_by(policy_id=policy_ref.id).all()
@@ -667,7 +667,7 @@ class Policy(jio_policy.Driver):
                     delete()
             for row in policy_user_group:
                 session.query(PolicyUserGroupModel).filter_by(
-                    policy_id=row.id).delete()
+                   policy_id=row.policy_id).delete()
             session.delete(policy_ref)
 
     def get_group_policies(self,groupid):
@@ -718,6 +718,8 @@ class Policy(jio_policy.Driver):
 
         with session.begin():
             policy_ref = self._get_policy(session, policy_id)
+            if policy_ref.hidden or policy_ref.type != 'ResourceBased':
+                raise exception.PolicyNotFound(policy_id=policy_id)
 
             session.query(PolicyActionPrincipleModel).filter_by(
                 policy_id=policy_ref.id).delete()
