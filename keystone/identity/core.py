@@ -866,7 +866,7 @@ class Manager(manager.Manager):
             else:
                 expiry_days = CONF.password_policy.expiry_days
                 if expiry_days is not None:
-                    user['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
+                    user['expiry'] = datetime.datetime.utcnow() + datetime.timedelta(days=expiry_days)
 
         account_id, driver, entity_id = (
             self._get_account_driver_and_entity_id(user_id))

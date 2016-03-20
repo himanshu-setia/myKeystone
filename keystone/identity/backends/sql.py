@@ -117,7 +117,7 @@ class Identity(identity.Driver):
         if not self._check_password(password, user_ref):
             raise AssertionError(_('Invalid user / password'))
         if user_ref.expiry is not None:
-            if user_ref.expiry <= datetime.datetime.now():
+            if user_ref.expiry <= datetime.datetime.utcnow():
                 raise exception.PasswordExpired(_('Password Expired'))
         return identity.filter_user(user_ref.to_dict())
 
@@ -299,7 +299,7 @@ class Identity(identity.Driver):
                 if h_user_cnt is not 0 and h_user_cnt >= count:
                     user = user_history_refs[count-1]
                     setattr(user, 'password', original_password)
-                    setattr(user, 'date', datetime.datetime.now())
+                    setattr(user, 'date', datetime.datetime.utcnow())
                     if h_user_cnt > count:
                         ## deleting the redundant user history
                         uids = []
@@ -310,7 +310,7 @@ class Identity(identity.Driver):
             else:
                 session.add(UserHistory(userid=user_id,
                                             password=original_password,
-                                            date=datetime.datetime.now()))
+                                            date=datetime.datetime.utcnow()))
 
     @sql.handle_conflicts(conflict_type='user & group mapping')
     def add_user_to_group(self, user_id, group_id):

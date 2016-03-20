@@ -29,7 +29,6 @@ import datetime
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
-
 @dependency.requires('assignment_api', 'identity_api', 'resource_api')
 class User(controller.V2Controller):
 
@@ -259,7 +258,7 @@ class UserV3(controller.V3Controller):
         self._require_attribute(user, 'name')
         if 'password' in user:
             expiry_days = CONF.password_policy.expiry_days
-            user['expiry'] = datetime.datetime.now() + datetime.timedelta(days=expiry_days)
+            user['expiry'] = datetime.datetime.utcnow() + datetime.timedelta(days=expiry_days)
         #The manager layer will generate the unique ID for users
         ref = self._normalize_dict(user)
         ref = self._normalize_account_id(context, ref)
