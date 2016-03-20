@@ -375,8 +375,23 @@ class Identity(identity.Driver):
         session = sql.get_session()
         # We don't check if user or group are still valid and let the remove
         # be tried anyway - in case this is some kind of clean-up operation
+        query = session.query(UserGroupMembership)
+        refs = query.filter_by(user_id=user_id)
+        if refs is None:
+            return
         with session.begin():
             session.query(UserGroupMembership).filter_by(user_id=user_id).delete()
+
+    def remove_group_membership(self, group_id):
+        session = sql.get_session()
+        # We don't check if user or group are still valid and let the remove
+        # be tried anyway - in case this is some kind of clean-up operation
+        query = session.query(UserGroupMembership)
+        refs = query.filter_by(group_id=group_id)
+        if refs is None:
+            return
+        with session.begin():
+            session.query(UserGroupMembership).filter_by(group_id=group_id).delete()
 
     def list_groups_for_user(self, user_id, hints):
         # TODO(henry-nash) We could implement full filtering here by enhancing

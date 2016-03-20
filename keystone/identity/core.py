@@ -970,9 +970,11 @@ class Manager(manager.Manager):
             self._get_account_driver_and_entity_id(group_id))
         user_ids = (u['id'] for u in self.list_users_in_group(group_id))
         driver.delete_group(entity_id)
+        driver.remove_group_membership(group_id)
         self.get_group.invalidate(self, group_id)
         self.id_mapping_api.delete_id_mapping(group_id)
         self.assignment_api.delete_group(group_id)
+        self.jio_policy_api.detach_group_policy(group_id)
 
         notifications.Audit.deleted(self._GROUP, group_id, initiator)
 
