@@ -232,6 +232,13 @@ class RootV3(controller.V3Controller):
                 account = {}
                 account['name'] =  query_string['AccountName']
                 account['password'] = query_string['Password']
+                if 'BillingType' in query_string:
+                    if query_string['BillingType'] == 'internal' or query_string['BillingType'] == 'external':
+                        account['billing_type'] = query_string['BillingType']
+                    else:
+                        raise exception.ValidationError('Invalid Rvalue for BillingType. Valid values are : \'internal\'/\'external\'')
+                else:
+                    account['billing_type'] = 'external'
                 if 'AccountType' in query_string:
                     account['type'] = query_string['AccountType']
                 return account_controller.create_customer_account(context, account)

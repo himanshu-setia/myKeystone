@@ -174,6 +174,7 @@ class Resource(keystone_resource.Driver):
     def create_account(self, account_id, account):
         # default type for account is customer account
         account['type']=account.get('type','ca')
+        account['billing_type']=account.get('billing_type','internal')
         with sql.transaction() as session:
             ref = Account.from_dict(account)
             session.add(ref)
@@ -228,7 +229,6 @@ class Resource(keystone_resource.Driver):
     @sql.handle_conflicts(conflict_type='account')
     def update_account(self, account_id, account):
         # default type for account is customer account
-        account['type']=account.get('type','ca')
         with sql.transaction() as session:
             ref = self._get_account(session, account_id)
             old_dict = ref.to_dict()
@@ -277,12 +277,13 @@ class Resource(keystone_resource.Driver):
 
 class Account(sql.ModelBase, sql.DictBase):
     __tablename__ = 'account'
-    attributes = ['id', 'name', 'enabled', 'extra', 'type']
+    attributes = ['id', 'name', 'enabled', 'extra', 'type', 'billing_type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(64), nullable=False)
     enabled = sql.Column(sql.Boolean, default=True, nullable=False)
     extra = sql.Column(sql.JsonBlob())
     type = sql.Column(sql.Enum('ca', 'console', 'csa', 'isa'), nullable=False)
+    billing_type = sql.Column(sql.Enum('internal', 'external'), nullable=False)
     __table_args__ = (sql.UniqueConstraint('name'), {})
 
 
