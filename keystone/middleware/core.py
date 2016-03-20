@@ -362,6 +362,8 @@ class AuthContextMiddleware(wsgi.Middleware):
         # The request context stores itself in thread-local memory for logging.
         oslo_context.RequestContext(
             request_id=request.environ.get('openstack.request_id'))
+        if request.path == '/v3/no-ops' or request.path == '/no-ops':
+            return wsgi.render_response(status =(200, 'OK'))
         account_id = None
         if AUTH_TOKEN_HEADER in request.headers:
             composite_token = request.headers.get(AUTH_TOKEN_HEADER).strip()
