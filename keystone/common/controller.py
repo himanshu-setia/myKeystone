@@ -36,7 +36,7 @@ resource_default_service = 'iam'
 jio_delimiter = ':'
 jio_namespace = 'jrn:jcs'
 jio_admin_account_default = 'jcs_account'
-res_postfix = 'Id'
+res_postfix = 'Name'
 
 def v2_deprecated(f):
     """No-op decorator in preparation for deprecating Identity API v2.
@@ -324,22 +324,23 @@ def jio_policy_user_filterprotected(**params):
                         items = items.split()
                     for item in items:
                         UserId=None
+                        user_name = None
                         resource_type = item
                         if not isinstance(params.get('args'), list):
-                            item = res_postfix
+                            item = 'Id'
                         else:
-                            item = item + res_postfix
+                            item = item + 'Id'
                         if item in context['query_string']:
                             UserId= context['query_string'][item]
                             entity = self.identity_api.get_user(UserId)
                             account_id = entity['account_id']
+                            user_name = entity['name']
                         else:
                             account_id = project_id
                         resource = resource_pre + account_id + jio_delimiter
                         resource_item = resource + resource_type + jio_delimiter
-
-                        if UserId is not None:
-                            resources.append(resource_item + UserId)
+                        if user_name is not None:
+                            resources.append(resource_item + user_name)
                         else:
                             resources.append(resource_item)
                 else:
@@ -367,7 +368,7 @@ def jio_policy_user_filterprotected(**params):
 def jio_policy_filterprotected(**params):
     def get_account_id(self,resource_type,resource_id,action):
         entity = {}
-        if action in ['DeleteCredential']: 
+        if action in ['DeleteCredential']:
             entity = self.credential_api.get_credential(resource_id)
             return entity['project_id']
         elif resource_type == 'User':
@@ -389,7 +390,7 @@ def jio_policy_filterprotected(**params):
             action = jio_namespace + jio_delimiter + action_default_service + jio_delimiter + action_name
             auth_context = self.get_auth_context(context)
             user_id = auth_context.get('user_id')
-            project_id = auth_context.get('project_id')
+            account_id = auth_context.get('account_id')
             resource_pre =  jio_namespace + jio_delimiter + resource_default_service + jio_delimiter
             resources = []
             #TODO(roopali): simplify and optimise.
@@ -401,28 +402,31 @@ def jio_policy_filterprotected(**params):
                     items = items.split()
                 for item in items:
                     resourceId=None
+                    resourceName=None
                     resource_type = item
                     if not isinstance(params.get('args'), list):
                         item = res_postfix
+                        param_id = 'Id'
                     else:
                         item = item + res_postfix
+                        param_id = item + 'Id'
                     if item in context['query_string']:
-                        resourceId= context['query_string'][item]
+                        resourceName= context['query_string'][item]
+                    if param_id in context['query_string']:
+                        resourceId= context['query_string'][param_id]
                         account_id = get_account_id(self,resource_type,resourceId, action_name)
-                    else:
-                        account_id = project_id
                     resource = resource_pre + account_id + jio_delimiter
                     resource_item = resource + resource_type + jio_delimiter
-                    
-                    if resourceId is not None:
-                        resources.append(resource_item + resourceId)
+
+                    if resourceName is not None:
+                        resources.append(resource_item + resourceName)
                     else:
                         resources.append(resource_item)
             else:
                 resources.append(resource)
             for r in resources:
                 try:
-                    effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r, False)
+                    effect = self.jio_policy_api.is_user_authorized(user_id, account_id, action, r, False)
                     if effect is False:
                         LOG.debug('Jio policy based authorization failed')
                         raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
