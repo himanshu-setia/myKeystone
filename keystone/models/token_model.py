@@ -14,6 +14,7 @@
 
 from keystoneclient.common import cms
 from oslo_config import cfg
+from oslo_log import log
 from oslo_utils import timeutils
 import six
 
@@ -23,6 +24,8 @@ from keystone.i18n import _
 
 
 CONF = cfg.CONF
+LOG = log.getLogger(__name__)
+
 # supported token versions
 V2 = 'v2.0'
 V3 = 'v3.0'
@@ -58,8 +61,8 @@ class KeystoneToken(dict):
                                            mode=CONF.token.hash_algorithm)
 
         if self.project_scoped and self.account_scoped:
-            raise exception.UnexpectedError(_('Found invalid token: scoped to '
-                                              'both project and account.'))
+            LOG.debug('Found token: scoped to '
+                                              'both project and account.')
 
     def __repr__(self):
         desc = ('<%(type)s (audit_id=%(audit_id)s, '
