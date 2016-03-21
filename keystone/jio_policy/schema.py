@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from keystone.common.validation import parameter_types
 
 _statement_schema = {
     "type": "array",
@@ -45,10 +46,7 @@ _statement_schema = {
 
 _policy_properties = {
     "statement": _statement_schema,
-    "name": {
-        "type": "string",
-        "maxLength": 255
-    }
+    "name": parameter_types.name_string
 }
 
 policy_create = {

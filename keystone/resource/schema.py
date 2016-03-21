@@ -50,11 +50,7 @@ project_update = {
 _account_properties = {
     'description': validation.nullable(parameter_types.description),
     'enabled': parameter_types.boolean,
-    'name': {
-        'type': 'string',
-        'minLength': 1,
-        'maxLength': 64
-    }
+    'name': parameter_types.name_string
 }
 
 account_create = {

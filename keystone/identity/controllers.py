@@ -17,10 +17,12 @@ from oslo_log import log
 
 from keystone.common import controller
 from keystone.common import dependency
+from keystone.common import validation
 from keystone.common import utils
 from keystone import exception
 from keystone.i18n import _, _LW
 from keystone import notifications
+from keystone.identity import schema
 
 import datetime
 
@@ -251,6 +253,7 @@ class UserV3(controller.V3Controller):
             new_ref['password_expiry'] = ref.get('expiry')
         return new_ref
 
+    @validation.validated(schema.user_create, 'user')
     @controller.jio_policy_filterprotected(args='User')
     def create_user(self, context, user):
         self._require_attribute(user, 'name')
@@ -333,6 +336,7 @@ class UserV3(controller.V3Controller):
         return UserV3.wrap_member(context, new_ref)
 
     @controller.jio_policy_filterprotected(args='User')
+    @validation.validated(schema.user_update, 'user')
     def update_user(self, context, user_id, user):
         return self._update_user(context, user_id, user)
 
@@ -441,6 +445,7 @@ class GroupV3(controller.V3Controller):
         self.get_member_from_driver = self.identity_api.get_group
 
     @controller.jio_policy_filterprotected(args='Group')
+    @validation.validated(schema.group_create, 'group')
     def create_group(self, context, group):
         self._require_attribute(group, 'name')
 
@@ -491,6 +496,7 @@ class GroupV3(controller.V3Controller):
         return GroupV3.wrap_member(context, ref)
 
     @controller.jio_policy_filterprotected(args='Group')
+    @validation.validated(schema.group_update, 'group')
     def update_group(self, context, group_id, group):
         self._require_matching_id(group_id, group)
         self._require_matching_account_id(

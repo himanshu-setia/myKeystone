@@ -75,7 +75,7 @@ class RootV3(controller.V3Controller):
                 if 'Password' in query_string:
                     user['password'] = query_string['Password']
 
-                return user_controller.create_user(context,user)
+                return user_controller.create_user(context,user=user)
             elif Action == 'GetUser':
                 return user_controller.get_user(context,query_string['Id'])
             elif Action == 'GetUserSummary':
@@ -93,7 +93,7 @@ class RootV3(controller.V3Controller):
                 if 'Password' in query_string:
                     user['password'] = query_string['Password']
 
-                return user_controller.update_user(context,query_string['Id'],user)
+                return user_controller.update_user(context,query_string['Id'],user=user)
 
             elif Action == 'DeleteUser':
                 return user_controller.delete_user(context,query_string['Id'])
@@ -112,7 +112,7 @@ class RootV3(controller.V3Controller):
                     group['description'] = query_string['Description']
                 group['name'] = query_string['Name']
 
-                return group_controller.create_group(context,group)
+                return group_controller.create_group(context,group=group)
 
             elif Action == 'GetGroup':
                 return group_controller.get_group(context,query_string['Id'])
@@ -130,7 +130,7 @@ class RootV3(controller.V3Controller):
                 if 'Name' in query_string:
                     group['name'] = query_string['Name']
 
-                return group_controller.update_group(context,query_string['Id'],group)
+                return group_controller.update_group(context,query_string['Id'],group=group)
 
             elif Action == 'DeleteGroup':
                 return group_controller.delete_group(context,query_string['Id'])
@@ -172,7 +172,7 @@ class RootV3(controller.V3Controller):
                 return jio_policy_controller.list_actions(context)
             elif Action == 'CreatePolicy':
                 policy_document = json.loads(query_string['PolicyDocument'])
-                return jio_policy_controller.create_policy(context, policy_document)
+                return jio_policy_controller.create_policy(context, policy=policy_document)
             elif Action == 'ListPolicies':
                 return jio_policy_controller.list_policies(context)
             elif Action == 'GetPolicy':
@@ -187,7 +187,7 @@ class RootV3(controller.V3Controller):
             elif Action == 'UpdatePolicy':
                 policy_document = json.loads(query_string['PolicyDocument'])
                 jio_policy_id = query_string['Id']
-                return jio_policy_controller.update_policy(context, jio_policy_id, policy_document)
+                return jio_policy_controller.update_policy(context, jio_policy_id, policy=policy_document)
             elif Action == 'AttachPolicyToUser':
                 jio_policy_id = query_string['PolicyId']
                 user_id = query_string['UserId']
@@ -241,13 +241,13 @@ class RootV3(controller.V3Controller):
                     account['billing_type'] = 'external'
                 if 'AccountType' in query_string:
                     account['type'] = query_string['AccountType']
-                return account_controller.create_customer_account(context, account)
+                return account_controller.create_customer_account(context, account=account)
             elif Action == "CreateConsoleAccount":
                 account = {}
                 account['name'] =  query_string['AccountName']
                 account['password'] = query_string['Password']
                 account['type'] = query_string['AccountType']
-                return account_controller.create_console_account(context, account)
+                return account_controller.create_console_account(context, account=account)
             elif Action == "UpdateAccount":
                 account= {}
                 if 'AccountUsersLimit' in query_string:
@@ -272,11 +272,11 @@ class RootV3(controller.V3Controller):
 
             elif Action == 'CreateResourceBasedPolicy':
                 policy_document = json.loads(query_string['PolicyDocument'])
-                return jio_policy_controller.create_resource_based_policy(context, policy_document)
+                return jio_policy_controller.create_resource_based_policy(context, policy=policy_document)
             elif Action == 'UpdateResourceBasedPolicy':
                 policy_document = json.loads(query_string['PolicyDocument'])
                 jio_policy_id = query_string['Id']
-                return jio_policy_controller.update_resource_based_policy(context, jio_policy_id, policy_document)
+                return jio_policy_controller.update_resource_based_policy(context, jio_policy_id, policy=policy_document)
             elif Action == 'DeleteResourceBasedPolicy':
                 jio_policy_id = query_string['Id']
                 return jio_policy_controller.delete_resource_based_policy(context, jio_policy_id)

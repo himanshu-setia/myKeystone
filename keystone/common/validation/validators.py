@@ -52,8 +52,9 @@ class SchemaValidator(object):
                 # we don't expose sensitive user information in the event it
                 # fails validation.
                 detail = _("Invalid input for field '%(path)s'. The value is "
-                           "'%(value)s'.") % {'path': ex.path.pop(),
-                                              'value': ex.instance}
+                           "'%(value)s'. %(message)s") % {'path': ex.path.pop(),
+                                              'value': ex.instance,
+                                              'message': ex.message}
             else:
                 detail = ex.message
             raise exception.SchemaValidationError(detail=detail)
