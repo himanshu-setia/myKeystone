@@ -123,7 +123,7 @@ class RootV3(controller.V3Controller):
                 or Action == 'UpdateResourceBasedPolicy' or Action == 'GetResourceBasedPolicySummary':
             if 'Name' in query_string:
                 policy_ref = self.jio_policy_api.get_policy_by_name(query_string['Name'], account_id)
-                query_string['Id'] = policy_ref['id']
+                query_string['Id'] = policy_ref.id
                 LOG.debug('PolicyId:%s PolicyName:%s', query_string['Id'], query_string['Name'])
 
         #These are the actions which take PolicyId as input param)
@@ -132,7 +132,7 @@ class RootV3(controller.V3Controller):
                 or Action == 'AttachPolicyToResource' or Action == 'DetachPolicyFromResource' :
             if 'PolicyName' in query_string:
                 policy_ref = self.jio_policy_api.get_policy_by_name(query_string['PolicyName'], account_id)
-                query_string['PolicyId'] = policy_ref['id']
+                query_string['PolicyId'] = policy_ref.id
                 LOG.debug('PolicyId:%s PolicyName:%s', query_string['PolicyId'], query_string['PolicyName'])
 
         try:
