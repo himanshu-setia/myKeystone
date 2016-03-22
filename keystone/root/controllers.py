@@ -37,7 +37,11 @@ class RootV3(controller.V3Controller):
     def genericmapper(self, context):
 
         query_string = context.get('query_string', None)
-        Action = query_string['Action']
+        try:
+            Action = query_string['Action']
+        except KeyError, e:
+            raise exception.QueryParameterNotFound(parameter=e)
+
         if 'console_token_id' in context and context['console_token_id'] != None:
             if 'Password' in query_string:
                 if 'AccessKey' in query_string:
