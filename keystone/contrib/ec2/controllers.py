@@ -119,8 +119,12 @@ class Ec2ControllerCommon(object):
         if not credentials and ec2credentials:
             credentials = ec2credentials
 
+        if credentials is None:
+            raise exception.Unauthorized(message='JCS credentials not supplied.')
+
         if 'access' not in credentials:
-            raise exception.Unauthorized(message='JCS signature not supplied.')
+            raise exception.Unauthorized(message='JCS access key not supplied.')
+
 
         creds_ref = self._get_credentials(credentials['access'])
         self.check_signature(creds_ref, credentials)
