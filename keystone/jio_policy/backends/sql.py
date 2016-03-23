@@ -878,9 +878,14 @@ class Policy(jio_policy.Driver):
         session = sql.get_session()
         with session.begin():
             policy_ref = self._get_policy(session, policy_id)
-            session.query(PolicyUserGroupModel).filter_by(
-                user_group_id=user_group_id).filter_by(policy_id=policy_id).\
-                filter_by(type=type).delete()
+            query = session.query(PolicyUserGroupModel).filter_by(
+                user_group_id=user_group_id).filter_by(policy_id=policy_id)
+            if query.count() == 0:
+                raise exception.NotFound(("User/Group '%(user_group_id)s' and Policy '%(policy_id)s' mapping not found") %
+                                     {'user_group_id': user_group_id,
+                                      'policy_id': policy_id})
+
+            query = query.filter_by(type=type).delete()
 
     def _delete_user_group_policy_mapping(self, user_group_id,
                                        type=None):
