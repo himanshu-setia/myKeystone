@@ -96,7 +96,7 @@ class PolicyUserGroupModel(sql.ModelBase):
 
 class PolicyActionPrincipleModel(sql.ModelBase):
     __tablename__ = 'policy_action_principle'
-    attributes = ['policy_id', 'action_id', 'principle_id', 'principle_type', 'principle_acc_id', 'effect']
+    attributes = ['policy_id', 'action_id', 'principle_name', 'principle_type', 'principle_acc_id', 'effect']
     policy_id = sql.Column(sql.String(64), sql.ForeignKey('jio_policy.id'), primary_key=True)
     action_id = sql.Column(sql.String(64), sql.ForeignKey('action.id'), primary_key=True)
     principle_acc_id = sql.Column(sql.String(64),nullable=False)
@@ -903,6 +903,7 @@ class Policy(jio_policy.Driver):
         self._delete_user_group_policy_mapping(group_id,
                         type='GroupPolicy')
 
+    @sql.handle_conflicts(conflict_type='policy and user mapping')
     def attach_policy_to_user(self, policy_id, user_id):
         self._attach_policy_to_user_group(policy_id, user_id,
                                           type='UserPolicy')
@@ -911,6 +912,7 @@ class Policy(jio_policy.Driver):
         self._detach_policy_from_user_group(policy_id, user_id,
                                             type='UserPolicy')
 
+    @sql.handle_conflicts(conflict_type='policy and group mapping')
     def attach_policy_to_group(self, policy_id, group_id):
         self._attach_policy_to_user_group(policy_id, group_id,
                                           type='GroupPolicy')
