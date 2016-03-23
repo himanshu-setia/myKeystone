@@ -316,8 +316,9 @@ class Identity(identity.Driver):
     def add_user_to_group(self, user_id, group_id):
         session = sql.get_session()
         self.get_group(group_id)
-        self.get_user(user_id)
-
+        ref = self._get_user(session, user_id)
+        if ref.type == 'root':
+            raise exception.Forbidden(message='Cannot add root user to a group')
         with session.begin():
             session.add(UserGroupMembership(user_id=user_id,
                                             group_id=group_id))
