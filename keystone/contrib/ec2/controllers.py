@@ -340,6 +340,8 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
+
+        account_id = account_id.rjust(32, '0')
         response = dict(account_id=account_id,
                         user_id=user_id,
                         token_id=token_data["access"]["token"]["id"])
@@ -413,6 +415,8 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                                id='placeholder')
         (token_id, token_data) = self.token_provider_api.issue_v2_token(
             auth_token_data, roles_ref, catalog_ref)
+
+        project_id = project_id.rjust(32, '0')
         response = dict(account_id=project_id,
                         user_id=user_id,
                         token_id=token_data["access"]["token"]["id"])
@@ -594,7 +598,8 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
         token_id, token_data = self.token_provider_api.issue_v3_token(
             user_id, method_names, project_id=account_id,
             metadata_ref='')
-        
+
+        account_id = account_id.rjust(32, '0')
         response = dict(account_id=account_id,
                         user_id=user_id,
                         token_id=token_id)
@@ -654,12 +659,14 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
                                           'perform this action')
-        
+
         method_names = ['ec2credential']
 
         token_id, token_data = self.token_provider_api.issue_v3_token(
             user_id, method_names, project_id=project_id,
             metadata_ref=metadata_ref)
+
+        project_id = project_id.rjust(32, '0')
         response = dict(account_id=project_id,
                         user_id=user_id,
                         token_id=token_id)

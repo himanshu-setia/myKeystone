@@ -419,7 +419,7 @@ class Auth(controller.V3Controller):
             # trusts and have successfully issued a token.
             if trust:
                 self.trust_api.consume_use(trust['id'])
-            response = self.format_auth_response(token_data)
+            response = self.format_auth_response(token_data, True)
             return render_token_data_response(token_id, response,
                                               created=True)
         except exception.TrustNotFound as e:
@@ -544,10 +544,18 @@ class Auth(controller.V3Controller):
         token_id = context.get('token_id')
         return self.token_provider_api.revoke_token(token_id)
 
-    def format_auth_response(self, token_data):
+    def format_auth_response(self, token_data, is_caller_console):
         if token_data is None:
             return
-        res =  dict(account_id=token_data["token"]["user"]["account"]["id"],
+
+        account_id = token_data["token"]["user"]["account"]["id"]
+
+        if is_caller_console == True:
+            account_id = str(account_id)
+        else:
+            account_id = account_id.rjust(32, '0')
+
+        res =  dict(account_id=account_id,
                         user_id=token_data["token"]["user"]["id"])
         if 'type' in token_data["token"]["user"]:
             res['user_type'] = token_data["token"]["user"]["type"]
@@ -562,7 +570,7 @@ class Auth(controller.V3Controller):
             token_id)
         if not include_catalog and 'catalog' in token_data['token']:
             del token_data['token']['catalog']
-        response = self.format_auth_response(token_data)
+        response = self.format_auth_response(token_data, True)
         return render_token_data_response(token_id, response)
 
     def validate_token_data(self, context):
@@ -620,7 +628,7 @@ class Auth(controller.V3Controller):
         project_id = token_data["token"]["user"]["account"]["id"]
         self._validate_token_with_action_resource(
                     [action], [resource], user_id, project_id, [is_implicit_allow], context)
-        response = self.format_auth_response(token_data)
+        response = self.format_auth_response(token_data, False)
         return self.render_response(response,context)
 
     def validate_cross_account_with_token(self,context, **kwargs):
@@ -641,7 +649,7 @@ class Auth(controller.V3Controller):
             account_id = token_data["token"]["account"]["id"]
             self._validate_cross_account_with_token(
                     user_id, account_id, resource, action, is_implicit_allow, context)
-        response = self.format_auth_response(token_data)
+        response = self.format_auth_response(token_data, False)
         return self.render_response(response ,context)
 
     def create_pre_signed_url(self, context, **kwargs):
@@ -732,7 +740,7 @@ class Auth(controller.V3Controller):
             project_id = token_data["token"]["user"]["account"]["id"]
             self._validate_token_with_action_resource(
                     action, resource, user_id, project_id, is_implicit_allow, context)
-        response = self.format_auth_response(token_data)
+        response = self.format_auth_response(token_data, False)
         return self.render_response(response,context)
 
     def validate_url_with_action_resource_post(self, context, **kwargs):
@@ -797,7 +805,7 @@ class Auth(controller.V3Controller):
             raise exception.ValidationError(attribute="action_resource_list",
                                                 target="body")
 
-        response = self.format_auth_response(token_data)
+        response = self.format_auth_response(token_data, False)
         return self.render_response(response,context)
 
     @controller.protected()
