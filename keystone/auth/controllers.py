@@ -679,9 +679,14 @@ class Auth(controller.V3Controller):
             account_id, auth_context, None, None, None,
             parent_audit_id=None)
 
-        result =  'Token=' + token_id + '&Action=' + action + '&Resource=' +resource
+        result = {}
+        result['token'] = token_id
+        result['action'] = action
+        result['resource'] = resource
+        if 'object_name' in kwargs and kwargs['object_name'] != None:
+            result['object_name'] = kwargs['object_name']
         key = CONF.PresignedUrlKey.ActivePresignedUrlKey
-        encrypted_result = utils.aes_encrypt(result, key)
+        encrypted_result = utils.aes_encrypt(jsonutils.dumps(result), key)
         headers = [('X-Url-Token', encrypted_result)]
         return wsgi.render_response(headers=headers)
 
@@ -740,13 +745,12 @@ class Auth(controller.V3Controller):
         except Exception:
             LOG.warning(_LW('Invalid pre-signed url %(url)s'), {'url' : context['headers']['X-Url-Token']})
             raise exception.ValidationError(attribute="Valid pre-signed url", target="request")
-        
-        qstring = parse_qs(decrypted_string)
 
+        qstring = jsonutils.loads(decrypted_string)
         try:
-            token_id = qstring['Token'][0]
-            Action   = qstring['Action'][0]
-            Resource = qstring['Resource'][0]
+            token_id = qstring['token']
+            Action   = qstring['action']
+            Resource = qstring['resource']
         except KeyError:
                 LOG.warning(_LW('Invalid pre-signed url %(url)s'), {'url' : context['headers']['X-Url-Token']})
                 raise exception.ValidationError(attribute="Valid pre-signed url",
@@ -769,6 +773,11 @@ class Auth(controller.V3Controller):
                 if Action != action or Resource != resource:
                     raise exception.ValidationError(attribute="matching action & resource from the presigned url",
                                                 target="body")
+
+                if 'object_name' in qstring and qstring['object_name'] is not None and \
+                    ('object_name' not in act_res_list[0] or  act_res_list[0]['object_name'] != qstring['object_name']):
+                        raise exception.ValidationError(attribute='valid object_name', target="body")
+
             except KeyError as e:
                 raise exception.ValidationError(attribute="action, resource",
                                                 target="body")

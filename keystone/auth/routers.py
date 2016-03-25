@@ -40,7 +40,7 @@ class Routers(wsgi.RoutersBase):
             mapper, auth_controller,
             path='/get-presigned-url-token',
             post_action='create_pre_signed_url',
-            rel=json_home.build_v3_resource_relation('url-auth'))
+            rel=json_home.build_v3_resource_relation('get-presigned-url-token'))
 
         self._add_resource(
             mapper, auth_controller,
