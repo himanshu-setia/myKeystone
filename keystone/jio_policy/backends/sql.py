@@ -721,6 +721,11 @@ class Policy(jio_policy.Driver):
             raise exception.ResourceNotFound(resource=res_id)
         resource = Policy._get_resource_list(res_id)
         res_acc_id = resource[3]
+        if len(res_acc_id) == 32:
+            res_acc_id = res_acc_id[-12:]
+        elif len(res_acc_id) != 12:
+            raise exception.NotFound("AccountId in resource %s cannot be found."%resource)
+
 
         resource = session.query(ResourceModel.id).\
             filter(ResourceModel.name == res_id).all()
@@ -825,10 +830,17 @@ class Policy(jio_policy.Driver):
         if len(resource.split(':')) < 6:
             raise exception.ResourceNotFound(resource=resource)
         # in case tenantid is not present in resource, update it
-        if resource.split(':')[3] == '':
+        resource_acc_id = resource.split(':')[3].strip()
+        if resource_acc_id == '':
             var = resource.split(':')
             var[3] = account_id
             resource = ':'.join(var)
+        elif len(resource_acc_id) == 32:
+            var = resource.split(':')
+            var[3] = resource_acc_id[-12:]
+            resource = ':'.join(var)
+        elif len(resource_acc_id) != 12:
+            raise exception.NotFound("AccountId in resource %s cannot be found."%resource)
 
         if len(action.split(':')) < 4:
             raise exception.ActionNotFound(action=action)
