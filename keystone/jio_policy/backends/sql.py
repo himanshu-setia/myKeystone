@@ -160,7 +160,7 @@ class Policy(jio_policy.Driver):
         ls = resource.split(':')
         return ls
 
-    @sql.handle_conflicts(conflict_type='policy')
+    @sql.handle_conflicts(conflict_message='Policy name already exist')
     def create_policy(self, account_id, policy_id, policy, hidden=False, service=False):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
@@ -275,7 +275,7 @@ class Policy(jio_policy.Driver):
         ref['updated_at'] = created_at
         return ref
 
-    @sql.handle_conflicts(conflict_type='policy')
+    @sql.handle_conflicts(conflict_message='Policy Name already exist')
     def create_resource_based_policy(self, account_id, policy_id, policy):
         ref = copy.deepcopy(policy)
         ref['id'] = policy_id
@@ -485,7 +485,7 @@ class Policy(jio_policy.Driver):
         ret['attachment_count'] = int(attachment_count)
         return ret
 
-    @sql.handle_conflicts(conflict_type='policy')
+    @sql.handle_conflicts(conflict_message='Policy conflict')
     def update_policy(self, policy_id, policy):
         session = sql.get_session()
         service = 'image'
@@ -561,7 +561,7 @@ class Policy(jio_policy.Driver):
         return dict(policy_blob)
 
 
-    @sql.handle_conflicts(conflict_type='policy')
+    @sql.handle_conflicts(conflict_message='Policy conflict')
     def update_resource_based_policy(self, policy_id, policy):
         session = sql.get_session()
         with session.begin():
@@ -881,7 +881,7 @@ class Policy(jio_policy.Driver):
             query = session.query(PolicyUserGroupModel).filter_by(
                 user_group_id=user_group_id).filter_by(policy_id=policy_id)
             if query.count() == 0:
-                raise exception.NotFound(("User/Group '%(user_group_id)s' and Policy '%(policy_id)s' mapping not found") %
+                raise exception.NotFound(("Policy '%(policy_id)s' not attached to User/Group '%(user_group_id)s'") %
                                      {'user_group_id': user_group_id,
                                       'policy_id': policy_id})
 
@@ -903,7 +903,7 @@ class Policy(jio_policy.Driver):
         self._delete_user_group_policy_mapping(group_id,
                         type='GroupPolicy')
 
-    @sql.handle_conflicts(conflict_type='policy and user mapping')
+    @sql.handle_conflicts(conflict_message='Policy is already attached to user')
     def attach_policy_to_user(self, policy_id, user_id):
         self._attach_policy_to_user_group(policy_id, user_id,
                                           type='UserPolicy')
@@ -912,7 +912,7 @@ class Policy(jio_policy.Driver):
         self._detach_policy_from_user_group(policy_id, user_id,
                                             type='UserPolicy')
 
-    @sql.handle_conflicts(conflict_type='policy and group mapping')
+    @sql.handle_conflicts(conflict_message='Policy is already attached to group')
     def attach_policy_to_group(self, policy_id, group_id):
         self._attach_policy_to_user_group(policy_id, group_id,
                                           type='GroupPolicy')
@@ -1050,7 +1050,7 @@ class Policy(jio_policy.Driver):
         rows = query.filter(ResourceTypeModel.name == resource_type).count()
         return True if rows > 0 else False
 
-    @sql.handle_conflicts(conflict_type='action')
+    @sql.handle_conflicts(conflict_message='Action already exists')
     def create_action(self, action_id, action_name, service_type):
         ref = dict()
         ref['id'] = action_id
@@ -1064,7 +1064,7 @@ class Policy(jio_policy.Driver):
                 raise exception.ValidationError(attribute='valid service name', target='resource')
         return ref
 
-    @sql.handle_conflicts(conflict_type='resource_type')
+    @sql.handle_conflicts(conflict_message='Resource type already exists')
     def create_resource_type(self, resource_type_id, resource_type_name, service_type):
         ref = dict()
         ref['id'] = resource_type_id
@@ -1078,7 +1078,7 @@ class Policy(jio_policy.Driver):
                 raise exception.ValidationError(attribute='valid service name', target='resource')
         return ref
 
-    @sql.handle_conflicts(conflict_type='action_resource_type_mapping')
+    @sql.handle_conflicts(conflict_message='Action resource type mapping already exists')
     def create_action_resource_type_mapping(self, action_name, resource_type_name, resource_type_service):
         ref = dict()
         ref['action_name'] = action_name

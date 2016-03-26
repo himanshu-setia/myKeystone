@@ -50,7 +50,7 @@ class AccountConfig(resource.AccountConfigDriver):
         else:
             return WhiteListedConfig
 
-    @sql.handle_conflicts(conflict_type='account_config')
+    @sql.handle_conflicts(conflict_message='account_config')
     def create_config_option(self, account_id, group, option, value,
                              sensitive=False):
         with sql.transaction() as session:

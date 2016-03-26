@@ -137,7 +137,7 @@ class Resource(keystone_resource.Driver):
             return not project_refs
 
     # CRUD
-    @sql.handle_conflicts(conflict_type='project')
+    @sql.handle_conflicts(conflict_message='project')
     def create_project(self, tenant_id, tenant):
         tenant['name'] = clean.project_name(tenant['name'])
         with sql.transaction() as session:
@@ -145,7 +145,7 @@ class Resource(keystone_resource.Driver):
             session.add(tenant_ref)
             return tenant_ref.to_dict()
 
-    @sql.handle_conflicts(conflict_type='project')
+    @sql.handle_conflicts(conflict_message='project')
     def update_project(self, tenant_id, tenant):
         if 'name' in tenant:
             tenant['name'] = clean.project_name(tenant['name'])
@@ -162,7 +162,7 @@ class Resource(keystone_resource.Driver):
             tenant_ref.extra = new_project.extra
             return tenant_ref.to_dict(include_extra_dict=True)
 
-    @sql.handle_conflicts(conflict_type='project')
+    @sql.handle_conflicts(conflict_message='project')
     def delete_project(self, tenant_id):
         with sql.transaction() as session:
             tenant_ref = self._get_project(session, tenant_id)
@@ -170,7 +170,7 @@ class Resource(keystone_resource.Driver):
 
     # account crud
 
-    @sql.handle_conflicts(conflict_type='account')
+    @sql.handle_conflicts(conflict_message='Account name already exists')
     def create_account(self, account_id, account):
         # default type for account is customer account
         account['type']=account.get('type','ca')
@@ -226,7 +226,7 @@ class Resource(keystone_resource.Driver):
                 raise exception.AccountNotFound(account_id=account_name)
             return ref.to_dict()
 
-    @sql.handle_conflicts(conflict_type='account')
+    @sql.handle_conflicts(conflict_message='Account already exists')
     def update_account(self, account_id, account):
         # default type for account is customer account
         with sql.transaction() as session:

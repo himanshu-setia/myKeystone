@@ -54,7 +54,7 @@ class TrustRole(sql.ModelBase):
 
 
 class Trust(trust.Driver):
-    @sql.handle_conflicts(conflict_type='trust')
+    @sql.handle_conflicts(conflict_message='trust')
     def create_trust(self, trust_id, trust, roles):
         with sql.transaction() as session:
             ref = TrustModel.from_dict(trust)
@@ -79,7 +79,7 @@ class Trust(trust.Driver):
             roles.append({'id': role.role_id})
         trust_dict['roles'] = roles
 
-    @sql.handle_conflicts(conflict_type='trust')
+    @sql.handle_conflicts(conflict_message='trust')
     def consume_use(self, trust_id):
 
         for attempt in range(MAXIMUM_CONSUME_ATTEMPTS):
@@ -149,13 +149,13 @@ class Trust(trust.Driver):
         self._add_roles(trust_id, session, trust_dict)
         return trust_dict
 
-    @sql.handle_conflicts(conflict_type='trust')
+    @sql.handle_conflicts(conflict_message='trust')
     def list_trusts(self):
         session = sql.get_session()
         trusts = session.query(TrustModel).filter_by(deleted_at=None)
         return [trust_ref.to_dict() for trust_ref in trusts]
 
-    @sql.handle_conflicts(conflict_type='trust')
+    @sql.handle_conflicts(conflict_message='trust')
     def list_trusts_for_trustee(self, trustee_user_id):
         session = sql.get_session()
         trusts = (session.query(TrustModel).
@@ -163,7 +163,7 @@ class Trust(trust.Driver):
                   filter_by(trustee_user_id=trustee_user_id))
         return [trust_ref.to_dict() for trust_ref in trusts]
 
-    @sql.handle_conflicts(conflict_type='trust')
+    @sql.handle_conflicts(conflict_message='trust')
     def list_trusts_for_trustor(self, trustor_user_id):
         session = sql.get_session()
         trusts = (session.query(TrustModel).
@@ -171,7 +171,7 @@ class Trust(trust.Driver):
                   filter_by(trustor_user_id=trustor_user_id))
         return [trust_ref.to_dict() for trust_ref in trusts]
 
-    @sql.handle_conflicts(conflict_type='trust')
+    @sql.handle_conflicts(conflict_message='trust')
     def delete_trust(self, trust_id):
         with sql.transaction() as session:
             trust_ref = session.query(TrustModel).get(trust_id)

@@ -17,7 +17,7 @@ from keystone import exception
 
 class Role(assignment.RoleDriver):
 
-    @sql.handle_conflicts(conflict_type='role')
+    @sql.handle_conflicts(conflict_message='role')
     def create_role(self, role_id, role):
         with sql.transaction() as session:
             ref = RoleTable.from_dict(role)
@@ -51,7 +51,7 @@ class Role(assignment.RoleDriver):
         with sql.transaction() as session:
             return self._get_role(session, role_id).to_dict()
 
-    @sql.handle_conflicts(conflict_type='role')
+    @sql.handle_conflicts(conflict_message='role')
     def update_role(self, role_id, role):
         with sql.transaction() as session:
             ref = self._get_role(session, role_id)

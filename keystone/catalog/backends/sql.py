@@ -154,7 +154,7 @@ class Catalog(catalog.Driver):
             self._delete_child_regions(session, region_id, region_id)
             session.delete(ref)
 
-    @sql.handle_conflicts(conflict_type='region')
+    @sql.handle_conflicts(conflict_message='region')
     def create_region(self, region_ref):
         session = sql.get_session()
         with session.begin():

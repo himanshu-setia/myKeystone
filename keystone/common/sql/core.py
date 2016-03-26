@@ -392,9 +392,9 @@ def filter_limit_query(model, query, hints):
         return query
 
 
-def handle_conflicts(conflict_type='object'):
+def handle_conflicts(conflict_message='object'):
     """Converts select sqlalchemy exceptions into HTTP 409 Conflict."""
-    _conflict_msg = 'Conflict %(conflict_type)s: %(details)s'
+    _conflict_msg = 'Conflict %(conflict_message)s: %(details)s'
 
     def decorator(method):
         @functools.wraps(method)
@@ -405,9 +405,9 @@ def handle_conflicts(conflict_type='object'):
                 # LOG the exception for debug purposes, do not send the
                 # exception details out with the raised Conflict exception
                 # as it can contain raw SQL.
-                LOG.debug(_conflict_msg, {'conflict_type': conflict_type,
+                LOG.debug(_conflict_msg, {'conflict_message': conflict_message,
                                           'details': six.text_type(e)})
-                raise exception.Conflict(type=conflict_type,
+                raise exception.Conflict(conflict_message=conflict_message,
                                          details=_('Duplicate Entry'))
             except db_exception.DBError as e:
                 # TODO(blk-u): inspecting inner_exception breaks encapsulation;
@@ -416,7 +416,7 @@ def handle_conflicts(conflict_type='object'):
                     # LOG the exception for debug purposes, do not send the
                     # exception details out with the raised Conflict exception
                     # as it can contain raw SQL.
-                    LOG.debug(_conflict_msg, {'conflict_type': conflict_type,
+                    LOG.debug(_conflict_msg, {'conflict_message': conflict_message,
                                               'details': six.text_type(e)})
                     # NOTE(morganfainberg): This is really a case where the SQL
                     # failed to store the data. This is not something that the
@@ -425,7 +425,7 @@ def handle_conflicts(conflict_type='object'):
                     # SQL writing to the DB should catch the issue.
                     raise exception.UnexpectedError(
                         _('An unexpected error occurred when trying to '
-                          'store %s') % conflict_type)
+                          'store %s') % conflict_message)
                 raise
 
         return wrapper

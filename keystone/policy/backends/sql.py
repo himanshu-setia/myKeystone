@@ -28,7 +28,7 @@ class PolicyModel(sql.ModelBase, sql.DictBase):
 
 class Policy(rules.Policy):
 
-    @sql.handle_conflicts(conflict_type='policy')
+    @sql.handle_conflicts(conflict_message='Policy name already exists')
     def create_policy(self, policy_id, policy):
         session = sql.get_session()
 
@@ -56,7 +56,7 @@ class Policy(rules.Policy):
 
         return self._get_policy(session, policy_id).to_dict()
 
-    @sql.handle_conflicts(conflict_type='policy')
+    @sql.handle_conflicts(conflict_message='Policy conflict')
     def update_policy(self, policy_id, policy):
         session = sql.get_session()
 

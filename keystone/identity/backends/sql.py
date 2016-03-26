@@ -123,7 +123,7 @@ class Identity(identity.Driver):
 
     # user crud
 
-    @sql.handle_conflicts(conflict_type='user')
+    @sql.handle_conflicts(conflict_message='User already exists')
     def create_user(self, user_id, user):
         user = utils.hash_user_password(user)
         user['type']=user.get('type', 'regular')
@@ -250,7 +250,7 @@ class Identity(identity.Driver):
             raise exception.UserNotFound(user_id=user_name)
         return identity.filter_user(user_ref.to_dict())
 
-    @sql.handle_conflicts(conflict_type='user')
+    @sql.handle_conflicts(conflict_message='User already exists')
     def update_user(self, user_id, user):
         session = sql.get_session()
         with session.begin():
@@ -287,7 +287,7 @@ class Identity(identity.Driver):
         else:
             return None
 
-    @sql.handle_conflicts(conflict_type='user_history')
+    @sql.handle_conflicts(conflict_message='user_history')
     def update_user_history(self, user_id, original_password, count=0, hashed=False):
         session = sql.get_session()
         if hashed is False:
@@ -312,7 +312,7 @@ class Identity(identity.Driver):
                                             password=original_password,
                                             date=datetime.datetime.utcnow()))
 
-    @sql.handle_conflicts(conflict_type='user & group mapping')
+    @sql.handle_conflicts(conflict_message='Cannot add user to group as user is already a member of group')
     def add_user_to_group(self, user_id, group_id):
         session = sql.get_session()
         self.get_group(group_id)
@@ -453,7 +453,7 @@ class Identity(identity.Driver):
 
     # group crud
 
-    @sql.handle_conflicts(conflict_type='group')
+    @sql.handle_conflicts(conflict_message='Group already exists')
     def create_group(self, group_id, group):
         session = sql.get_session()
         with session.begin():
@@ -501,7 +501,7 @@ class Identity(identity.Driver):
             raise exception.GroupNotFound(group_id=group_name)
         return group_ref.to_dict()
 
-    @sql.handle_conflicts(conflict_type='group')
+    @sql.handle_conflicts(conflict_message='Group already exists')
     def update_group(self, group_id, group):
         session = sql.get_session()
 

@@ -54,7 +54,7 @@ class ProjectEndpointGroupMembership(sql.ModelBase, sql.ModelDictMixin):
 
 class EndpointFilter(object):
 
-    @sql.handle_conflicts(conflict_type='project_endpoint')
+    @sql.handle_conflicts(conflict_message='project_endpoint')
     def add_endpoint_to_project(self, endpoint_id, project_id):
         session = sql.get_session()
         with session.begin():
@@ -161,7 +161,7 @@ class EndpointFilter(object):
                                                   project_id)
         return ref.to_dict()
 
-    @sql.handle_conflicts(conflict_type='project_endpoint_group')
+    @sql.handle_conflicts(conflict_message='project_endpoint_group')
     def add_endpoint_group_to_project(self, endpoint_group_id, project_id):
         session = sql.get_session()
 

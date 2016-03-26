@@ -33,7 +33,7 @@ class Credential(credential.Driver):
 
     # credential crud
 
-    @sql.handle_conflicts(conflict_type='credential')
+    @sql.handle_conflicts(conflict_message='credential')
     def create_credential(self, credential_id, credential):
         session = sql.get_session()
         with session.begin():
@@ -67,7 +67,7 @@ class Credential(credential.Driver):
         else:
             return ref.to_dict()
 
-    @sql.handle_conflicts(conflict_type='credential')
+    @sql.handle_conflicts(conflict_message='credential')
     def update_credential(self, credential_id, credential):
         session = sql.get_session()
         with session.begin():

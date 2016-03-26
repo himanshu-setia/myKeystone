@@ -156,7 +156,7 @@ class ServiceProviderModel(sql.ModelBase, sql.DictBase):
 class Federation(core.Driver):
 
     # Identity Provider CRUD
-    @sql.handle_conflicts(conflict_type='identity_provider')
+    @sql.handle_conflicts(conflict_message='identity_provider')
     def create_idp(self, idp_id, idp):
         idp['id'] = idp_id
         with sql.transaction() as session:
@@ -220,7 +220,7 @@ class Federation(core.Driver):
                       'idp_id': idp_id}
             raise exception.FederatedProtocolNotFound(**kwargs)
 
-    @sql.handle_conflicts(conflict_type='federation_protocol')
+    @sql.handle_conflicts(conflict_message='federation_protocol')
     def create_protocol(self, idp_id, protocol_id, protocol):
         protocol['id'] = protocol_id
         protocol['idp_id'] = idp_id
@@ -264,7 +264,7 @@ class Federation(core.Driver):
             raise exception.MappingNotFound(mapping_id=mapping_id)
         return mapping_ref
 
-    @sql.handle_conflicts(conflict_type='mapping')
+    @sql.handle_conflicts(conflict_message='mapping')
     def create_mapping(self, mapping_id, mapping):
         ref = {}
         ref['id'] = mapping_id
@@ -289,7 +289,7 @@ class Federation(core.Driver):
             mapping_ref = self._get_mapping(session, mapping_id)
         return mapping_ref.to_dict()
 
-    @sql.handle_conflicts(conflict_type='mapping')
+    @sql.handle_conflicts(conflict_message='mapping')
     def update_mapping(self, mapping_id, mapping):
         ref = {}
         ref['id'] = mapping_id
@@ -311,7 +311,7 @@ class Federation(core.Driver):
         return mapping_ref.to_dict()
 
     # Service Provider CRUD
-    @sql.handle_conflicts(conflict_type='service_provider')
+    @sql.handle_conflicts(conflict_message='service_provider')
     def create_sp(self, sp_id, sp):
         sp['id'] = sp_id
         with sql.transaction() as session:
