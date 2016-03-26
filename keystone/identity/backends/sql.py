@@ -298,8 +298,10 @@ class Identity(identity.Driver):
                 h_user_cnt = len(user_history_refs)
                 if h_user_cnt is not 0 and h_user_cnt >= count:
                     user = user_history_refs[count-1]
-                    setattr(user, 'password', original_password)
-                    setattr(user, 'date', datetime.datetime.utcnow())
+                    new_row = {}
+                    new_row['password'] = original_password
+                    new_row['date'] =  datetime.datetime.utcnow()
+                    session.query(UserHistory).filter(UserHistory.id == user.id).update(new_row, synchronize_session=False)
                     if h_user_cnt > count:
                         ## deleting the redundant user history
                         uids = []
@@ -307,6 +309,11 @@ class Identity(identity.Driver):
                             uids.append(user_history_refs[x].id)
                         if uids and len(uids) > 0:
                             session.query(UserHistory).filter(UserHistory.id.in_(uids)).delete(synchronize_session=False)
+                else:
+                    session.add(UserHistory(userid=user_id,
+                                            password=original_password,
+                                            date=datetime.datetime.now()))
+
             else:
                 session.add(UserHistory(userid=user_id,
                                             password=original_password,

@@ -43,15 +43,22 @@ class RootV3(controller.V3Controller):
 
         LOG.debug("Action:%s"%Action)
         if 'console_token_id' in context and context['console_token_id'] != None:
-            if 'Password' in query_string:
+            if 'Password' in query_string or 'NewPassword' in query_string:
                 if 'AccessKey' in query_string:
-                    password = query_string['Password']
-                    access = query_string['AccessKey']
-                    LOG.debug("Api call from console with password: %s and acess key %s.", password, access)
-                    query_string['Password'] = self.credential_api.decrypt_password_in_context(access, password)
-                    if 'OldPassword' in query_string:
-                        query_string['OldPassword'] = self.credential_api.decrypt_password_in_context(access,
-                                                     query_string['OldPassword'])
+                    if 'Password' in query_string:
+                        password = query_string['Password']
+                        access = query_string['AccessKey']
+                        LOG.debug("Api call from console with password: %s and acess key %s.", password, access)
+                        query_string['Password'] = self.credential_api.decrypt_password_in_context(access, password)
+                        if 'OldPassword' in query_string:
+                            query_string['OldPassword'] = self.credential_api.decrypt_password_in_context(access,
+                                        query_string['OldPassword'])
+                    if 'NewPassword' in query_string:
+                        newpassword = query_string['NewPassword']
+                        access = query_string['AccessKey']
+                        LOG.debug("api call from console with newpassword: %s and acess key %s.", newpassword, access)
+                        query_string['NewPassword'] = self.credential_api.decrypt_password_in_context(access, newpassword)
+
                 else:
                     msg = _LW('access key not found')
                     raise exception.ValidationError(msg)

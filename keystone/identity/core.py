@@ -884,8 +884,8 @@ class Manager(manager.Manager):
         if enabled_change or user.get('password') is not None:
             self.emit_invalidate_user_token_persistence(user_id)
 
-        if old_user_ref.get('password') is not None:
-            self.update_user_history(old_user_ref.get('id'), old_user_ref.get('password'), CONF.password_policy.num_password_saved, True)
+        if user_ref.get('password') is not None:
+            self.update_user_history(old_user_ref.get('id'), user_ref.get('password'), CONF.password_policy.num_password_saved, False)
 
         return self._set_account_id_and_mapping(
             ref, account_id, driver, mapping.EntityType.USER)
@@ -1403,6 +1403,10 @@ class Driver(object):
         """
         Get the group count user is assigned to
         """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def update_user_history(self, user_id, original_password, count, hashed=False):
         raise exception.NotImplemented()
 
     # end of identity
