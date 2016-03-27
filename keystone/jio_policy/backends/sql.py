@@ -29,14 +29,13 @@ iam_pre_format = 'jrn:jcs'
 
 class JioPolicyModel(sql.ModelBase, sql.DictBase):
     __tablename__ = 'jio_policy'
-    attributes = ['id', 'account_id', 'created_at', 'deleted_at']
+    attributes = ['id', 'account_id', 'created_at']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
     account_id = sql.Column(sql.String(64), nullable=False)
     type = sql.Column(sql.Enum('UserBased', 'ResourceBased'), nullable=False)
     created_at = sql.Column(sql.DateTime, nullable=False)
     updated_at = sql.Column(sql.DateTime)
-    deleted_at = sql.Column(sql.DateTime)
     policy_blob = sql.Column(sql.JsonBlob)
     hidden = sql.Column(sql.Boolean, default=False, nullable=True)
 
@@ -360,10 +359,9 @@ class Policy(jio_policy.Driver):
         refs = session.query(JioPolicyModel).filter_by(account_id=account_id)\
             .filter_by(type='UserBased').filter_by(hidden=False).with_entities(
                     JioPolicyModel.id, JioPolicyModel.name,
-                    JioPolicyModel.created_at, JioPolicyModel.deleted_at)
+                    JioPolicyModel.created_at)
         ret = []
-        attrs_to_return = ['id', 'name', 'created_at', 'deleted_at',
-                           'attachment_count']
+        attrs_to_return = ['id', 'name', 'created_at', 'attachment_count']
         for ref in refs:
             new_ref = {}
             for index, value in enumerate(ref):
@@ -384,10 +382,9 @@ class Policy(jio_policy.Driver):
         refs = session.query(JioPolicyModel).filter_by(account_id=account_id)\
             .filter_by(type='ResourceBased').with_entities(
                     JioPolicyModel.id, JioPolicyModel.name,
-                    JioPolicyModel.created_at, JioPolicyModel.deleted_at)
+                    JioPolicyModel.created_at)
         ret = []
-        attrs_to_return = ['id', 'name', 'created_at', 'deleted_at',
-                           'attachment_count']
+        attrs_to_return = ['id', 'name', 'created_at', 'attachment_count']
         for ref in refs:
             new_ref = {}
             for index, value in enumerate(ref):
