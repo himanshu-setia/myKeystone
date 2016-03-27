@@ -194,20 +194,26 @@ class Policy(jio_policy.Driver):
                 else:
                     raise exception.ValidationError(attribute='allow or deny',
                                                     target='effect')
-                resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                 try:
-                    zip_resource = zip(resource_ids, resource)
-
                     #For RBP,same resource will be used in UBP, so these resources will be
                     #redundant, need to remove them
-                    for pair in zip_resource:
-                        resource = pair[1].split(':')
-                        resource[3] = account_id
-                        res_name = ':'.join(resource)
-                        session.add(ResourceModel(id=pair[0], name=res_name,
+                    res_ids = []
+                    for res in resource:
+                        res_split = res.split(':')
+                        res_split[3] = account_id
+                        res_name = ':'.join(res_split)
+                        res_id = session.query(ResourceModel.id).\
+                                filter(ResourceModel.name == res_name).first()
+                        if res_id is None:
+                            res_id = uuid.uuid4().hex
+                            res_ids.append(res_id)
+                            session.add(ResourceModel(id=res_id, name=res_name,
                                     service_type=Policy._get_service_name(
-                                        pair[1])))
+                                        res)))
+                        else:
+                            res_ids.append(res_id[0])
 
+                    zip_resource = zip(res_ids, resource)
                     for pair in itertools.product(action, zip_resource):
                         is_cross_account_access = False
                         resource = Policy._get_resource_list(pair[1][1])
@@ -483,9 +489,8 @@ class Policy(jio_policy.Driver):
         return ret
 
     @sql.handle_conflicts(conflict_message='Policy conflict')
-    def update_policy(self, policy_id, policy):
+    def update_policy(self, account_id, policy_id, policy):
         session = sql.get_session()
-        service = 'image'
 
         # TODO(roopali) sql optimizations.
         with session.begin():
@@ -499,14 +504,12 @@ class Policy(jio_policy.Driver):
             if 'statement' in policy:
                 statement = policy.get('statement')
                 policy_blob['statement'] = copy.deepcopy(statement)
-                policy_action_resource = session.query(
-                        PolicyActionResourceModel).filter_by(
-                                policy_id=ref.id).all()
+                res_ids = self._get_resource_ids_to_delete(session,policy_id)
                 session.query(PolicyActionResourceModel).filter_by(
                         policy_id=ref.id).delete()
-                for row in policy_action_resource:
-                    session.query(ResourceModel).filter_by(
-                            id=row.resource_id).delete()
+                for res_id in res_ids:
+                    session.query(ResourceModel).filter_by(id=res_id).\
+                       delete()
                 for stmt in statement:
                     action = stmt.get('action', None)
                     effect = stmt.get('effect', None)
@@ -526,13 +529,24 @@ class Policy(jio_policy.Driver):
                     else:
                         raise exception.ValidationError(attribute='allow or deny',
                                                         target='effect')
-                    resource_ids = [uuid.uuid4().hex for i in range(len(resource))]
                     try:
-                        zip_resource = zip(resource_ids, resource)
-                        for pair in zip_resource:
-                            session.add(ResourceModel(id=pair[0], name=pair[1],
-                                        service_type=Policy._get_service_name(
-                                            pair[1])))
+                        res_ids = []
+                        for res in resource:
+                            res_split = res.split(':')
+                            res_split[3] = account_id
+                            res_name = ':'.join(res_split)
+                            res_id = session.query(ResourceModel.id).\
+                                filter(ResourceModel.name == res_name).first()
+                            if res_id is None:
+                                res_id = uuid.uuid4().hex
+                                res_ids.append(res_id)
+                                session.add(ResourceModel(id=res_id, name=res_name,
+                                    service_type=Policy._get_service_name(
+                                        res)))
+                            else:
+                                res_ids.append(res_id[0])
+
+                        zip_resource = zip(res_ids, resource)
 
                         for pair in itertools.product(action, zip_resource):
                             action_id = session.query(ActionModel).filter_by(
@@ -632,6 +646,27 @@ class Policy(jio_policy.Driver):
             ref.policy_blob = jsonutils.dumps(policy_blob)
         return dict(policy_blob)
 
+    #Return the resource ids which can be deleted - only attached to the given policy
+    def _get_resource_ids_to_delete(self, session, policy_id):
+        res_ids = []
+        policy_action_resource = session.query(PolicyActionResourceModel).\
+                filter_by(policy_id=policy_id).all()
+        for row in policy_action_resource:
+            count_par = session.query(PolicyActionResourceModel).filter_by(resource_id=row.resource_id).count()
+            count_pr = session.query(PolicyResourceModel).filter_by(resource_id=row.resource_id).count()
+            if count_par + count_pr == 1:
+                res_ids.append(row.resource_id)
+
+        policy_resource = session.query(PolicyResourceModel).\
+                filter_by(policy_id=policy_id).all()
+        for row in policy_resource:
+            count_par = session.query(PolicyActionResourceModel).filter_by(resource_id=row.resource_id).count()
+            count_pr = session.query(PolicyResourceModel).filter_by(resource_id=row.resource_id).count()
+            if count_par + count_pr == 1:
+                res_ids.append(row.resource_id)
+
+        return res_ids
+
     def delete_policy(self, policy_id):
         session = sql.get_session()
 
@@ -639,18 +674,17 @@ class Policy(jio_policy.Driver):
             policy_ref = self._get_policy(session, policy_id)
             if policy_ref.hidden or policy_ref.type != 'UserBased':
                 raise exception.PolicyNotFound(policy_id=policy_id)
-            policy_action_resource = session.query(PolicyActionResourceModel).\
-                filter_by(policy_id=policy_ref.id).all()
-            session.query(PolicyActionResourceModel).filter_by(
-                policy_id=policy_ref.id).delete()
             policy_user_group = session.query(PolicyUserGroupModel).filter_by(
                 policy_id=policy_ref.id).all()
-            for row in policy_action_resource:
-                session.query(ResourceModel).filter_by(id=row.resource_id).\
-                    delete()
+            res_ids = self._get_resource_ids_to_delete(session, policy_id)
+            session.query(PolicyActionResourceModel).filter_by(
+                policy_id=policy_ref.id).delete()
+            for res_id in res_ids:
+                session.query(ResourceModel).filter_by(id=res_id).\
+                       delete()
             for row in policy_user_group:
                 session.query(PolicyUserGroupModel).filter_by(
-                   policy_id=row.policy_id).delete()
+                    policy_id=row.policy_id).delete()
             session.delete(policy_ref)
 
     def get_group_policies(self,groupid):
@@ -703,14 +737,16 @@ class Policy(jio_policy.Driver):
             policy_ref = self._get_policy(session, policy_id)
             if policy_ref.hidden or policy_ref.type != 'ResourceBased':
                 raise exception.PolicyNotFound(policy_id=policy_id)
-
             session.query(PolicyActionPrincipleModel).filter_by(
                 policy_id=policy_ref.id).delete()
+            res_ids = self._get_resource_ids_to_delete(session,policy_id)
             session.query(PolicyResourceModel).filter_by(
                 policy_id=policy_ref.id).delete()
+            for res_id in res_ids:
+                session.query(ResourceModel).filter_by(id=res_id).\
+                       delete()
 
             session.delete(policy_ref)
-
 
     def is_cross_account_access_auth(self, user_id, group_ids, user_acc_id, res_id, action, is_impl_allow):
         session = sql.get_session()
@@ -932,6 +968,7 @@ class Policy(jio_policy.Driver):
         self._detach_policy_from_user_group(policy_id, group_id,
                                             type='GroupPolicy')
 
+    @sql.handle_conflicts(conflict_message='Policy is already attached to resource')
     def attach_policy_to_resource(self, policy_id, account_id, resource):
         session = sql.get_session()
         with session.begin():
@@ -966,30 +1003,41 @@ class Policy(jio_policy.Driver):
                         raise exception.ValidationError(
                                      attribute='valid account id', target='resource')
 
-                    session.add(ResourceModel(id=pair[0], name=pair[1],
+                    res_id = session.query(ResourceModel.id).\
+                         filter(ResourceModel.name == pair[1]).first()
+                    if res_id is None:
+                        res_id = pair[0]
+                        session.add(ResourceModel(id=pair[0], name=pair[1],
                                     service_type=Policy._get_service_name(
                                         pair[1])))
+                    else:
+                        res_id = res_id[0]
 
                     session.add(PolicyResourceModel(policy_id=policy_id,
-                                             resource_id=pair[0]))
+                                             resource_id=res_id))
 
             except sql.NotFound:
                 raise exception.ValidationError(
                     attribute='valid action', target='policy')
 
-
     def detach_policy_from_resource(self, policy_id, resources):
         session = sql.get_session()
         self._get_policy(session, policy_id)
-
         for res in resources:
             resource = (session.query(ResourceModel.id).\
-                filter(ResourceModel.name == res).all())
-            resource_ids = [x[0] for x in resource]
+                filter(ResourceModel.name == res).first())
+            if not resource:
+                raise exception.ResourceNotFound(resource=res)
+            resource_id = resource[0]
             session.query(PolicyResourceModel)\
-               .filter(PolicyResourceModel.resource_id.in_(resource_ids))\
+               .filter(PolicyResourceModel.resource_id==resource_id)\
                .filter(PolicyResourceModel.policy_id==policy_id)\
                .delete(synchronize_session='fetch')
+            count_par = session.query(PolicyActionResourceModel).filter_by(resource_id=resource_id).count()
+            count_pr = session.query(PolicyResourceModel).filter_by(resource_id=resource_id).count()
+            if count_par + count_pr == 0:
+                session.query(ResourceModel).filter_by(id=resource_id).\
+                       delete()
 
     def list_actions(self, hints):
         session = sql.get_session()

@@ -79,8 +79,8 @@ class Manager(manager.Manager):
     def delete_resource_based_policy(self, policy_id):
         ref = self.driver.delete_resource_based_policy(policy_id)
 
-    def update_policy(self, policy_id, policy):
-        return self.driver.update_policy(policy_id, policy)
+    def update_policy(self, account_id, policy_id, policy):
+        return self.driver.update_policy(account_id, policy_id, policy)
 
     def update_resource_based_policy(self, policy_id, policy):
         return self.driver.update_resource_based_policy(policy_id, policy)

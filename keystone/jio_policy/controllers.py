@@ -103,7 +103,12 @@ class JioPolicyV3(controller.V3Controller):
     @controller.jio_policy_filterprotected(args='Policy')
     @validation.validated(schema.policy_update, 'policy')
     def update_policy(self, context, jio_policy_id, policy):
-        ref = self.jio_policy_api.update_policy(jio_policy_id, policy)
+        try:
+            account_id = context['environment']['KEYSTONE_AUTH_CONTEXT'][
+                'account_id']
+        except KeyError:
+            raise exception.Forbidden('Cannot find account_id in context.')
+        ref = self.jio_policy_api.update_policy(account_id, jio_policy_id, policy)
         return JioPolicyV3.wrap_member(context, ref)
 
     @controller.jio_policy_filterprotected(args='Policy')
