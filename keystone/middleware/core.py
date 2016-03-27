@@ -82,9 +82,9 @@ class TokenAuthMiddleware(wsgi.Middleware):
     def process_request(self, request):
         token = request.headers.get(AUTH_TOKEN_HEADER)
         context = request.environ.get(CONTEXT_ENV, {})
-        if token != None and len(token) == 65:
+        if token != None and len(token) >= 65:
             tokens = token.split(TOKEN_DELIMITER)
-            if len(tokens)<2:
+            if len(tokens) != 2:
                 LOG.warning(_LW('RBAC: Invalid token. Second token missing'))
                 raise exception.Unauthorized()
             token = tokens[0]
