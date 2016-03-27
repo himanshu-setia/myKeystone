@@ -720,6 +720,8 @@ class Policy(jio_policy.Driver):
         res_acc_id = resource[3]
         if len(res_acc_id) == 32:
             res_acc_id = res_acc_id[-12:]
+            resource[3] = res_acc_id[-12:]
+            res_id = ':'.join(resource)
         elif len(res_acc_id) != 12:
             raise exception.NotFound("AccountId in resource %s cannot be found."%resource)
 
