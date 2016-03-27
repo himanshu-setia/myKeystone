@@ -170,8 +170,8 @@ class UserAuthInfo(object):
                     # check if user is root user
                     account_id = self.identity_api.get_account_if_name_root(user_name)
                     if account_id is None:
-                        raise exception.ValidationError(attribute='account',
-                                                    target='user')
+                        msg = 'Invalid username or password'
+                        raise exception.Unauthorized(msg)
                     user_info['account'] = { "id": account_id}
                 account_ref = self._lookup_account(user_info['account'])
                 user_ref = self.identity_api.get_user_by_name(
