@@ -276,6 +276,9 @@ class RootV3(controller.V3Controller):
                 return jio_policy_controller.list_actions(context)
             elif Action == 'CreatePolicy':
                 policy_document = json.loads(query_string['PolicyDocument'])
+                query_string['Name'] = policy_document.get('name', None)
+                if query_string['Name'] is None:
+                    raise exception.ValidationError('Invalid name in PolicyDocument')
                 return jio_policy_controller.create_policy(context, policy=policy_document)
             elif Action == 'ListPolicies':
                 return jio_policy_controller.list_policies(context)
