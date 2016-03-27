@@ -733,8 +733,8 @@ class Auth(controller.V3Controller):
                 raise exception.ValidationError(attribute="action, resource and implicit_allow",
                                                 target="body")
             if action == 'deny':
-                raise exception.Forbidden(message='Policy does not allow to '
-                                              'perform this action')
+                raise exception.Forbidden(message='Policy does not allow to'
+                                              ' perform this action')
             auth_context = self.get_auth_context(context)
             user_id = token_data["token"]["user"]["id"]
             project_id = token_data["token"]["user"]["account"]["id"]

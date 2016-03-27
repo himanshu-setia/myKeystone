@@ -296,7 +296,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                     is_cross_account_access_auth(user_id, account_id, resource, action, imp_allow)
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
-                                          'perform this action')
+                                          ' perform this action')
             else:
                 raise exception.ValidationError(attribute="action and resource",
                                             target="query_string")
@@ -325,7 +325,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
 
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
-                                          'perform this action')
+                                          ' perform this action')
 
 
         # NOTE(morganfainberg): Make sure the data is in correct form since it
@@ -371,7 +371,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
                     is_user_authorized(user_id, project_id, action, resource, imp_allow)
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
-                                          'perform this action')
+                                          ' perform this action')
             else:
                 raise exception.ValidationError(attribute="action and resource",
                                             target="query_string")
@@ -400,7 +400,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
 
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
-                                          'perform this action')
+                                          ' perform this action')
         
 
         # NOTE(morganfainberg): Make sure the data is in correct form since it
@@ -560,7 +560,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
                     is_cross_account_access_auth(user_id, account_id, resource, action, imp_allow)
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
-                                          'perform this action')
+                                          ' perform this action')
             else:
                 raise exception.ValidationError(attribute="action and resource",
                                             target="query_string")
@@ -591,7 +591,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
 
                 if not is_authorized:
                      raise exception.Forbidden(message='Policy does not allow to'
-                                          'perform this action')
+                                          ' perform this action')
 
         method_names = ['ec2credential']
 
@@ -629,7 +629,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
                     is_user_authorized(user_id, project_id, action, resource, imp_allow)
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
-                                          'perform this action')
+                                          ' perform this action')
             else:
                 raise exception.ValidationError(attribute="action and resource",
                                             target="query_string")
@@ -658,7 +658,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
 
                 if not is_authorized:
                     raise exception.Forbidden(message='Policy does not allow to'
-                                          'perform this action')
+                                          ' perform this action')
 
         method_names = ['ec2credential']
 
