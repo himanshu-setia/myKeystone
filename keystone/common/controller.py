@@ -350,12 +350,12 @@ def jio_policy_user_filterprotected(**params):
                         effect = self.jio_policy_api.is_user_authorized(user_id, project_id, action, r, False)
                         if effect is False:
                             LOG.debug('Jio policy based authorization failed')
-                            raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
-                                               %{'action':action_name, 'user_id':user_id}))
+                            raise exception.Forbidden(message=(_('User is not allowed to call action %(action)s.')
+                                               %{'action':action_name}))
                     except exception.ResourceNotFound:
                         LOG.debug('Jio policy based authorization failed')
-                        raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
-                                               %{'action':action_name, 'user_id':user_id}))
+                        raise exception.Forbidden(message=(_('User is not allowed to call action %(action)s.')
+                                               %{'action':action_name}))
                 LOG.debug('Jio policy based authorization granted')
             if 'filters' in params:
                 filters = params.get('filters')
@@ -429,12 +429,12 @@ def jio_policy_filterprotected(**params):
                     effect = self.jio_policy_api.is_user_authorized(user_id, account_id, action, r, False)
                     if effect is False:
                         LOG.debug('Jio policy based authorization failed')
-                        raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
-                                             %{'action':action_name, 'user_id':user_id}))
+                        raise exception.Forbidden(message=(_('User is not allowed to call action %(action)s.')
+                                             %{'action':action_name}))
                 except exception.ResourceNotFound:
                     LOG.debug('Jio policy based authorization failed')
-                    raise exception.Forbidden(message=(_('User %(user_id)s is not entitled to call %(action)s action.')
-                                           %{'action':action_name, 'user_id':user_id}))
+                    raise exception.Forbidden(message=(_('User is not allowed to call action %(action)s.')
+                                           %{'action':action_name}))
             LOG.debug('Jio policy based authorization granted')
             if 'filters' in params:
                 filters = params.get('filters')
