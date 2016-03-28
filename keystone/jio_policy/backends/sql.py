@@ -761,9 +761,11 @@ class Policy(jio_policy.Driver):
         elif len(res_acc_id) != 12:
             raise exception.NotFound("AccountId in resource %s cannot be found."%resource)
 
-
+        resources = list()
+        resources.append(res_id)
+        resources.append(res_id[:res_id.rfind(':')+1]+'*')
         resource = session.query(ResourceModel.id).\
-            filter(ResourceModel.name == res_id).all()
+            filter(ResourceModel.name.in_(resources)).all()
 
         resource_ids = [x[0] for x in resource]
         policy_ids = session.query(JioPolicyModel).join(PolicyResourceModel)\
@@ -791,8 +793,10 @@ class Policy(jio_policy.Driver):
                             policy_exists = True
                             is_authorized = result.effect
                     if result.principle_type in ['*', 'Group']:
-                        principle = self.identity_api.get_group_by_name(result.principle_name, result.principle_acc_id)
-                        principle_id = principle['id']
+                        principle_id = None
+                        if result.principle_name !='*':
+                            principle = self.identity_api.get_group_by_name(result.principle_name, result.principle_acc_id)
+                            principle_id = principle['id']
                         if ((result.principle_name == '*' and len(group_ids) > 0) or (principle_id in group_ids)):
                             if user['account_id'] == result.principle_acc_id:
                                 policy_exists = True
