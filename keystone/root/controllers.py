@@ -379,6 +379,9 @@ class RootV3(controller.V3Controller):
 
             elif Action == 'CreateResourceBasedPolicy':
                 policy_document = json.loads(query_string['PolicyDocument'])
+                query_string['Name'] = policy_document.get('name', None)
+                if query_string['Name'] is None:
+                    raise exception.ValidationError('Invalid name in PolicyDocument')
                 return jio_policy_controller.create_resource_based_policy(context, policy=policy_document)
             elif Action == 'UpdateResourceBasedPolicy':
                 policy_document = json.loads(query_string['PolicyDocument'])
