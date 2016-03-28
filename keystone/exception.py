@@ -76,10 +76,7 @@ class Error(Exception):
 
 
 class ValidationError(Error):
-    message_format = _("Expecting to find %(attribute)s in %(target)s -"
-                       " the server could not comply with the request"
-                       " since it is either malformed or otherwise"
-                       " incorrect. The client is assumed to be in error.")
+    message_format = _("Expecting to find %(attribute)s in %(target)s.")
     code = 400
     title = 'Bad Request'
 
