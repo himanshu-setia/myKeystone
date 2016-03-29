@@ -168,6 +168,9 @@ class Identity(identity.Driver):
         query = query.filter(UserGroupMembership.group_id == group_id)
 
         ref_list = {}
+        ref_list['group_id'] = group.id
+        ref_list['group_name'] = group.name
+        ref_list['group_description'] = group.description
         ref_list['group_jrn'] = 'jrn:jcs:iam:' + group.account_id + ':Group:' + group.name
         ref_list['attached_users'] = query.count()
 
@@ -188,6 +191,8 @@ class Identity(identity.Driver):
         query = query.filter(UserGroupMembership.user_id == user_id)
 
         ref_list = {}
+        ref_list['user_id'] = user.id
+        ref_list['user_name'] = user.name
         ref_list['user_jrn'] = 'jrn:jcs:iam:' + user.account_id + ':User:' + user.name
         ref_list['has_password'] = ('No','Yes')[user.password is not None]
         ref_list['attached_groups'] = query.count()

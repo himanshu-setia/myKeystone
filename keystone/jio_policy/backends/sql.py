@@ -1067,6 +1067,8 @@ class Policy(jio_policy.Driver):
                     PolicyUserGroupModel.user_group_id, PolicyUserGroupModel.type)
 
         summary_list = {}
+        summary_list['policy_id']=policy.id
+        summary_list['policy_name']=policy.name
         summary_list['policy_document'] =policy.policy_blob
         summary_list['policy_jrn'] = 'jrn:jcs:iam:' + policy.account_id + ':Policy:' + policy.name
         summary_list['creation_time'] = policy.created_at
