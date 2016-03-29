@@ -32,6 +32,8 @@ import routes.middleware
 import six
 import webob.dec
 import webob.exc
+from urlparse import urlparse,parse_qs,urlunparse
+import urllib
 
 from keystone.common import dependency
 from keystone.common import json_home
@@ -235,9 +237,14 @@ class Application(BaseApplication):
         if 'openstack.context' in  req.environ and 'environment' in req.environ['openstack.context'] and 'openstack.params' in req.environ['openstack.context']['environment']:
             req_body = req.environ['openstack.context']['environment']['openstack.params']
 
+        scheme, netloc, path, param, query, fragment = urlparse(wsgiref.util.request_uri(req.environ))
+        query_string = self._get_masked_val(parse_qs(query))
+        query = urllib.urlencode(query_string)
+        req_uri = urlunparse((scheme, netloc, path, param, query, fragment))
+
         LOG.info('%(req_method)s %(uri)s HEADERS: %(list_of_headers)s BODY: %(body)s', {
             'req_method': req.environ['REQUEST_METHOD'].upper(),
-            'uri': wsgiref.util.request_uri(req.environ),
+            'uri': req_uri,
             'list_of_headers': req_headers,
             'body': req_body
         })
@@ -280,6 +287,12 @@ class Application(BaseApplication):
         response_code = self._get_response_code(req)
         return render_response(body=result, status=response_code,
                                method=req.environ['REQUEST_METHOD'])
+
+    def _get_masked_val(self,req_dict):
+        for key in req_dict:
+            if key.find('Password') != -1:
+                req_dict[key] = '***'
+        return req_dict
 
     def _get_response_code(self, req):
         req_method = req.environ['REQUEST_METHOD']
