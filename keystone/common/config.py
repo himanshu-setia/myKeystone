@@ -892,6 +892,10 @@ FILE_OPTIONS = {
         cfg.IntOpt('MaxPresignedUrlKeyExpiryTime', default=604800,
             help='Maximum presigned url expiry time (seconds)')
     ],
+    'AuthTimeMisMatch': [
+        cfg.IntOpt('Time', default=300,
+                    help='Timestamp mismatch for authorization requests.'),
+    ],
     'actions': [
          cfg.ListOpt('default_actions', default=['CreateUser',
         'GetUser',

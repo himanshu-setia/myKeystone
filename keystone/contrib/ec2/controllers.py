@@ -40,7 +40,11 @@ import json
 from keystoneclient.contrib.ec2 import utils as ec2_utils
 from oslo_serialization import jsonutils
 import six
+import time
+import base64
 
+from oslo_config import cfg
+from six.moves import urllib
 from keystone.common import controller
 from keystone.common import dependency
 from keystone.common import utils
@@ -48,6 +52,8 @@ from keystone.common import wsgi
 from keystone import exception
 from keystone.i18n import _
 from keystone.models import token_model
+
+CONF = cfg.CONF
 
 @dependency.requires('assignment_api', 'catalog_api', 'credential_api',
                      'identity_api', 'resource_api', 'role_api',
@@ -123,8 +129,9 @@ class Ec2ControllerCommon(object):
         if 'access' not in credentials:
             raise exception.Unauthorized(message='JCS access key not supplied.')
 
-
         creds_ref = self._get_credentials(credentials['access'])
+        self._validate_timestamp(credentials)
+
         self.check_signature(creds_ref, credentials)
 
         # TODO(termie): don't create new tokens every time
@@ -149,7 +156,30 @@ class Ec2ControllerCommon(object):
             six.reraise(exception.Unauthorized, exception.Unauthorized(e),
                         sys.exc_info()[2])
 
-        return user_ref, None, metadata_ref, None, None 
+        return user_ref, None, metadata_ref, None, None
+
+    def _validate_timestamp(self,credentials):
+        """Validate the timestamp for signature
+        """
+        try:
+            if 'params' in credentials:
+                timestamp = credentials['params']['Timestamp']
+                rcvd_time_gmt = time.strptime(timestamp,"%Y-%m-%dT%H:%M:%SZ")
+            else:
+                timestamp = base64.urlsafe_b64decode(str(credentials['token'])).split("\n")[3]
+                try:
+                    rcvd_time_gmt = time.strptime(timestamp,"%a, %d %b %Y %H:%M:%S GMT")
+                except ValueError:
+                    raise exception.ValidationError(attribute="Correct Timestamp format", target="token")
+
+        except KeyError as e:
+            raise exception.ValidationError(attribute=e,
+                                            target="credentials")
+        curr_time_gmt = time.gmtime()
+        diff_time = CONF.AuthTimeMisMatch.Time
+        #If the request timestamp is more than the configured time from the current, send 403.
+        if time.mktime(curr_time_gmt) - time.mktime(rcvd_time_gmt) > diff_time:
+            raise exception.Forbidden(message='Timestamp validation failed')
 
     def create_credential(self, context, user_id, tenant_id):
         """Create a secret/access pair for use with ec2 style auth.
