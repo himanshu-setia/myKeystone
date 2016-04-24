@@ -60,6 +60,11 @@ class PreauthToken(preauth.Driver):
             pre_auth_token = self._get_preauth_token(session, token_id)
             session.delete(pre_auth_token)
 
+    def delete_user_preauth_token(self, user_id):
+        session = sql.get_session()
+        with session.begin():
+            session.query(PreauthTokenModel).filter(user_id==user_id).delete()
+
     def get_user_from_token_id(self, token_id):
         session = sql.get_session()
         ref = session.query(PreauthTokenModel).get(token_id)

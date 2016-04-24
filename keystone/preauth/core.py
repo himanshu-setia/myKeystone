@@ -50,6 +50,8 @@ class Manager(manager.Manager):
                                                   resource,
                                                   object_id,
                                                   token_id)
+    def delete_user_preauth_token(self, user_id):
+        return self.driver.delete_user_preauth_token(user_id)
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -74,3 +76,5 @@ class Driver(object):
     def is_preauth_token_valid(self, action, resource, object_id, token_id):
         raise exception.NotImplemented()
 
+    def delete_user_preauth_token(self, user_id):
+        raise exception.NotImplemented()
