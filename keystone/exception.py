@@ -480,3 +480,7 @@ class QueryParameterNotFound(Error):
     message_format = _("Expecting to find %(parameter)s in query string.")
     code = 400
     title = 'Bad Request'
+
+class PreauthTokenNotFound(NotFound):
+    message_format = _("Could not find preauth token: %(token_id)s")
+

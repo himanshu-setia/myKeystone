@@ -1176,6 +1176,11 @@ FILE_OPTIONS = {
             cfg.StrOpt('driver', default=('keystone.jio_policy.backends.sql.Policy'),
                 help='jio policy backend.'),
     ],
+    'preauth': [
+            cfg.StrOpt('driver', default=('keystone.preauth.backends.sql.PreauthToken'),
+                help='preauth token backend.'),
+    ],
+
 }
 
 
