@@ -25,7 +25,8 @@ class PreauthToken(preauth.Driver):
 
     @sql.handle_conflicts(conflict_message='Preauth token id already exist')
     def create_preauth_token(self, preauth_token):
-        with sql.transaction() as session:
+        session = sql.get_session()
+        with session.begin():
             session.add(PreauthTokenModel(
                      id = preauth_token['token_id'],
                      user_id = preauth_token.get('user_id', None),
@@ -34,6 +35,7 @@ class PreauthToken(preauth.Driver):
                      resource = preauth_token.get('resource', None),
                      object_id = preauth_token.get('object_id', None),
                      expires = preauth_token.get('expires', None)))
+        return preauth_token
 
     def _get_preauth_token(self, session, token_id):
         """Private method to get a PreauthTokenModel object"""

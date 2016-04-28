@@ -76,9 +76,9 @@ class PreauthTokenV3(controller.V3Controller):
         preauth_token['token_id'] = uuid.uuid4().hex
         preauth_token['action'] = action
         preauth_token['resource'] = resource
-        self.preauth_api.create_preauth_token(preauth_token)
+        result = self.preauth_api.create_preauth_token(preauth_token)
 
-        headers = [('X-Preauth-Token', preauth_token['token_id'])]
+        headers = [('X-Preauth-Token', result['token_id'])]
         return wsgi.render_response(headers=headers)
 
     def list_preauth_tokens(self, context):
