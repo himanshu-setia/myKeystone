@@ -50,11 +50,11 @@ class PreauthToken(preauth.Driver):
 
     def list_preauth_token_in_account(self, account_id):
         session = sql.get_session()
-        return session.query(PreauthTokenModel).filter(account_id==account_id)
+        return session.query(PreauthTokenModel).filter_by(account_id=account_id)
 
     def list_preauth_token_of_user(self, user_id):
         session = sql.get_session()
-        return session.query(PreauthTokenModel).filter(user_id==user_id)
+        return session.query(PreauthTokenModel).filter_by(user_id=user_id)
 
     def revoke_preauth_token(self, token_id):
         session = sql.get_session()
@@ -65,7 +65,7 @@ class PreauthToken(preauth.Driver):
     def delete_user_preauth_token(self, user_id):
         session = sql.get_session()
         with session.begin():
-            session.query(PreauthTokenModel).filter(user_id==user_id).delete()
+            session.query(PreauthTokenModel).filter_by(user_id=user_id).delete()
 
     def get_user_from_token_id(self, token_id):
         session = sql.get_session()
