@@ -907,7 +907,9 @@ def render_token_data_response(token_id, token_data, created=False):
     Stash token ID into the X-Subject-Token header.
 
     """
-    headers = [('X-Subject-Token', token_id)]
+    headers = []
+    if token_id != None:
+        headers = [('X-Subject-Token', token_id)]
 
     if created:
         status = (201, 'Created')
