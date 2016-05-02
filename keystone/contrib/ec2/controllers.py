@@ -49,7 +49,6 @@ from keystone import exception
 from keystone.i18n import _
 from keystone.models import token_model
 
-
 @dependency.requires('assignment_api', 'catalog_api', 'credential_api',
                      'identity_api', 'resource_api', 'role_api',
                      'token_provider_api')
@@ -108,11 +107,10 @@ class Ec2ControllerCommon(object):
         """
         raise exception.NotImplemented()
 
-    def _authenticate(self, credentials=None, ec2credentials=None):
+    def _authenticate(self, context, credentials=None, ec2credentials=None):
         """Common code shared between the V2 and V3 authenticate methods.
         :returns: user_ref, tenant_ref, metadata_ref, roles_ref, catalog_ref
         """
-
         # FIXME(ja): validate that a service token was used!
 
         # NOTE(termie): backwards compat hack
@@ -133,6 +131,8 @@ class Ec2ControllerCommon(object):
         # TODO(termie): this is copied from TokenController.authenticate
         user_ref = self.identity_api.get_user(creds_ref['user_id'])
         metadata_ref = {}
+        if context:
+            context['UserInfo'] = {'UserName': user_ref['name'], 'UserType': user_ref['type'], 'UserId': user_ref['id'], 'AccountId': user_ref['account_id']}
 
         trust_id = creds_ref.get('trust_id')
         if trust_id:
@@ -256,7 +256,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
     @controller.v2_deprecated
     def authenticate(self, context, credentials=None, ec2Credentials=None):
         (user_ref, tenant_ref, metadata_ref, roles_ref,
-         catalog_ref) = self._authenticate(credentials=credentials,
+         catalog_ref) = self._authenticate(context, credentials=credentials,
                                            ec2credentials=ec2Credentials)
 
         # NOTE(morganfainberg): Make sure the data is in correct form since it
@@ -276,7 +276,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
 
     def validate_cross_account_with_sign(self,context, credentials=None, ec2Credentials=None):
         (user_ref, tenant_ref, metadata_ref, roles_ref,
-         catalog_ref) = self._authenticate(credentials=credentials,
+         catalog_ref) = self._authenticate(context, credentials=credentials,
                                            ec2credentials=ec2Credentials)
         user_id = user_ref["id"]
         account_id = user_ref["account_id"]
@@ -352,7 +352,7 @@ class Ec2Controller(Ec2ControllerCommon, controller.V2Controller):
 
     def authorise_with_action_resource(self, context, credentials=None, ec2Credentials=None):
         (user_ref, tenant_ref, metadata_ref, roles_ref,
-         catalog_ref) = self._authenticate(credentials=credentials,
+         catalog_ref) = self._authenticate(context, credentials=credentials,
                                            ec2credentials=ec2Credentials)
         # get user id
         user_id = user_ref["id"]
@@ -528,7 +528,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
 
     def authenticate(self, context, credentials=None, ec2Credentials=None):
         (user_ref, project_ref, metadata_ref, roles_ref,
-         catalog_ref) = self._authenticate(credentials=credentials,
+         catalog_ref) = self._authenticate(context, credentials=credentials,
                                            ec2credentials=ec2Credentials)
 
         method_names = ['ec2credential']
@@ -540,7 +540,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
 
     def validate_cross_account_with_sign(self,context, credentials=None, ec2Credentials=None):
         (user_ref, project_ref, metadata_ref, roles_ref,
-         catalog_ref) = self._authenticate(credentials=credentials,
+         catalog_ref) = self._authenticate(context, credentials=credentials,
                                            ec2credentials=ec2Credentials)
         user_id = user_ref["id"]
         account_id = user_ref["account_id"]
@@ -608,7 +608,7 @@ class Ec2ControllerV3(Ec2ControllerCommon, controller.V3Controller):
 
     def authorise_with_action_resource(self, context, credentials=None, ec2Credentials=None):
         (user_ref, project_ref, metadata_ref, roles_ref,
-         catalog_ref) = self._authenticate(credentials=credentials,
+         catalog_ref) = self._authenticate(context,credentials=credentials,
                                            ec2credentials=ec2Credentials)
 
 

@@ -229,28 +229,8 @@ class Application(BaseApplication):
         # NOTE(morganfainberg): use the request method to normalize the
         # response code between GET and HEAD requests. The HTTP status should
         # be the same.
-        req_headers = 'EMPTY'
-        if 'openstack.context' in  req.environ and 'headers' in req.environ['openstack.context']:
-            req_headers = req.environ['openstack.context'].get('headers')
-
-        req_body = 'EMPTY'
-        if 'openstack.context' in  req.environ and 'environment' in req.environ['openstack.context'] and 'openstack.params' in req.environ['openstack.context']['environment']:
-            req_body = req.environ['openstack.context']['environment']['openstack.params']
-
-        scheme, netloc, path, param, query, fragment = urlparse(wsgiref.util.request_uri(req.environ))
-        query_string = self._get_masked_val(parse_qs(query))
-        query = urllib.urlencode(query_string)
-        req_uri = urlunparse((scheme, netloc, path, param, query, fragment))
-
-        LOG.info('%(req_method)s %(uri)s HEADERS: %(list_of_headers)s BODY: %(body)s', {
-            'req_method': req.environ['REQUEST_METHOD'].upper(),
-            'uri': req_uri,
-            'list_of_headers': req_headers,
-            'body': req_body
-        })
 
         params = self._normalize_dict(params)
-
         try:
             result = method(context, **params)
         except exception.Unauthorized as e:
@@ -274,25 +254,29 @@ class Application(BaseApplication):
             return render_exception(exception.UnexpectedError(exception=e),
                                     context=context,
                                     user_locale=best_match_language(req))
+  
+        headers = []
+        if 'UserInfo' in context:
+            UserInfo = context['UserInfo']
+            headers.append(('UserInfo', UserInfo))
+        elif 'KEYSTONE_AUTH_CONTEXT' in context['environment'] and 'UserInfo' in context['environment']['KEYSTONE_AUTH_CONTEXT']:
+            UserInfo = context['environment']['KEYSTONE_AUTH_CONTEXT']['UserInfo']  
+            headers.append(('UserInfo', UserInfo))
 
         if result is None:
-            return render_response(status=(204, 'No Content'))
+            return render_response(status=(204, 'No Content'), headers = headers)
         elif isinstance(result, six.string_types):
+            result.headers.update(headers)
             return result
         elif isinstance(result, webob.Response):
+            result.headers.update(headers)
             return result
         elif isinstance(result, webob.exc.WSGIHTTPException):
             return result
 
         response_code = self._get_response_code(req)
-        return render_response(body=result, status=response_code,
+        return render_response(body=result, status=response_code, headers = headers,
                                method=req.environ['REQUEST_METHOD'])
-
-    def _get_masked_val(self,req_dict):
-        for key in req_dict:
-            if key.find('Password') != -1:
-                req_dict[key] = '***'
-        return req_dict
 
     def _get_response_code(self, req):
         req_method = req.environ['REQUEST_METHOD']
@@ -785,7 +769,6 @@ def render_response(body=None, status=None, headers=None, method=None):
             if content_type is None:
                 headers.append(('Content-Type', 'application/json'))
         status = status or (200, 'OK')
-
     resp = webob.Response(body=body,
                           status='%s %s' % status,
                           headerlist=headers)
@@ -803,13 +786,20 @@ def render_response(body=None, status=None, headers=None, method=None):
         resp.body = b''
         for header, value in six.iteritems(stored_headers):
             resp.headers[header] = value
-    LOG.info('RESPONSE STATUS: %s  HEADERS: %s   BODY: %s', resp._status, resp._headerlist, resp._app_iter)
+    LOG.info('{\"ResponseStatus\": \"%s\", \"ResponseHeaders\": \"%s\", \"ResponseBody\": %s}', resp._status, str(resp._headerlist).replace('"', '\\"'), resp.body)
     return resp
 
 
 def render_exception(error, context=None, request=None, user_locale=None):
     """Forms a WSGI response based on the current error."""
-
+    headers = []
+    if context and 'UserInfo' in context:
+        UserInfo = context['UserInfo']
+        headers.append(('UserInfo', UserInfo))
+    elif context and 'KEYSTONE_AUTH_CONTEXT' in context['environment'] and 'UserInfo' in context['environment']['KEYSTONE_AUTH_CONTEXT']:
+        UserInfo = context['environment']['KEYSTONE_AUTH_CONTEXT']['UserInfo']
+        headers.append(('UserInfo', UserInfo))
+    
     error_message = error.args[0]
     message = oslo_i18n.translate(error_message, desired_locale=user_locale)
     if message is error_message:
@@ -822,7 +812,6 @@ def render_exception(error, context=None, request=None, user_locale=None):
         'title': error.title,
         'message': message,
     }}
-    headers = []
     if isinstance(error, exception.AuthPluginException):
         body['error']['identity'] = error.authentication
     elif isinstance(error, exception.Unauthorized):

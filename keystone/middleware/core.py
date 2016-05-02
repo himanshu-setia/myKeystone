@@ -255,13 +255,23 @@ class AuthContextMiddleware(wsgi.Middleware):
         context['token_id']= token_id
         context['environment'] = request.environ
         try:
+            token_data=self.token_provider_api.validate_token(token_id)
             token_ref = token_model.KeystoneToken(
                 token_id=token_id,
-                token_data=self.token_provider_api.validate_token(token_id))
+                token_data=token_data)
+
+            UserInfo = {} 
+            if 'token' in token_data and 'user' in token_data['token']:
+                user = token_data['token']['user']
+                UserInfo = {'UserName': user['name'], 'UserType': user['type'], 'UserId': user['id'], 'AccountId': user['account']['id']}
+            elif 'access' in token_data and 'user' in token_data['access']:
+                user = token_data['access']['user']
+                UserInfo = {'UserName': user['name'], 'UserType': user['type'], 'UserId': user['id'], 'AccountId': user['account_id']}
+ 
             # TODO(gyee): validate_token_bind should really be its own
             # middleware
             wsgi.validate_token_bind(context, token_ref)
-            return authorization.token_to_auth_context(token_ref)
+            return authorization.token_to_auth_context(token_ref),UserInfo
         except exception.TokenNotFound:
             LOG.warning(_LW('RBAC: Invalid token'))
             raise exception.Unauthorized()
@@ -402,10 +412,12 @@ class AuthContextMiddleware(wsgi.Middleware):
             msg = _LW('Auth context already exists in the request environment')
             LOG.warning(msg)
             return
-        auth_context = self._build_auth_context(request)
+        auth_context,UserInfo = self._build_auth_context(request)
         if account_id is not None:
             auth_context["project_id"] = account_id
             auth_context["account_id"] = account_id
+        if UserInfo is not None: 
+            auth_context["UserInfo"] = UserInfo
         LOG.debug('RBAC: auth_context: %s', auth_context)
         request.environ[authorization.AUTH_CONTEXT_ENV] = auth_context
 

@@ -415,6 +415,9 @@ class Auth(controller.V3Controller):
                 account_id, auth_context, trust, metadata_ref, include_catalog,
                 parent_audit_id=token_audit_id)
 
+            if 'token' in token_data and 'user' in token_data['token']:
+                user = token_data['token']['user']
+                context['UserInfo'] = {'UserName': user['name'], 'UserType': user['type'], 'UserId': user['id'], 'AccountId': user['account']['id']}
             # NOTE(wanghong): We consume a trust use only when we are using
             # trusts and have successfully issued a token.
             if trust:
@@ -578,6 +581,9 @@ class Auth(controller.V3Controller):
         include_catalog = 'nocatalog' not in context['query_string']
         token_data = self.token_provider_api.validate_v3_token(
             token_id)
+        if 'token' in token_data and 'user' in token_data['token']:
+            user = token_data['token']['user']
+            context['UserInfo'] = {'UserName': user['name'], 'UserType': user['type'], 'UserId': user['id'], 'AccountId': user['account']['id']}
         if not include_catalog and 'catalog' in token_data['token']:
             del token_data['token']['catalog']
         return token_data
