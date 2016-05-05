@@ -26,6 +26,8 @@ from keystone import credential as cred
 from keystone import resource as res
 from keystone.common import dependency
 from keystone.common import utils
+from keystone.root import sql
+from keystone.common import wsgi
 
 import json
 CONF = cfg.CONF
@@ -410,3 +412,34 @@ class RootV3(controller.V3Controller):
             raise exception.QueryParameterNotFound(parameter=e)
 
         raise exception.ActionNotFound(action = Action)
+
+
+    def db_ops_connection(self):
+        status = (404, 'Not Found')
+        db_check = sql.DatabaseCheck()
+        if db_check.check_connection() == True:
+            status = (200, 'OK')
+        else :
+            status = (404, 'Not Found')
+
+        return wsgi.render_response(body=None, status=status, headers=None)
+
+    def db_ops_wsrep(self):
+        db_check = sql.DatabaseCheck()
+        count = db_check.check_wsrep()
+        status = (404, 'Not Found')
+        if count > 0:
+            status = (200, 'OK')
+
+        return wsgi.render_response(body = count, status=status, headers=None)
+
+    def db_ops_table(self):
+        status = (404, 'Not Found')
+        table_list = ['account', 'action', 'action_resource_type_mapping', 'credential', 'group', 'jio_policy', 'migrate_version', 'policy_action_principle', 'policy_action_resource', 'policy_resource_mapping', 'policy_user_group_mapping', 'preauth_token', 'resource', 'resource_type', 'role', 'service', 'token', 'user', 'user_group_membership', 'user_history']
+
+        db_check = sql.DatabaseCheck()
+        result = db_check.check_tables()
+        if result != None:
+            if set(table_list) <= set(result):
+                status = (200, 'OK')
+        return wsgi.render_response(body = None, status=status, headers=None)

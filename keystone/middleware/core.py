@@ -29,6 +29,7 @@ from keystone.i18n import _LW
 from keystone.models import token_model
 from keystone.openstack.common import versionutils
 from keystone import contrib
+from keystone import root
 
 
 CONF = cfg.CONF
@@ -374,6 +375,17 @@ class AuthContextMiddleware(wsgi.Middleware):
             request_id=request.environ.get('openstack.request_id'))
         if request.path == '/v3/no-ops' or request.path == '/no-ops':
             return wsgi.render_response(status =(200, 'OK'))
+        elif request.path == '/v3/db-ops-connection' or request.path == '/db-ops-connection':
+            root_controller = root.controllers.RootV3()
+            return root_controller.db_ops_connection()
+        elif request.path == '/v3/db-ops-wsrep' or request.path == '/db-ops-wsrep':
+            root_controller = root.controllers.RootV3()
+            return root_controller.db_ops_wsrep()
+
+        elif request.path == '/v3/db-ops-table' or  request.path== '/db-ops-table':
+            root_controller = root.controllers.RootV3()
+            return root_controller.db_ops_table()
+
         account_id = None
         if AUTH_TOKEN_HEADER in request.headers:
             composite_token = request.headers.get(AUTH_TOKEN_HEADER).strip()
