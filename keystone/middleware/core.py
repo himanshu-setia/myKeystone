@@ -329,14 +329,15 @@ class AuthContextMiddleware(wsgi.Middleware):
     def _verify_signature(self, req):
        body_hash = hashlib.sha256(req.body).hexdigest()
        signature = self._get_signature(req)
-       LOG.debug(_LW( signature))
        if not signature:
            msg = ("JCS Signature not provided")
-           return None, None
+           raise exception.Unauthorized(msg)
+           #return None, None
        access = self._get_access(req)
        if not access:
            msg = ("JCS Access key not provided")
-           return None, None
+           raise exception.Unauthorized(msg)
+           #return None, None
 
        if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
            params = {}
@@ -358,12 +359,11 @@ class AuthContextMiddleware(wsgi.Middleware):
            'headers': req.headers,
            'body_hash': body_hash
        }
-       LOG.warning(cred_dict)
+
        #The context is passed as None, it is unused in the function
        ec2controller = contrib.ec2.controllers.Ec2Controller()
        response = ec2controller.authenticate(None,ec2Credentials=cred_dict)
 
-       LOG.debug(response)
        token_id = response['access']['token']['id']
        account_id = response['access']['user']['account_id']
        req.headers[AUTH_TOKEN_HEADER] = token_id
@@ -409,27 +409,24 @@ class AuthContextMiddleware(wsgi.Middleware):
                     msg = _LW('Caller token is invalid')
                     raise exception.Forbidden(msg)
         else:
-            LOG.debug(('Auth token not in the request header. '
-                       'Will not build auth context.'))
-            LOG.warning(request.path)
-            if 'ec2' in request.path:
-                return
-            else:
-                LOG.warning("calling verify signature")
+            if request.path == '/':
                 token_id, account_id = self._verify_signature(request)
                 if not token_id:
-                    return;
-#            return
+                    return
+            else:
+                return
+
         if authorization.AUTH_CONTEXT_ENV in request.environ:
             msg = _LW('Auth context already exists in the request environment')
             LOG.warning(msg)
             return
+
         auth_context,UserInfo = self._build_auth_context(request)
         if account_id is not None:
             auth_context["project_id"] = account_id
             auth_context["account_id"] = account_id
-        if UserInfo is not None: 
+        if UserInfo is not None:
             auth_context["UserInfo"] = UserInfo
-        LOG.debug('RBAC: auth_context: %s', auth_context)
+
         request.environ[authorization.AUTH_CONTEXT_ENV] = auth_context
 
