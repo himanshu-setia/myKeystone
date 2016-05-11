@@ -1,9 +1,5 @@
-from oslo_config import cfg
 from sqlalchemy import text
 from keystone.common import sql
-import MySQLdb
-
-CONF = cfg.CONF
 
 class DatabaseCheck():
     def check_connection(self):
