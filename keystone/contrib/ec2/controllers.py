@@ -62,7 +62,19 @@ CONF = cfg.CONF
 class Ec2ControllerCommon(object):
     def check_signature(self, creds_ref, credentials):
         signer = ec2_utils.Ec2Signer(creds_ref['secret'])
-        signature = signer.generate(credentials)
+        try:
+            if 'SignatureMethod' not in credentials['params'] or credentials['params']['SignatureMethod'] != 'HmacSHA256':
+                raise exception.ValidationError(attribute='Valid SignatureMethod',
+                                            target='credentials')
+        except KeyError:
+                raise exception.ValidationError(attribute="Signature params",
+                                            target="credentials")
+        try:
+            signature = signer.generate(credentials)
+        except:
+            raise exception.ValidationError(attribute='valid signature format',
+                                            target='credentials')
+        
         # NOTE(davechen): credentials.get('signature') is not guaranteed to
         # exist, we need check it explicitly.
         if credentials.get('signature'):
