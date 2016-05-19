@@ -69,12 +69,15 @@ class Ec2ControllerCommon(object):
         except KeyError:
                 raise exception.ValidationError(attribute="Signature params",
                                             target="credentials")
+       
         try:
+            if credentials['params']['SignatureVersion'] != '2':
+                raise exception.ValidationError(attribute='Valid SignatureVersion',target='credentials')
+
             signature = signer.generate(credentials)
-        except:
-            raise exception.ValidationError(attribute='valid signature format',
-                                            target='credentials')
-        
+        except KeyError:
+            raise exception.ValidationError(attribute='valid signature format',target='credentials')
+
         # NOTE(davechen): credentials.get('signature') is not guaranteed to
         # exist, we need check it explicitly.
         if credentials.get('signature'):
