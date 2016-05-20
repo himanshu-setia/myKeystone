@@ -425,6 +425,10 @@ class AuthContextMiddleware(wsgi.Middleware):
         if account_id is not None:
             auth_context["project_id"] = account_id
             auth_context["account_id"] = account_id
+        elif UserInfo is not None and UserInfo.has_key("AccountId"):
+            auth_context["project_id"] = UserInfo["AccountId"]
+            auth_context["account_id"] = UserInfo["AccountId"]
+
         if UserInfo is not None:
             auth_context["UserInfo"] = UserInfo
 
