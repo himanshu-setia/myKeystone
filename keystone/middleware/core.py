@@ -409,7 +409,7 @@ class AuthContextMiddleware(wsgi.Middleware):
                     msg = _LW('Caller token is invalid')
                     raise exception.Forbidden(msg)
         else:
-            if request.path == '/':
+            if request.path == '/' or request.path == '/v3/':
                 token_id, account_id = self._verify_signature(request)
                 if not token_id:
                     return
