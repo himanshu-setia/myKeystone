@@ -27,7 +27,7 @@ CONF = cfg.CONF
 class User(sql.ModelBase, sql.DictBase):
     __tablename__ = 'user'
     attributes = ['id', 'name', 'account_id', 'password', 'enabled',
-                  'default_project_id', 'expiry', 'type']
+                  'default_project_id', 'type']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
     account_id = sql.Column(sql.String(64), nullable=False)
@@ -35,7 +35,6 @@ class User(sql.ModelBase, sql.DictBase):
     enabled = sql.Column(sql.Boolean)
     extra = sql.Column(sql.JsonBlob())
     default_project_id = sql.Column(sql.String(64))
-    expiry = sql.Column(sql.DateTime)
     type = sql.Column(sql.Enum('regular', 'root'), nullable=False)
     # Unique constraint across two columns to create the separation
     # rather than just only 'name' being unique
@@ -116,9 +115,6 @@ class Identity(identity.Driver):
             raise AssertionError(_('Invalid user / password'))
         if not self._check_password(password, user_ref):
             raise AssertionError(_('Invalid user / password'))
-        if user_ref.expiry is not None:
-            if user_ref.expiry <= datetime.datetime.utcnow():
-                raise exception.PasswordExpired(_('Password Expired'))
         return identity.filter_user(user_ref.to_dict())
 
     # user crud

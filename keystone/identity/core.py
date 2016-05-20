@@ -862,11 +862,6 @@ class Manager(manager.Manager):
             if user['password'] is None:
                 if old_user_ref.get('type') == 'root':
                     raise exception.Forbidden('Password cannot be removed for root user.')
-                user['expiry'] = None
-            else:
-                expiry_days = CONF.password_policy.expiry_days
-                if expiry_days is not None:
-                    user['expiry'] = datetime.datetime.utcnow() + datetime.timedelta(days=expiry_days)
 
         account_id, driver, entity_id = (
             self._get_account_driver_and_entity_id(user_id))

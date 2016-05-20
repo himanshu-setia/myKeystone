@@ -239,7 +239,6 @@ class UserV3(controller.V3Controller):
             for r in attrs_to_return:
                 if r in ref:
                     new_ref[r] = ref.get(r)
-            new_ref['password_expiry'] = ref.get('expiry')
             ret.append(new_ref)
         return ret
 
@@ -249,7 +248,6 @@ class UserV3(controller.V3Controller):
         for r in attrs_to_return:
             if r in ref:
                 new_ref[r] = ref.get(r)
-            new_ref['password_expiry'] = ref.get('expiry')
         return new_ref
 
     @validation.validated(schema.user_create, 'user')
@@ -257,9 +255,6 @@ class UserV3(controller.V3Controller):
     def create_user(self, context, user):
         LOG.debug('Create user: %q', user)
         self._require_attribute(user, 'name')
-        if 'password' in user:
-            expiry_days = CONF.password_policy.expiry_days
-            user['expiry'] = datetime.datetime.utcnow() + datetime.timedelta(days=expiry_days)
         #The manager layer will generate the unique ID for users
         ref = self._normalize_dict(user)
         ref = self._normalize_account_id(context, ref)
