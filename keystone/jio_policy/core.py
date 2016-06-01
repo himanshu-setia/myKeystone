@@ -55,9 +55,6 @@ class Manager(manager.Manager):
         return ref
 
     def list_policies(self, project_id):
-        # TODO(ajayaa) Check whether the user has permission to list policies
-        # in the project.
-        project_ref = self.resource_api.get_account(project_id)
         return self.driver.list_policies(project_id)
 
     def list_resource_based_policies(self, project_id):
@@ -117,6 +114,14 @@ class Manager(manager.Manager):
     def detach_policy_from_group(self, policy_id, group_id):
         self.identity_api.get_group(group_id)
         self.driver.detach_policy_from_group(policy_id, group_id)
+
+    def attach_policy_to_role(self, policy_id, role_id):
+        self.jio_role_api.get_role(role_id)
+        self.driver.attach_policy_to_role(policy_id, role_id)
+
+    def detach_policy_from_role(self, policy_id, role_id):
+        self.jio_role_api.get_role(role_id)
+        self.driver.detach_policy_from_role(policy_id, role_id)
 
     def is_user_authorized(self, user_id, project_id, action, resource, is_implicit_allow):
         group_ids = self._get_group_ids_for_user_id(user_id)
@@ -253,9 +258,36 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
+    def attach_policy_to_role(self, policy_id, role_id):
+        """Attaches a policy to a user.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.RoleNotFound
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def detach_policy_from_role(self, policy_id, role_id):
+        """Detach policy from a user.
+
+        :raises: keystone.exception.PolicyNotFound
+                 keystone.exception.RoleNotFound
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
     def is_user_authorized(self, user_id, group_id, project_id, action,
                            resource):
         """Checks if userid is allowed to do action on resource
+        :raises: keystone.exception.ActionNotFound
+                 keystone.exception.ResourceNotFound
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def is_role_authorized(self, role_id, account_id, action,
+                           resource):
+        """Checks if roleid is allowed to do action on resource
         :raises: keystone.exception.ActionNotFound
                  keystone.exception.ResourceNotFound
         """

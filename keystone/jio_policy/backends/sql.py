@@ -916,6 +916,61 @@ class Policy(jio_policy.Driver):
 
         return is_authorized
 
+    def is_role_authorized(self, role_id, account_id, action, resource, is_implicit_allow):
+        session = sql.get_session()
+        # resource name must have 5 separators (:) e.g.
+        # 'jrn:jcs:service:tenantid:rtype:res' is a valid resource name
+        # providing tenantid is optional for a service
+        # but the format should be maintained
+        if len(resource.split(':')) < 6:
+            raise exception.ResourceNotFound(resource=resource)
+        # in case tenantid is not present in resource, update it
+        resource_acc_id = resource.split(':')[3].strip()
+        if resource_acc_id == '':
+            var = resource.split(':')
+            var[3] = account_id
+            resource = ':'.join(var)
+        elif len(resource_acc_id) == 32:
+            var = resource.split(':')
+            var[3] = resource_acc_id[-12:]
+            resource = ':'.join(var)
+        elif len(resource_acc_id) != 12:
+            raise exception.NotFound("AccountId in resource %s cannot be found."%resource)
+
+        if len(action.split(':')) < 4:
+            raise exception.ActionNotFound(action=action)
+        if action.split(':')[3] == '*':
+            raise exception.ActionNotFound(action=action)
+
+        #if action_direct == [] and action_indirect == []:
+        #    raise exception.ActionNotFound(action=action)
+        action_list = self.get_action_list(action)
+        resource_list = self.get_resource_list(resource)
+
+        if resource_list == []:
+            return is_implicit_allow
+            #raise exception.ResourceNotFound(resource=resource)
+        role_query = session.query(PolicyActionResourceModel.effect).join(JioPolicyModel).join(JioRolePolicyModel)
+        role_query = role_query.\
+            filter(JioPolicyModel.account_id == account_id)
+        role_query = role_query.\
+            filter(JioRolePolicyModel.role_id=role_id)
+        if action_list != []:
+            role_query = role_query.\
+                filter(PolicyActionResourceModel.action_id.in_(action_list))
+        if resource_list != []:
+            role_query = role_query.\
+                filter(PolicyActionResourceModel.resource_id.in_(resource_list)).all()
+
+        is_authorized = True
+        if role_query:
+            for row in role_query:
+                is_authorized = is_authorized and row[0]
+        else:
+            is_authorized = is_implicit_allow
+
+        return is_authorized
+
     def _attach_policy_to_user_group(self, policy_id, user_group_id,
                                      type=None):
         session = sql.get_session()
@@ -971,6 +1026,25 @@ class Policy(jio_policy.Driver):
     def detach_policy_from_group(self, policy_id, group_id):
         self._detach_policy_from_user_group(policy_id, group_id,
                                             type='GroupPolicy')
+
+    @sql.handle_conflicts(conflict_message='Policy is already attached to role')
+    def attach_policy_to_role(self, policy_id, role_id):
+        session = sql.get_session()
+        with session.begin():
+            policy_ref = self._get_policy(session, policy_id)
+            session.add(JioRolePolicyMappingModel(policy_id=policy_id,
+                                                  jio_role_id=role_id))
+
+    def detach_policy_from_role(self, policy_id, role_id):
+        session = sql.get_session()
+        with session.begin():
+            policy_ref = self._get_policy(session, policy_id)
+            query = session.query(JioRolePolicyMappingModel).filter_by(
+                jio_role_id=role_id).filter_by(policy_id=policy_id)
+            if query.count() == 0:
+                raise exception.NotFound(("Policy '%(policy_id)s' not attached to Role '%(role_id)s'") %
+                                     {'role_id': role_id,
+                                      'policy_id': policy_id})
 
     @sql.handle_conflicts(conflict_message='Policy is already attached to resource')
     def attach_policy_to_resource(self, policy_id, account_id, resource):
@@ -1072,7 +1146,7 @@ class Policy(jio_policy.Driver):
         summary_list['policy_document'] =policy.policy_blob
         summary_list['policy_jrn'] = 'jrn:jcs:iam:' + policy.account_id + ':Policy:' + policy.name
         summary_list['creation_time'] = policy.created_at
-	
+
         sum_list = []
         for row in query:
             dict = {}

@@ -175,6 +175,16 @@ class JioPolicyV3(controller.V3Controller):
         return self.jio_policy_api.detach_policy_from_resource(jio_policy_id,
                                                            resource)
 
+    @controller.jio_policy_filterprotected(args=['Policy','Role'])
+    def attach_policy_to_role(self, context, jio_policy_id, jio_role_id):
+        return self.jio_policy_api.attach_policy_to_role(jio_policy_id,
+                                                         jio_role_id)
+
+    @controller.jio_policy_filterprotected(args=['Policy','Role'])
+    def detach_policy_from_role(self, context, jio_policy_id, jio_role_id):
+        return self.jio_policy_api.detach_policy_from_role(jio_policy_id,
+                                                           jio_role_id)
+
     @controller.jio_policy_filterprotected(args='Policy')
     def get_policy_summary(self, context, jio_policy_id):
         refs = self.jio_policy_api.get_policy_summary(jio_policy_id)
